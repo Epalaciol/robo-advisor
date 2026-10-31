@@ -20,6 +20,7 @@ from roboadvisor.core.markowitz import (  # noqa: E402
     min_varianza,
     portafolios_aleatorios,
     tangente,
+    w_max_efectivo,
 )
 from roboadvisor.core.portafolio_completo import componer  # noqa: E402
 from roboadvisor.core.retornos import estimar, retornos_mensuales  # noqa: E402
@@ -75,6 +76,8 @@ def _calcular(
     precios = _repo_mercado.precios([*tickers_lista, benchmark], desde)
     est = estimar(precios[tickers_lista], rf, ventana_meses, min_meses)
 
+    w_max_usado, _ = w_max_efectivo(w_max, len(tickers_lista))
+
     port_min_var = min_varianza(est, w_max)
     port_tangente = tangente(est, w_max)
     front = frontera(est, w_max)
@@ -115,6 +118,8 @@ def _calcular(
         "nube": nube,
         "cal_pendiente": pendiente,
         "cal_intercepto": intercepto,
+        "w_max_elegido": w_max,
+        "w_max_usado": w_max_usado,
         "betas": betas_series,
         "duration": durations_series,
         "beta_portafolio": beta_port,
@@ -190,7 +195,6 @@ if st.button("Calcular", disabled=not puede_calcular, type="primary"):
             "Prueba quitando o cambiando alguno, o inténtalo de nuevo en unos segundos."
         )
     else:
-        resultado["w_max"] = w_max_usuario
         st.session_state["constructor_resultado"] = resultado
 
 resultado = st.session_state.get("constructor_resultado")
@@ -244,18 +248,33 @@ if resultado:
             st.warning(port_tangente.advertencia)
 
     with tab_composicion:
-        w_max_usado = resultado["w_max"]
+        w_max_elegido = resultado["w_max_elegido"]
+        w_max_usado = resultado["w_max_usado"]
         st.caption(
             "Cada barra representa el 100% de tu plata: el ancho de cada color es "
             "la parte que le toca a ese activo."
         )
-        st.info(
-            f"**Regla que elegiste:** ningún activo puede pesar más de "
-            f"**{w_max_usado:.0%}** de la parte de riesgo (evita que Markowitz "
-            "concentre todo en 1 o 2 activos; ajustable arriba, en \"Tope máximo "
-            "por activo\"). Si un activo llega justo a ese número, es porque tocó "
-            "el tope — no porque sea la \"mejor\" combinación matemática pura."
-        )
+
+        if abs(w_max_usado - w_max_elegido) > 1e-9:
+            st.warning(
+                f"**Pediste un tope de {w_max_elegido:.0%}**, pero con "
+                f"{len(port_tangente.w)} activos elegidos el mínimo matemáticamente "
+                f"posible es **{w_max_usado:.0%}** (= 1/{len(port_tangente.w)}: si "
+                "cada uno pesara menos que eso, no alcanzaría para sumar 100%). "
+                f"Se usó **{w_max_usado:.0%}** en este cálculo — no fue elegido por "
+                "la optimización, es un límite matemático con pocos activos. Para "
+                "que tu tope de {:.0%} sí se respete, elige más activos.".format(
+                    w_max_elegido
+                )
+            )
+        else:
+            st.info(
+                f"**Regla que elegiste:** ningún activo puede pesar más de "
+                f"**{w_max_usado:.0%}** de la parte de riesgo (evita que Markowitz "
+                "concentre todo en 1 o 2 activos; ajustable arriba, en \"Tope máximo "
+                "por activo\"). Si un activo llega justo a ese número, es porque tocó "
+                "el tope — no porque sea la \"mejor\" combinación matemática pura."
+            )
 
         activos_en_el_tope = [
             t for t, w in port_tangente.w.items() if w >= w_max_usado - 1e-6
@@ -341,7 +360,14 @@ if resultado:
         st.write(f"Meses efectivamente usados: {est.n_meses}")
         st.write(f"Tasa libre de riesgo: {est.rf:.2%}")
         st.write("Shrinkage de covarianza: Ledoit-Wolf")
-        st.write(f"Tope por activo (w_max): {resultado['w_max']:.0%} (elegido por ti)")
+        if abs(resultado["w_max_usado"] - resultado["w_max_elegido"]) > 1e-9:
+            st.write(
+                f"Tope por activo (w_max) elegido: {resultado['w_max_elegido']:.0%} — "
+                f"tope realmente usado: {resultado['w_max_usado']:.0%} "
+                "(ajustado al mínimo matemático posible, ver advertencia arriba)"
+            )
+        else:
+            st.write(f"Tope por activo (w_max): {resultado['w_max_usado']:.0%} (elegido por ti)")
         st.write(f"Fecha de datos (fecha_base): {resultado['fecha_base']}")
 
     st.subheader("3. Guardar")
@@ -349,7 +375,7 @@ if resultado:
         "Entiendo que el portafolio se guarda una sola vez y no se puede editar."
     )
     if st.button("Confirmar y guardar", type="primary", disabled=not confirmar):
-        params_usados = replace(PARAMS, w_max=resultado["w_max"])
+        params_usados = replace(PARAMS, w_max=resultado["w_max_usado"])
         payload = armar_registro_portafolio(
             user_id=st.session_state["user_id"],
             encuesta_id=encuesta["id"],

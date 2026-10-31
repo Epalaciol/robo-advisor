@@ -30,10 +30,22 @@ class Portafolio:
     advertencia: str | None = None
 
 
-def _w_max_efectivo(w_max: float, n: int) -> tuple[float, str | None]:
+def w_max_efectivo(w_max: float, n: int) -> tuple[float, str | None]:
+    """`w_max` efectivo para `n` activos: `max(w_max, 1/n)` — con `n` activos,
+    ninguno puede pesar menos de `1/n` en promedio, así que un tope por debajo
+    de eso es matemáticamente inalcanzable y se sube al mínimo posible.
+
+    Pública (no solo para uso interno) para que la UI pueda mostrar el tope
+    *real* aplicado cuando difiere del que pidió el usuario.
+    """
     minimo = 1 / n
     if w_max < minimo:
-        return minimo, f"w_max ajustado de {w_max:.4f} a {minimo:.4f} (= 1/{n})"
+        mensaje = (
+            f"Pediste un tope de {w_max:.0%}, pero con {n} activos elegidos el "
+            f"mínimo posible es {minimo:.0%} (= 1/{n}): si cada uno pesara menos, "
+            f"no alcanzaría para sumar 100%. Se usó {minimo:.0%}."
+        )
+        return minimo, mensaje
     return w_max, None
 
 
@@ -91,7 +103,7 @@ def min_varianza(est: Estimacion, w_max: float) -> Portafolio:
     mu = est.mu.to_numpy()
     sigma = est.sigma.to_numpy()
     n = len(mu)
-    w_max_eff, nota = _w_max_efectivo(w_max, n)
+    w_max_eff, nota = w_max_efectivo(w_max, n)
 
     w = _resolver_min_varianza(mu, sigma, w_max_eff)
     retorno, sigma_p, sharpe = _metricas(w, mu, sigma, est.rf)
@@ -114,7 +126,7 @@ def tangente(est: Estimacion, w_max: float) -> Portafolio:
     mu = est.mu.to_numpy()
     sigma = est.sigma.to_numpy()
     n = len(mu)
-    w_max_eff, nota = _w_max_efectivo(w_max, n)
+    w_max_eff, nota = w_max_efectivo(w_max, n)
 
     if not (est.mu > est.rf).any():
         aviso = "Ningún activo supera a rf: se devuelve mínima varianza"
@@ -181,7 +193,7 @@ def frontera(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
     mu = est.mu.to_numpy()
     sigma = est.sigma.to_numpy()
     n = len(mu)
-    w_max_eff, _ = _w_max_efectivo(w_max, n)
+    w_max_eff, _ = w_max_efectivo(w_max, n)
 
     port_min_var = min_varianza(est, w_max)
     retorno_min = port_min_var.retorno
@@ -229,7 +241,7 @@ def portafolios_aleatorios(
     mu = est.mu.to_numpy()
     sigma = est.sigma.to_numpy()
     n_activos = len(mu)
-    w_max_eff, _ = _w_max_efectivo(w_max, n_activos)
+    w_max_eff, _ = w_max_efectivo(w_max, n_activos)
 
     rng = np.random.default_rng(semilla)
     filas = []
