@@ -231,6 +231,19 @@ if resultado:
             "Cada barra representa el 100% de tu plata: el ancho de cada color es "
             "la parte que le toca a ese activo."
         )
+        st.info(
+            f"**Regla del portafolio:** ningún activo puede pesar más de "
+            f"**{PARAMS.w_max:.0%}** de la parte de riesgo (evita que Markowitz "
+            "concentre todo en 1 o 2 activos). Si un activo llega justo a ese "
+            "número, es porque tocó el tope — no porque sea la \"mejor\" "
+            "combinación matemática pura."
+        )
+
+        activos_en_el_tope = [
+            t for t, w in port_tangente.w.items() if w >= PARAMS.w_max - 1e-6
+        ]
+        if activos_en_el_tope:
+            st.caption(f"🔒 En el tope ({PARAMS.w_max:.0%}): {', '.join(activos_en_el_tope)}")
 
         st.write("**Solo la parte de riesgo**")
         st.plotly_chart(

@@ -131,13 +131,42 @@ def figura_frontera(
         )
     )
 
-    sigma_max = (
-        max(float(frontera_df["sigma"].max()), port_tangente.sigma, sigma_activos.max()) * 1.2
+    # Rango visible de ejes a partir de los datos reales — SIN incluir la CAL,
+    # que se dibuja después recortada a este mismo rango. Antes la CAL se
+    # extendía 1.2x más allá del dato más lejano y ese punto, lejísimos,
+    # quedaba igual incluido en el gráfico: al hacer zoom-out o "reset axes"
+    # Plotly reencuadraba para mostrarlo entero y la vista útil se arruinaba.
+    sigmas_reales = np.concatenate(
+        [
+            frontera_df["sigma"].to_numpy(),
+            sigma_activos,
+            [port_min_var.sigma, port_tangente.sigma],
+            nube_no_eficientes["sigma"].to_numpy()
+            if nube_no_eficientes is not None and not nube_no_eficientes.empty
+            else [],
+            [punto_usuario[0]] if punto_usuario is not None else [],
+        ]
     )
+    retornos_reales = np.concatenate(
+        [
+            frontera_df["retorno"].to_numpy(),
+            mu.to_numpy(),
+            [port_min_var.retorno, port_tangente.retorno],
+            nube_no_eficientes["retorno"].to_numpy()
+            if nube_no_eficientes is not None and not nube_no_eficientes.empty
+            else [],
+            [punto_usuario[1]] if punto_usuario is not None else [],
+        ]
+    )
+    sigma_max_visible = float(sigmas_reales.max()) * 1.15
+    margen_y = (float(retornos_reales.max()) - float(retornos_reales.min())) * 0.15
+    retorno_min_visible = float(retornos_reales.min()) - margen_y
+    retorno_max_visible = float(retornos_reales.max()) + margen_y
+
     fig.add_trace(
         go.Scatter(
-            x=[0, sigma_max],
-            y=[cal_intercepto, cal_intercepto + cal_pendiente * sigma_max],
+            x=[0, sigma_max_visible],
+            y=[cal_intercepto, cal_intercepto + cal_pendiente * sigma_max_visible],
             mode="lines",
             name="CAL (con el activo libre de riesgo)",
             line={"color": COLOR_CAL, "dash": "dot", "width": 2},
@@ -187,6 +216,8 @@ def figura_frontera(
         yaxis_title="Retorno esperado por año",
         xaxis_tickformat=".0%",
         yaxis_tickformat=".0%",
+        xaxis_range=[0, sigma_max_visible],
+        yaxis_range=[retorno_min_visible, retorno_max_visible],
         height=550,
         legend={"orientation": "v", "yanchor": "top", "y": 1, "xanchor": "left", "x": 1.02},
     )
