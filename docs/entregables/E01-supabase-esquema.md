@@ -40,7 +40,7 @@ pytest -m integration -q
 Revisar en el Table Editor que `activos` tiene 24 filas (22 invertibles activos, `ACWI` como benchmark y `TES_COP` con `activo=false`).
 
 ## Criterios de aceptación
-- [ ] Esquema aplicado sin errores; RLS habilitada en las 8 tablas.
-- [ ] Catálogo cargado (rerun idempotente).
-- [ ] Las 6 pruebas de RLS pasan contra el proyecto real.
-- [ ] `service_role` no aparece en ningún archivo versionado.
+- [ ] Esquema aplicado sin errores; RLS habilitada en las 8 tablas. **Pendiente**: requiere que crees el proyecto Supabase real y ejecutes la migración (acción humana, ver README §"Aplicar el esquema").
+- [ ] Catálogo cargado (rerun idempotente). **Código listo y probado offline** (`tests/test_cargar_catalogo.py`); falta correrlo contra un proyecto real.
+- [ ] Las 6 pruebas de RLS pasan contra el proyecto real. **Pendiente**: las 6 pruebas están escritas y se saltan automáticamente sin `.env`; no se han ejecutado contra una base real.
+- [x] `service_role` no aparece en ningún archivo versionado.

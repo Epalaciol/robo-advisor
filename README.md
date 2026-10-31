@@ -28,5 +28,11 @@ Datos de Yahoo Finance cargados por un pipeline diario en Supabase; app en Strea
 - Crear el repo en GitHub (preferible privado).
 - Enviar al profesor las preguntas de `docs/00-contexto-y-requisitos.md` §5.
 
+## Aplicar el esquema (E01)
+1. Copia `.env.example` a `.env` y completa `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+2. En el SQL Editor del proyecto Supabase, pega y ejecuta `supabase/migrations/0001_init.sql` (una sola vez).
+3. Carga el catálogo: `python scripts/cargar_catalogo.py` (idempotente, usa `service_role`).
+4. Verifica la seguridad: `pytest -m integration -q` (crea y borra usuarios de prueba).
+
 ## Fechas
 Taller 1: **12-nov-2026** · Taller 2: 19-nov-2026 (incremental, después).

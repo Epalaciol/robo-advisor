@@ -30,6 +30,11 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.pytest.ini_options]
+markers = [
+    "integration: requiere un proyecto Supabase real (SUPABASE_SERVICE_ROLE_KEY en .env); se omite si no está",
+]
+
 [tool.ruff]
 line-length = 100
 
