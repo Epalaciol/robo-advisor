@@ -126,12 +126,14 @@ def requerir_sesion() -> None:
     """Para usar al inicio de cada página protegida: si no hay sesión, redirige a Inicio."""
     if not hay_sesion():
         st.warning("Debes iniciar sesión para ver esta página.")
-        st.page_link("Inicio.py", label="Ir a Inicio")
+        if st.button("Ir a Inicio", type="primary"):
+            st.switch_page("Inicio.py")
         st.stop()
 
     try:
         cliente_sesion_actual()
     except ValueError as error:
         st.warning(str(error))
-        st.page_link("Inicio.py", label="Ir a Inicio")
+        if st.button("Ir a Inicio", type="primary"):
+            st.switch_page("Inicio.py")
         st.stop()

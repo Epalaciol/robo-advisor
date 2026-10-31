@@ -39,7 +39,8 @@ def _mostrar_resultado_existente(encuesta: dict) -> None:
     )
     st.plotly_chart(figura_utilidad_vs_sigma(float(encuesta["a"])), use_container_width=True)
 
-    st.page_link("pages/2_Constructor.py", label="Ir al Constructor")
+    if st.button("Ir al Constructor", type="primary"):
+        st.switch_page("pages/2_Constructor.py")
 
 
 def _formulario_nuevo() -> None:

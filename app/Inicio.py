@@ -93,7 +93,8 @@ def _enrutar_segun_estado(estado: str) -> None:
         "completo": "pages/3_Mi_portafolio.py",
     }
     st.success("Sesión activa.")
-    st.page_link(destinos[estado], label="Continuar")
+    if st.button("Continuar", type="primary"):
+        st.switch_page(destinos[estado])
     if st.button("Cerrar sesión"):
         cerrar_sesion()
         st.rerun()

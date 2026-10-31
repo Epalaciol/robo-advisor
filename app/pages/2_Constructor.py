@@ -10,7 +10,7 @@ import streamlit as st  # noqa: E402
 from ui.auth import cliente_sesion_actual, requerir_sesion  # noqa: E402
 from ui.constructor import armar_registro_portafolio  # noqa: E402
 from ui.estilos import pie_de_pagina  # noqa: E402
-from ui.graficos import figura_frontera, figura_pesos  # noqa: E402
+from ui.graficos import figura_composicion, figura_frontera  # noqa: E402
 
 from roboadvisor.config import ParametrosFinancieros  # noqa: E402
 from roboadvisor.core.markowitz import cal, frontera, min_varianza, tangente  # noqa: E402
@@ -35,12 +35,14 @@ st.title("Constructor de portafolio")
 encuesta = repo_usuario.obtener_encuesta()
 if encuesta is None:
     st.warning("Primero debes responder la encuesta de aversión al riesgo.")
-    st.page_link("pages/1_Encuesta.py", label="Ir a la encuesta")
+    if st.button("Ir a la encuesta", type="primary"):
+        st.switch_page("pages/1_Encuesta.py")
     st.stop()
 
 if repo_usuario.obtener_portafolio() is not None:
     st.info("Ya tienes un portafolio guardado. No se puede armar otro.")
-    st.page_link("pages/3_Mi_portafolio.py", label="Ir a Mi portafolio")
+    if st.button("Ir a Mi portafolio", type="primary"):
+        st.switch_page("pages/3_Mi_portafolio.py")
     st.stop()
 
 a_usuario = float(encuesta["a"])
@@ -174,48 +176,74 @@ if resultado:
     )
 
     with tab_resumen:
-        col1, col2, col3 = st.columns(3)
-        col1.metric("% en portafolio de riesgo (y*)", f"{port_completo.y:.1%}")
-        col2.metric("% libre de riesgo", f"{port_completo.peso_rf:.1%}")
-        col3.metric("Sharpe (riesgo)", f"{port_tangente.sharpe:.2f}")
-
-        col4, col5, col6 = st.columns(3)
-        col4.metric("Retorno esperado (riesgo)", f"{port_tangente.retorno:.1%}")
-        col5.metric("σ (riesgo)", f"{port_tangente.sigma:.1%}")
-        col6.metric("Utilidad", f"{port_completo.utilidad:.4f}")
-
-        st.caption(
-            f"Retorno esperado (completo): {port_completo.retorno:.1%} · "
-            f"σ (completo): {port_completo.sigma:.1%}"
+        st.markdown(
+            f"### En palabras simples\n"
+            f"De cada \\$100 que inviertas, **\\${port_completo.y * 100:,.0f} van a activos "
+            f"con riesgo** (acciones, bonos, oro...) y **\\${port_completo.peso_rf * 100:,.0f} "
+            f"se guardan en algo seguro**. Con esa mezcla, en un año típico esperarías ganar "
+            f"alrededor de **{port_completo.retorno:.1%}**, aunque el valor real puede subir o "
+            f"bajar unos **{port_completo.sigma:.1%}** respecto a ese promedio — así de "
+            f"\"movido\" es este portafolio."
         )
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("% en riesgo (y*)", f"{port_completo.y:.1%}")
+        col1.caption("Qué parte de tu plata va a activos con riesgo vs. algo seguro.")
+        col2.metric("Retorno esperado", f"{port_completo.retorno:.1%}")
+        col2.caption("Ganancia promedio esperada por año. No está garantizada.")
+        col3.metric("σ — qué tan movido", f"{port_completo.sigma:.1%}")
+        col3.caption("Qué tanto puede variar el valor de un año a otro.")
+
+        with st.expander("Ver también: Sharpe y Utilidad (métricas técnicas)"):
+            col4, col5 = st.columns(2)
+            col4.metric("Sharpe (riesgo)", f"{port_tangente.sharpe:.2f}")
+            col4.caption("Ganancia extra por cada unidad de riesgo tomado. Más alto es mejor.")
+            col5.metric("Utilidad", f"{port_completo.utilidad:.4f}")
+            col5.caption(
+                "Puntaje interno que combina tu ganancia esperada y tu tolerancia al riesgo; "
+                "solo sirve para comparar opciones, no tiene una unidad propia."
+            )
 
         if port_completo.apalancamiento_requerido:
             st.warning(
-                "Tu aversión al riesgo pediría más del 100% en el portafolio de riesgo "
-                "(apalancamiento); se recortó a 100% sin apalancamiento."
+                "Tu perfil de riesgo pediría invertir más del 100% en activos con riesgo "
+                "(pedir prestado para invertir más). Por seguridad, se recortó a un máximo "
+                "de 100%: no se pide dinero prestado."
             )
         if port_tangente.advertencia:
             st.warning(port_tangente.advertencia)
 
     with tab_composicion:
-        st.write("**Portafolio de riesgo**")
-        st.dataframe(port_tangente.w.rename("peso").to_frame().style.format("{:.2%}"))
-        st.plotly_chart(
-            figura_pesos(port_tangente.w, "Pesos del portafolio de riesgo"),
-            use_container_width=True,
+        st.caption(
+            "Cada barra representa el 100% de tu plata: el ancho de cada color es "
+            "la parte que le toca a ese activo."
         )
 
-        st.write("**Portafolio completo (incluye libre de riesgo)**")
+        st.write("**Solo la parte de riesgo**")
+        st.plotly_chart(
+            figura_composicion(port_tangente.w, "Portafolio de riesgo (100%)"),
+            use_container_width=True,
+        )
+        st.dataframe(port_tangente.w.rename("peso").to_frame().style.format("{:.2%}"))
+
+        st.write("**Tu plata completa (riesgo + seguro)**")
         pesos_completo_rf = pd.concat(
             [port_completo.pesos_completo, pd.Series({"Libre de riesgo": port_completo.peso_rf})]
         )
-        st.dataframe(pesos_completo_rf.rename("peso").to_frame().style.format("{:.2%}"))
         st.plotly_chart(
-            figura_pesos(pesos_completo_rf, "Pesos del portafolio completo"),
+            figura_composicion(pesos_completo_rf, "Portafolio completo (100%)"),
             use_container_width=True,
         )
+        st.dataframe(pesos_completo_rf.rename("peso").to_frame().style.format("{:.2%}"))
 
     with tab_frontera:
+        st.caption(
+            "Cómo leerlo: cada punto gris es uno de tus activos. La línea gris curva "
+            "conecta las mejores combinaciones posibles (ni mucho riesgo de más, ni "
+            "retorno de menos). La línea punteada clara es el resultado de mezclar eso "
+            "con algo seguro. El **diamante naranja es tu portafolio real** — mientras "
+            "más a la derecha, más riesgo; mientras más arriba, más ganancia esperada."
+        )
         st.plotly_chart(
             figura_frontera(
                 resultado["frontera"],
@@ -232,20 +260,31 @@ if resultado:
 
     with tab_riesgo:
         if resultado["betas"].empty:
-            st.caption("Sin activos de renta variable seleccionados.")
+            st.caption("Sin activos de renta variable (acciones) seleccionados.")
         else:
-            st.write("**Betas vs ACWI**")
+            st.write("**Beta — qué tan fuerte se mueve cada acción frente al mercado global**")
+            st.caption(
+                "Beta = 1: se mueve igual que el mercado (ACWI). Beta > 1: se mueve más "
+                "fuerte (más riesgoso). Beta < 1: se mueve menos (más tranquilo)."
+            )
             st.dataframe(resultado["betas"].rename("beta").to_frame().style.format("{:.2f}"))
             beta_normalizada = resultado["beta_portafolio"]["beta_normalizada"]
-            st.metric("Beta del portafolio", f"{beta_normalizada:.2f}")
+            st.metric("Beta de tu portafolio", f"{beta_normalizada:.2f}")
 
         if resultado["duration"].empty:
-            st.caption("Sin activos de renta fija seleccionados.")
+            st.caption("Sin activos de renta fija (bonos) seleccionados.")
         else:
-            st.write("**Duration**")
-            st.dataframe(resultado["duration"].rename("duration").to_frame().style.format("{:.2f}"))
+            st.write("**Duration — qué tan sensible es cada bono a cambios en las tasas**")
+            st.caption(
+                "En años: a mayor duration, más le afecta el precio del bono cuando suben "
+                "o bajan las tasas de interés. Un bono con duration 8 es más sensible que "
+                "uno con duration 3."
+            )
+            st.dataframe(
+                resultado["duration"].rename("duration").to_frame().style.format("{:.2f}")
+            )
             st.metric(
-                "Duration del portafolio (renta fija)",
+                "Duration de tu portafolio (parte de renta fija)",
                 f"{resultado['duration_portafolio']['duration_rf_normalizada']:.2f}",
             )
 
@@ -280,6 +319,7 @@ if resultado:
         else:
             del st.session_state["constructor_resultado"]
             st.success("¡Portafolio guardado!")
-            st.page_link("pages/3_Mi_portafolio.py", label="Ver mi portafolio")
+            if st.button("Ver mi portafolio", type="primary"):
+                st.switch_page("pages/3_Mi_portafolio.py")
 
 pie_de_pagina()
