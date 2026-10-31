@@ -1,6 +1,6 @@
 import pandas as pd
 
-from roboadvisor.data.yahoo import parsear_descarga_precios
+from roboadvisor.data.yahoo import _extraer_cierres, parsear_descarga_precios
 
 
 def _bruto_multiindice() -> pd.DataFrame:
@@ -53,3 +53,21 @@ def test_ticker_sin_columnas_se_omite():
     bruto = _bruto_multiindice()
     resultado = parsear_descarga_precios(bruto, ["AAA", "NO_EXISTE"])
     assert "NO_EXISTE" not in set(resultado["ticker"])
+
+
+def test_extraer_cierres_multiindice_un_solo_ticker():
+    # yfinance >= reciente devuelve MultiIndex (campo, ticker) incluso para un ticker
+    fechas = pd.date_range("2024-01-02", periods=3, freq="D")
+    columnas = pd.MultiIndex.from_product([["Close", "Open"], ["^IRX"]])
+    bruto = pd.DataFrame([[4.0, 4.1], [4.2, 4.1], [4.1, 4.2]], index=fechas, columns=columnas)
+
+    cierres = _extraer_cierres(bruto)
+    assert list(cierres) == [4.0, 4.2, 4.1]
+
+
+def test_extraer_cierres_columnas_planas():
+    fechas = pd.date_range("2024-01-02", periods=2, freq="D")
+    bruto = pd.DataFrame({"Close": [4.0, 4.1], "Open": [3.9, 4.0]}, index=fechas)
+
+    cierres = _extraer_cierres(bruto)
+    assert list(cierres) == [4.0, 4.1]

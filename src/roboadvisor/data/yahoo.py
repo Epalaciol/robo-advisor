@@ -72,18 +72,27 @@ def descargar_precios(tickers: list[str], desde: pd.Timestamp) -> pd.DataFrame:
     return parsear_descarga_precios(bruto, tickers)
 
 
+def _extraer_cierres(bruto: pd.DataFrame) -> pd.Series:
+    """`Close` de un `DataFrame` de `yfinance.download()`, sea el índice de
+    columnas plano o `MultiIndex` (yfinance usa `MultiIndex` incluso para un
+    solo ticker en versiones recientes).
+    """
+    if isinstance(bruto.columns, pd.MultiIndex):
+        cierres = bruto.xs("Close", axis=1, level=0).iloc[:, 0]
+    else:
+        cierres = bruto["Close"]
+    return cierres.dropna()
+
+
 def descargar_rf(desde: pd.Timestamp) -> pd.DataFrame:
     """Tasa libre de riesgo anual (`^IRX` / 100) desde `desde`."""
     bruto = _con_reintentos(
         yf.download, "^IRX", start=desde.date(), auto_adjust=False, progress=False
     )
-    bruto = bruto.dropna(subset=["Close"])
-    cierres = bruto["Close"]
-    if isinstance(cierres, pd.DataFrame):
-        cierres = cierres.iloc[:, 0]
+    cierres = _extraer_cierres(bruto)
     return pd.DataFrame(
         {
-            "fecha": pd.to_datetime(bruto.index).normalize(),
+            "fecha": pd.to_datetime(cierres.index).normalize(),
             "tasa_anual": cierres.to_numpy() / 100,
         }
     )
