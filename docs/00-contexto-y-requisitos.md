@@ -56,6 +56,19 @@ Registro → encuesta → guardar usuario y resultado → escoger activos y arma
    horizonte real del portafolio es de años? Usamos `^IRX` por defecto (sin riesgo de tasa,
    coherente con "libre de riesgo"); `^TNX` sí tiene riesgo de precio y ya está representado
    por activos como `TLT`/`IEF` en el catálogo.
+7. ¿`μ` debe estimarse como promedio histórico simple (lo que hacemos, §3 de
+   `03-motor-financiero.md`) o con un modelo tipo CAPM (`rf + β·(E(Rm)−rf)`)? Son métodos
+   legítimos distintos: el histórico refleja lo que el activo *realmente* rindió en la ventana
+   (puede estar inflado por una racha reciente, ej. oro 2021–2026); CAPM refleja lo que
+   *debería* rendir según su riesgo sistemático, independiente de su historia. Usamos el
+   histórico por ser el estándar del enfoque Markowitz clásico del taller.
+8. ¿Por qué retornos mensuales y no diarios para estimar `μ`/`Σ`? Decisión deliberada
+   (ver tabla §3 "Estabilidad y comparabilidad"): con datos diarios, `μ` es mucho más ruidoso
+   (el error estándar de la media baja lento frente a la volatilidad de alta frecuencia) y `Σ`
+   se distorsiona por efectos de no-sincronía/autocorrelación de corto plazo entre activos con
+   distintos calendarios de cotización (cripto 7 días vs. acciones 5, distintas zonas horarias).
+   Como el portafolio es de asignación estratégica de largo plazo (no trading), el ruido diario
+   no aporta señal útil a Markowitz y sí perjudica la estabilidad de la estimación.
 
 ## 6. Riesgos conocidos
 - `yfinance` no es API oficial: puede fallar o limitar peticiones → por eso existe el pipeline y la app nunca llama a Yahoo.
