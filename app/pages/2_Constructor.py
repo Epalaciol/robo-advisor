@@ -1,6 +1,7 @@
 """Constructor de portafolio: selección de activos, cálculo y guardado (E09)."""
 
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -150,6 +151,21 @@ st.caption(
     f"(mínimo {PARAMS.n_min_activos})"
 )
 
+w_max_pct = st.slider(
+    "Tope máximo por activo",
+    min_value=10,
+    max_value=100,
+    value=int(PARAMS.w_max * 100),
+    step=5,
+    format="%d%%",
+    help=(
+        "Qué tanto puede concentrarse Markowitz en un solo activo. Más bajo = más "
+        "diversificado (obligado); 100% = sin tope, puede poner todo en 1-2 activos "
+        f"si eso maximiza el Sharpe. Valor por defecto del taller: {PARAMS.w_max:.0%}."
+    ),
+)
+w_max_usuario = w_max_pct / 100
+
 puede_calcular = PARAMS.n_min_activos <= len(tickers_elegidos) <= PARAMS.n_max_activos
 if st.button("Calcular", disabled=not puede_calcular, type="primary"):
     ultima_fecha = repo_mercado.ultima_fecha_precios()
@@ -161,7 +177,7 @@ if st.button("Calcular", disabled=not puede_calcular, type="primary"):
             tuple(sorted(tickers_elegidos)),
             ultima_fecha,
             rf,
-            PARAMS.w_max,
+            w_max_usuario,
             PARAMS.ventana_meses,
             PARAMS.min_meses,
             PARAMS.benchmark,
@@ -174,6 +190,7 @@ if st.button("Calcular", disabled=not puede_calcular, type="primary"):
             "Prueba quitando o cambiando alguno, o inténtalo de nuevo en unos segundos."
         )
     else:
+        resultado["w_max"] = w_max_usuario
         st.session_state["constructor_resultado"] = resultado
 
 resultado = st.session_state.get("constructor_resultado")
@@ -227,23 +244,24 @@ if resultado:
             st.warning(port_tangente.advertencia)
 
     with tab_composicion:
+        w_max_usado = resultado["w_max"]
         st.caption(
             "Cada barra representa el 100% de tu plata: el ancho de cada color es "
             "la parte que le toca a ese activo."
         )
         st.info(
-            f"**Regla del portafolio:** ningún activo puede pesar más de "
-            f"**{PARAMS.w_max:.0%}** de la parte de riesgo (evita que Markowitz "
-            "concentre todo en 1 o 2 activos). Si un activo llega justo a ese "
-            "número, es porque tocó el tope — no porque sea la \"mejor\" "
-            "combinación matemática pura."
+            f"**Regla que elegiste:** ningún activo puede pesar más de "
+            f"**{w_max_usado:.0%}** de la parte de riesgo (evita que Markowitz "
+            "concentre todo en 1 o 2 activos; ajustable arriba, en \"Tope máximo "
+            "por activo\"). Si un activo llega justo a ese número, es porque tocó "
+            "el tope — no porque sea la \"mejor\" combinación matemática pura."
         )
 
         activos_en_el_tope = [
-            t for t, w in port_tangente.w.items() if w >= PARAMS.w_max - 1e-6
+            t for t, w in port_tangente.w.items() if w >= w_max_usado - 1e-6
         ]
         if activos_en_el_tope:
-            st.caption(f"🔒 En el tope ({PARAMS.w_max:.0%}): {', '.join(activos_en_el_tope)}")
+            st.caption(f"🔒 En el tope ({w_max_usado:.0%}): {', '.join(activos_en_el_tope)}")
 
         st.write("**Solo la parte de riesgo**")
         st.plotly_chart(
@@ -323,7 +341,7 @@ if resultado:
         st.write(f"Meses efectivamente usados: {est.n_meses}")
         st.write(f"Tasa libre de riesgo: {est.rf:.2%}")
         st.write("Shrinkage de covarianza: Ledoit-Wolf")
-        st.write(f"Tope por activo (w_max): {PARAMS.w_max:.0%}")
+        st.write(f"Tope por activo (w_max): {resultado['w_max']:.0%} (elegido por ti)")
         st.write(f"Fecha de datos (fecha_base): {resultado['fecha_base']}")
 
     st.subheader("3. Guardar")
@@ -331,6 +349,7 @@ if resultado:
         "Entiendo que el portafolio se guarda una sola vez y no se puede editar."
     )
     if st.button("Confirmar y guardar", type="primary", disabled=not confirmar):
+        params_usados = replace(PARAMS, w_max=resultado["w_max"])
         payload = armar_registro_portafolio(
             user_id=st.session_state["user_id"],
             encuesta_id=encuesta["id"],
@@ -339,7 +358,7 @@ if resultado:
             est=est,
             port_riesgo=port_tangente,
             port_completo=port_completo,
-            params=PARAMS,
+            params=params_usados,
             fecha_base=resultado["fecha_base"],
         )
         try:
