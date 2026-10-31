@@ -32,6 +32,6 @@ python -c "from roboadvisor.core.cuestionario import puntuar; print(puntuar({k:'
 Esperado: puntaje 18, perfil moderado, A=4.
 
 ## Criterios de aceptación
-- [ ] 9 preguntas con sus opciones fieles al PDF.
-- [ ] Mapeo puntaje→perfil correcto en todo el rango 9–27.
-- [ ] Sin imports de red, DB ni Streamlit en `core/`.
+- [x] 9 preguntas con sus opciones fieles al PDF.
+- [x] Mapeo puntaje→perfil correcto en todo el rango 9–27.
+- [x] Sin imports de red, DB ni Streamlit en `core/`.
