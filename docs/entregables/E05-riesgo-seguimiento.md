@@ -33,6 +33,6 @@ pytest tests/core -q && ruff check .
 ```
 
 ## Criterios de aceptación
-- [ ] Todas las pruebas pasan; funciones puras.
-- [ ] Series cortas no revientan: devuelven `None`/`suficiente=False` y no `NaN` silenciosos.
-- [ ] Documentado en docstrings el supuesto compra-y-mantiene.
+- [x] Todas las pruebas pasan; funciones puras.
+- [x] Series cortas no revientan: devuelven `None`/`suficiente=False` y no `NaN` silenciosos.
+- [x] Documentado en docstrings el supuesto compra-y-mantiene.
