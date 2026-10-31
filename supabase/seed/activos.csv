@@ -1,0 +1,25 @@
+ticker,nombre,clase,region,moneda,es_renta_fija,duration,rol,activo,notas
+GXG,Global X MSCI Colombia ETF,acciones_colombia_latam,Colombia,USD,false,,invertible,true,VERIFICAR en E02 que siga cotizando y tenga 36+ meses
+CIB,Bancolombia ADR,acciones_colombia_latam,Colombia,USD,false,,invertible,true,Acción individual (ADR); apta para múltiplos
+EC,Ecopetrol ADR,acciones_colombia_latam,Colombia,USD,false,,invertible,true,Acción individual (ADR); apta para múltiplos
+ILF,iShares Latin America 40 ETF,acciones_colombia_latam,Latinoamérica,USD,false,,invertible,true,
+SPY,SPDR S&P 500 ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,
+QQQ,Invesco QQQ (Nasdaq 100),acciones_eeuu,Estados Unidos,USD,false,,invertible,true,
+IWM,iShares Russell 2000 ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,Small caps
+EFA,iShares MSCI EAFE ETF,acciones_eafe,Desarrollados ex-EE.UU.,USD,false,,invertible,true,
+EEM,iShares MSCI Emerging Markets ETF,acciones_emergentes,Mercados emergentes,USD,false,,invertible,true,
+LQD,iShares iBoxx USD Investment Grade Corporate Bond ETF,renta_fija_ig,Estados Unidos,USD,true,8.4,invertible,true,Duration aproximada; actualizar desde la ficha del emisor
+AGG,iShares Core US Aggregate Bond ETF,renta_fija_ig,Estados Unidos,USD,true,6.0,invertible,true,Duration aproximada; actualizar desde la ficha del emisor
+IEF,iShares 7-10 Year Treasury Bond ETF,renta_fija_ig,Estados Unidos,USD,true,7.5,invertible,true,Duration aproximada; actualizar desde la ficha del emisor
+TLT,iShares 20+ Year Treasury Bond ETF,renta_fija_ig,Estados Unidos,USD,true,16.5,invertible,true,Duration aproximada; actualizar desde la ficha del emisor
+TIP,iShares TIPS Bond ETF,renta_fija_ig,Estados Unidos,USD,true,6.5,invertible,true,Duration aproximada; actualizar desde la ficha del emisor
+HYG,iShares iBoxx USD High Yield Corporate Bond ETF,renta_fija_hy,Estados Unidos,USD,true,3.5,invertible,true,Duration aproximada; actualizar desde la ficha del emisor
+BNDX,Vanguard Total International Bond ETF,renta_fija_global,Resto del mundo,USD,true,8.0,invertible,true,Duration aproximada; cubierto a USD
+EMB,iShares JP Morgan USD Emerging Markets Bond ETF,renta_fija_emergente,Mercados emergentes,USD,true,7.0,invertible,true,Duration aproximada; incluye deuda soberana colombiana en USD
+TES_COP,TES Colombia (curva local),renta_fija_colombia,Colombia,COP,true,5.0,invertible,false,Inactivo: se habilita con el Taller 2 (Nelson-Siegel); no tiene precio en Yahoo
+VNQ,Vanguard Real Estate ETF,reit,Estados Unidos,USD,false,,invertible,true,
+VNQI,Vanguard Global ex-US Real Estate ETF,reit,Resto del mundo,USD,false,,invertible,true,
+BTC-USD,Bitcoin,cripto,Global,USD,false,,invertible,true,Cotiza 7 días; el motor alinea al calendario de acciones
+ETH-USD,Ethereum,cripto,Global,USD,false,,invertible,true,Cotiza 7 días; historia desde 2017
+GLD,SPDR Gold Shares,materias_primas,Global,USD,false,,invertible,true,
+ACWI,iShares MSCI ACWI ETF,benchmark,Global,USD,false,,benchmark,true,Benchmark de betas; no se ofrece al usuario
