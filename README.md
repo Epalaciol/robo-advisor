@@ -33,6 +33,9 @@ Datos de Yahoo Finance cargados por un pipeline diario en Supabase; app en Strea
 2. En el SQL Editor del proyecto Supabase, pega y ejecuta `supabase/migrations/0001_init.sql` (una sola vez).
 3. Carga el catálogo: `python scripts/cargar_catalogo.py` (idempotente, usa `service_role`).
 4. Verifica la seguridad: `pytest -m integration -q` (crea y borra usuarios de prueba).
+5. (Opcional) Usuario fijo para probar la app en local sin pasar por el registro cada vez:
+   `python scripts/crear_usuario_prueba.py` (correo `prueba@local.test`, clave `Prueba1234!`;
+   `--borrar` para eliminarlo). Solo para desarrollo local.
 
 ## Fechas
 Taller 1: **12-nov-2026** · Taller 2: 19-nov-2026 (incremental, después).
