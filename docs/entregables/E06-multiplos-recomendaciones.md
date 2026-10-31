@@ -33,6 +33,6 @@ pytest tests/core -q && ruff check .
 ```
 
 ## Criterios de aceptación
-- [ ] Cada regla es independiente y su prueba documenta el umbral.
-- [ ] Ningún texto sugiere una compra/venta concreta de dinero real; usan "considerar", "revisar".
-- [ ] El aviso académico está presente en todas las recomendaciones.
+- [x] Cada regla es independiente y su prueba documenta el umbral.
+- [x] Ningún texto sugiere una compra/venta concreta de dinero real; usan "considerar", "revisar".
+- [x] El aviso académico está presente en todas las recomendaciones.
