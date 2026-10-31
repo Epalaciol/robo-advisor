@@ -37,8 +37,8 @@ python -m roboadvisor.pipeline.update_fundamentals
 En Supabase: `select ticker, count(*), min(fecha), max(fecha) from precios group by 1 order by 1;` y una fila reciente en `pipeline_runs`.
 
 ## Criterios de aceptación
-- [ ] Todos los tickers `activo=true` tienen ≥ 60 meses de historia o fueron desactivados con motivo en `notas`.
-- [ ] Segunda corrida no duplica filas.
-- [ ] `tasa_libre_riesgo` tiene la última fecha hábil.
-- [ ] Workflow ejecutado con éxito al menos una vez con `workflow_dispatch` en GitHub y **activado el cron** (esto inicia el conteo de 3 días para E11).
-- [ ] Documentar en `docs/04` los tickers desactivados o cambiados.
+- [ ] Todos los tickers `activo=true` tienen ≥ 60 meses de historia o fueron desactivados con motivo en `notas`. **Pendiente**: requiere correr `verificar_catalogo` contra Yahoo real (necesita red + proyecto Supabase de E01).
+- [x] Segunda corrida no duplica filas. Verificado con `FakeYahoo`/`RepositorioMemoria` en `tests/pipeline/test_update_prices.py::test_idempotencia_dos_corridas_mismas_filas`.
+- [ ] `tasa_libre_riesgo` tiene la última fecha hábil. **Pendiente**: requiere corrida real contra `^IRX`.
+- [ ] Workflow ejecutado con éxito al menos una vez con `workflow_dispatch` en GitHub y **activado el cron**. **Pendiente**: requiere repo en GitHub con secretos configurados.
+- [ ] Documentar en `docs/04` los tickers desactivados o cambiados. **Pendiente**: aún no se ha corrido `verificar_catalogo`, así que no hay tickers desactivados que documentar todavía.
