@@ -141,3 +141,42 @@ def test_portafolios_aleatorios_caen_dentro_o_sobre_la_frontera(estimacion_sinte
 
     # ninguno debería tener menor sigma que la mínima varianza (con tolerancia numérica)
     assert (nube["sigma"] >= port_min_var.sigma - 1e-3).all()
+
+
+def test_frontera_omite_puntos_que_no_convergen_y_sigue(estimacion_sintetica, monkeypatch):
+    import roboadvisor.core.markowitz as markowitz_modulo
+
+    est = estimacion_sintetica
+    original = markowitz_modulo._resolver_min_varianza
+    llamadas = {"n": 0}
+
+    def falla_cada_tercera(*args, **kwargs):
+        llamadas["n"] += 1
+        if llamadas["n"] % 3 == 0:
+            raise RuntimeError("no convergió (simulado)")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(markowitz_modulo, "_resolver_min_varianza", falla_cada_tercera)
+
+    front = frontera(est, 0.40, n_puntos=12)
+    assert 0 < len(front) < 12
+    assert {"retorno", "sigma", "pesos"}.issubset(front.columns)
+
+
+def test_frontera_lanza_error_claro_si_todos_los_puntos_fallan(estimacion_sintetica, monkeypatch):
+    import roboadvisor.core.markowitz as markowitz_modulo
+
+    est = estimacion_sintetica
+    original = markowitz_modulo._resolver_min_varianza
+
+    def falla_solo_en_la_malla(*args, **kwargs):
+        # deja pasar la llamada inicial de min_varianza() (sin objetivo_retorno);
+        # falla todos los puntos de la malla de la frontera.
+        if kwargs.get("objetivo_retorno") is not None:
+            raise RuntimeError("no convergió (simulado)")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(markowitz_modulo, "_resolver_min_varianza", falla_solo_en_la_malla)
+
+    with pytest.raises(RuntimeError, match="ningún punto"):
+        frontera(est, 0.40, n_puntos=5)

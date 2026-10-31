@@ -51,6 +51,11 @@ Registro → encuesta → guardar usuario y resultado → escoger activos y arma
 3. ¿Se permite apalancamiento cuando A=1 (y*>100%)?
 4. ¿Moneda de referencia: USD o COP?
 5. ¿Es válido usar fuentes distintas a investing.com para los múltiplos (Yahoo Finance)?
+6. ¿La tasa libre de riesgo debe ser de corto plazo (T-bill 3 meses, `^IRX`, la convención de
+   libro de texto para Markowitz/CAL) o de largo plazo (T-note 10 años, `^TNX`), dado que el
+   horizonte real del portafolio es de años? Usamos `^IRX` por defecto (sin riesgo de tasa,
+   coherente con "libre de riesgo"); `^TNX` sí tiene riesgo de precio y ya está representado
+   por activos como `TLT`/`IEF` en el catálogo.
 
 ## 6. Riesgos conocidos
 - `yfinance` no es API oficial: puede fallar o limitar peticiones → por eso existe el pipeline y la app nunca llama a Yahoo.

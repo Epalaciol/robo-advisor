@@ -187,7 +187,8 @@ def figura_frontera(
         yaxis_title="Retorno esperado por año",
         xaxis_tickformat=".0%",
         yaxis_tickformat=".0%",
-        legend={"orientation": "h", "yanchor": "bottom", "y": -0.35},
+        height=550,
+        legend={"orientation": "v", "yanchor": "top", "y": 1, "xanchor": "left", "x": 1.02},
     )
     return fig
 

@@ -168,6 +168,11 @@ if st.button("Calcular", disabled=not puede_calcular, type="primary"):
         )
     except ValueError as error:
         st.error(f"No se pudo calcular: {error}")
+    except Exception:
+        st.error(
+            "No se pudo calcular el portafolio con esta combinación de activos. "
+            "Prueba quitando o cambiando alguno, o inténtalo de nuevo en unos segundos."
+        )
     else:
         st.session_state["constructor_resultado"] = resultado
 
@@ -328,6 +333,8 @@ if resultado:
             repo_usuario.guardar_portafolio(payload)
         except ValueError as error:
             st.error(str(error))
+        except Exception:
+            st.error("No se pudo guardar el portafolio. Inténtalo de nuevo en unos segundos.")
         else:
             del st.session_state["constructor_resultado"]
             st.success("¡Portafolio guardado!")

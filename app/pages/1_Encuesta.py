@@ -115,6 +115,8 @@ def _formulario_nuevo() -> None:
                 repositorio.actualizar_factores(user_id, pendiente["factores"])
             except ValueError as error:
                 st.error(str(error))
+            except Exception:
+                st.error("No se pudo guardar la encuesta. Inténtalo de nuevo en unos segundos.")
             else:
                 del st.session_state["encuesta_pendiente"]
                 st.success("¡Encuesta guardada!")

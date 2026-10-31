@@ -47,10 +47,15 @@ def _metricas(
 
 
 def _resolver_min_varianza(
-    mu: np.ndarray, sigma: np.ndarray, w_max_eff: float, objetivo_retorno: float | None = None
+    mu: np.ndarray,
+    sigma: np.ndarray,
+    w_max_eff: float,
+    objetivo_retorno: float | None = None,
+    x0: np.ndarray | None = None,
 ) -> np.ndarray:
     n = len(mu)
-    x0 = np.full(n, 1 / n)
+    if x0 is None:
+        x0 = np.full(n, 1 / n)
     bounds = [(0.0, w_max_eff)] * n
     restricciones = [{"type": "eq", "fun": lambda w: np.sum(w) - 1.0}]
     if objetivo_retorno is not None:
@@ -184,8 +189,13 @@ def frontera(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
 
     objetivos = np.linspace(retorno_min, retorno_max, n_puntos)
     filas = []
+    x0 = None  # arranque "caliente": el óptimo del punto anterior converge mejor que 1/n
     for objetivo in objetivos:
-        w = _resolver_min_varianza(mu, sigma, w_max_eff, objetivo_retorno=objetivo)
+        try:
+            w = _resolver_min_varianza(mu, sigma, w_max_eff, objetivo_retorno=objetivo, x0=x0)
+        except RuntimeError:
+            continue  # ese punto puntual no convergió; se omite, el resto de la malla sigue
+        x0 = w
         retorno, sigma_p, _ = _metricas(w, mu, sigma, est.rf)
         filas.append(
             {
@@ -194,6 +204,9 @@ def frontera(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
                 "pesos": dict(zip(est.tickers, w, strict=True)),
             }
         )
+
+    if not filas:
+        raise RuntimeError("No se pudo calcular ningún punto de la frontera eficiente.")
     return pd.DataFrame(filas)
 
 
