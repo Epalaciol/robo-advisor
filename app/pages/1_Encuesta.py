@@ -7,8 +7,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st  # noqa: E402
 from ui.auth import cliente_sesion_actual, requerir_sesion  # noqa: E402
-from ui.encuesta import construir_payload_encuesta, figura_utilidad_vs_sigma  # noqa: E402
+from ui.encuesta import construir_payload_encuesta  # noqa: E402
 from ui.estilos import pie_de_pagina  # noqa: E402
+from ui.graficos import figura_utilidad_vs_sigma  # noqa: E402
 
 from roboadvisor.core.cuestionario import FACTORES_SUGERIDOS, PREGUNTAS, puntuar  # noqa: E402
 from roboadvisor.data.repositorio_usuario import RepositorioUsuario  # noqa: E402

@@ -52,6 +52,13 @@ class RepositorioUsuario:
         except APIError as error:
             raise ValueError("Ya existe una encuesta guardada para tu usuario.") from error
 
+    def guardar_portafolio(self, payload: dict) -> dict:
+        """Inserta el portafolio (inmutable: `unique(user_id)`). Mensaje claro si ya existía."""
+        try:
+            return self._cliente.table("portafolios").insert(payload).execute().data[0]
+        except APIError as error:
+            raise ValueError("Ya existe un portafolio guardado para tu usuario.") from error
+
     def actualizar_factores(self, user_id: str, factores: dict) -> None:
         self._cliente.table("perfiles").update({"factores": factores}).eq(
             "user_id", user_id

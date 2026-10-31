@@ -38,6 +38,6 @@ Editar o recalcular un portafolio ya guardado, múltiples portafolios, pesos man
 - [ ] Las cifras mostradas coinciden con una corrida de `scripts/demo_motor.py` para los mismos datos.
 
 ## Criterios de aceptación
-- [ ] Checklist completo.
-- [ ] Todos los números vienen de `core/`; la página no implementa fórmulas.
-- [ ] Tiempo de cálculo razonable (< 5 s con 11 activos y datos en caché).
+- [ ] Checklist completo. **Parcial**: verificado con el panel sintético de E04 (`armar_registro_portafolio` probado con pytest; `figura_frontera`/`figura_pesos` probadas end-to-end con el motor real; las cifras coinciden exactamente con `scripts/demo_motor.py`). El checklist contra datos y Supabase reales está **pendiente** (requiere E01/E02 conectados).
+- [x] Todos los números vienen de `core/`; la página solo llama a `estimar/min_varianza/tangente/frontera/cal/componer/betas/duration_portafolio` y grafica — no implementa fórmulas.
+- [ ] Tiempo de cálculo razonable (< 5 s con 11 activos y datos en caché). **Pendiente**: no medible sin datos reales; el cálculo con el panel sintético de 5 activos es instantáneo.
