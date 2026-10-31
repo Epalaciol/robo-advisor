@@ -11,7 +11,12 @@ from ui.encuesta import construir_payload_encuesta  # noqa: E402
 from ui.estilos import pie_de_pagina  # noqa: E402
 from ui.graficos import figura_utilidad_vs_sigma  # noqa: E402
 
-from roboadvisor.core.cuestionario import FACTORES_SUGERIDOS, PREGUNTAS, puntuar  # noqa: E402
+from roboadvisor.core.cuestionario import (  # noqa: E402
+    FACTORES_SUGERIDOS,
+    OPCIONES_FACTORES,
+    PREGUNTAS,
+    puntuar,
+)
 from roboadvisor.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
 
 st.set_page_config(page_title="Encuesta", page_icon="📝")
@@ -54,17 +59,26 @@ def _formulario_nuevo() -> None:
         respuestas: dict[str, str] = {}
         for i, pregunta in enumerate(PREGUNTAS, start=1):
             st.markdown(f"**{i}. {pregunta.texto}**")
-            opciones = list(pregunta.opciones.items())
+            # El texto completo de cada opción va aparte, como párrafo normal:
+            # un st.radio con labels largos desalinea el círculo respecto al
+            # texto cuando la opción ocupa varias líneas (confunde cuál
+            # círculo corresponde a cuál opción). El radio de abajo queda
+            # corto y sin ambigüedad: solo "a) / b) / c)".
+            for letra, texto_opcion in pregunta.opciones.items():
+                st.markdown(f"{letra}) {texto_opcion}")
+
             seleccion = st.radio(
                 label=f"pregunta_{pregunta.id}",
-                options=opciones,
-                format_func=lambda o: f"{o[0]}) {o[1]}",
+                options=list(pregunta.opciones.keys()),
+                format_func=lambda letra: f"Opción {letra}",
                 index=None,
+                horizontal=True,
                 key=f"radio_{pregunta.id}",
                 label_visibility="collapsed",
             )
             if seleccion is not None:
-                respuestas[pregunta.id] = seleccion[0]
+                respuestas[pregunta.id] = seleccion
+            st.markdown("")
 
         st.divider()
         st.subheader("Un poco sobre ti (opcional)")
@@ -75,14 +89,15 @@ def _formulario_nuevo() -> None:
         factores: dict = {}
         for clave in FACTORES_SUGERIDOS:
             etiqueta = clave.replace("_", " ").capitalize()
-            if clave == "colchon_emergencia":
-                factores[clave] = st.checkbox(etiqueta, key=f"factor_{clave}")
-            elif clave == "experiencia_invirtiendo_anios":
-                factores[clave] = st.number_input(
-                    etiqueta, min_value=0, max_value=80, step=1, key=f"factor_{clave}"
-                )
-            else:
-                factores[clave] = st.text_input(etiqueta, key=f"factor_{clave}")
+            seleccion_factor = st.selectbox(
+                etiqueta,
+                OPCIONES_FACTORES[clave],
+                index=None,
+                placeholder="Selecciona...",
+                key=f"factor_{clave}",
+            )
+            if seleccion_factor is not None:
+                factores[clave] = seleccion_factor
 
         calcular = st.form_submit_button("Calcular mi perfil")
 

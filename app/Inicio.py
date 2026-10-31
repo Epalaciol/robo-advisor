@@ -70,7 +70,11 @@ def _pagina_login_registro() -> None:
             contrasena_r = st.text_input(
                 "Contraseña (mínimo 8 caracteres)", type="password", key="registro_contrasena"
             )
-            alias_r = st.text_input("Alias", key="registro_alias")
+            alias_r = st.text_input(
+                "¿Cómo quieres que te llamemos?",
+                key="registro_alias",
+                help="Un nombre o apodo — no hace falta tu nombre completo.",
+            )
             edad_r = st.selectbox("Rango de edad", RANGOS_EDAD, key="registro_edad")
             st.caption(TEXTO_CONSENTIMIENTO)
             consentimiento_r = st.checkbox(

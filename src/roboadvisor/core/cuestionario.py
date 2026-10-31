@@ -163,6 +163,55 @@ FACTORES_SUGERIDOS: list[str] = [
     "colchon_emergencia",
 ]
 
+# Opciones de cada factor para un desplegable (dropdown) en la UI: listas
+# cerradas, más fáciles de llenar y más fáciles de analizar entre los 5
+# voluntarios que texto libre. Solo metadatos para la UI; no afectan el cálculo.
+OPCIONES_FACTORES: dict[str, list[str]] = {
+    "ocupacion": [
+        "Empleado/a",
+        "Independiente / freelance",
+        "Empresario/a",
+        "Estudiante",
+        "Jubilado/a",
+        "Desempleado/a",
+        "Otro",
+    ],
+    "rango_ingresos": [
+        "Menos de $2.000.000",
+        "$2.000.000 - $4.000.000",
+        "$4.000.000 - $8.000.000",
+        "$8.000.000 - $15.000.000",
+        "Más de $15.000.000",
+        "Prefiero no decir",
+    ],
+    "dependientes_economicos": ["0", "1", "2", "3", "4 o más"],
+    "nivel_educativo": [
+        "Bachillerato",
+        "Técnico/tecnólogo",
+        "Pregrado",
+        "Especialización",
+        "Maestría",
+        "Doctorado",
+    ],
+    "experiencia_invirtiendo_anios": [
+        "Sin experiencia",
+        "Menos de 1 año",
+        "1 a 3 años",
+        "3 a 5 años",
+        "5 a 10 años",
+        "Más de 10 años",
+    ],
+    "horizonte_principal_inversion": [
+        "Menos de 1 año",
+        "1 a 3 años",
+        "3 a 5 años",
+        "5 a 10 años",
+        "10 a 20 años",
+        "Más de 20 años",
+    ],
+    "colchon_emergencia": ["Sí", "No"],
+}
+
 
 @dataclass(frozen=True)
 class ResultadoEncuesta:
