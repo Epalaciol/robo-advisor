@@ -30,6 +30,6 @@ Repetir la encuesta, editar respuestas, loterías.
 - [ ] Un segundo usuario no puede ver el resultado del primero (probar con dos sesiones).
 
 ## Criterios de aceptación
-- [ ] Flujo completo sin errores; datos correctos en Supabase.
-- [ ] La encuesta es inmutable desde la app.
-- [ ] Sin cálculos de puntaje fuera de `core/`.
+- [ ] Flujo completo sin errores; datos correctos en Supabase. **Pendiente**: requiere Supabase real (E01) para el checklist manual; el payload y la lógica de validación ya están probados con pytest.
+- [x] La encuesta es inmutable desde la app (solo insert; sin update/delete en la UI ni en `repositorio_usuario.py`).
+- [x] Sin cálculos de puntaje fuera de `core/` (la página solo llama a `puntuar()`).

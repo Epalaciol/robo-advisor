@@ -5,6 +5,8 @@ en las políticas RLS de `supabase/migrations/` para devolver solo las filas
 del usuario autenticado.
 """
 
+from postgrest.exceptions import APIError
+
 from supabase import Client
 
 
@@ -42,6 +44,18 @@ class RepositorioUsuario:
     def obtener_portafolio(self) -> dict | None:
         datos = self._cliente.table("portafolios").select("*").execute().data
         return datos[0] if datos else None
+
+    def guardar_encuesta(self, payload: dict) -> dict:
+        """Inserta la encuesta (inmutable: `unique(user_id)`). Mensaje claro si ya existía."""
+        try:
+            return self._cliente.table("encuestas").insert(payload).execute().data[0]
+        except APIError as error:
+            raise ValueError("Ya existe una encuesta guardada para tu usuario.") from error
+
+    def actualizar_factores(self, user_id: str, factores: dict) -> None:
+        self._cliente.table("perfiles").update({"factores": factores}).eq(
+            "user_id", user_id
+        ).execute()
 
     def obtener_estado_pipeline(self) -> dict | None:
         """Última corrida del pipeline y fecha del precio más reciente (lectura
