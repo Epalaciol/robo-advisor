@@ -42,7 +42,7 @@ python scripts/demo_motor.py   # usa el panel sintético, imprime pesos, Sharpe 
 (`scripts/demo_motor.py` lo crea este entregable.)
 
 ## Criterios de aceptación
-- [ ] Todas las pruebas de arriba pasan.
-- [ ] Se documentan en el docstring las fórmulas y supuestos (anualización, shrinkage).
-- [ ] `core/` no importa red, DB ni Streamlit.
-- [ ] Con tolerancia numérica documentada (p. ej. 1e-6) y sin `warnings` de SciPy no controlados.
+- [x] Todas las pruebas de arriba pasan.
+- [x] Se documentan en el docstring las fórmulas y supuestos (anualización, shrinkage).
+- [x] `core/` no importa red, DB ni Streamlit.
+- [x] Con tolerancia numérica documentada (p. ej. 1e-6) y sin `warnings` de SciPy no controlados.
