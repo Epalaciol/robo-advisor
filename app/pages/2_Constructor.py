@@ -13,7 +13,13 @@ from ui.estilos import pie_de_pagina  # noqa: E402
 from ui.graficos import figura_composicion, figura_frontera  # noqa: E402
 
 from roboadvisor.config import ParametrosFinancieros  # noqa: E402
-from roboadvisor.core.markowitz import cal, frontera, min_varianza, tangente  # noqa: E402
+from roboadvisor.core.markowitz import (  # noqa: E402
+    cal,
+    frontera,
+    min_varianza,
+    portafolios_aleatorios,
+    tangente,
+)
 from roboadvisor.core.portafolio_completo import componer  # noqa: E402
 from roboadvisor.core.retornos import estimar, retornos_mensuales  # noqa: E402
 from roboadvisor.core.riesgo import beta_portafolio, betas, duration_portafolio  # noqa: E402
@@ -71,6 +77,7 @@ def _calcular(
     port_min_var = min_varianza(est, w_max)
     port_tangente = tangente(est, w_max)
     front = frontera(est, w_max)
+    nube = portafolios_aleatorios(est, w_max)
     pendiente, intercepto = cal(port_tangente, est.rf)
 
     retornos = retornos_mensuales(precios).tail(est.n_meses)
@@ -104,6 +111,7 @@ def _calcular(
         "port_min_var": port_min_var,
         "port_tangente": port_tangente,
         "frontera": front,
+        "nube": nube,
         "cal_pendiente": pendiente,
         "cal_intercepto": intercepto,
         "betas": betas_series,
@@ -238,11 +246,14 @@ if resultado:
 
     with tab_frontera:
         st.caption(
-            "Cómo leerlo: cada punto gris es uno de tus activos. La línea gris curva "
-            "conecta las mejores combinaciones posibles (ni mucho riesgo de más, ni "
-            "retorno de menos). La línea punteada clara es el resultado de mezclar eso "
-            "con algo seguro. El **diamante naranja es tu portafolio real** — mientras "
-            "más a la derecha, más riesgo; mientras más arriba, más ganancia esperada."
+            "Cómo leerlo: la nube de puntitos tenues son miles de combinaciones "
+            "posibles entre tus activos — casi todas **no son eficientes** (para ese "
+            "riesgo, se podría ganar más). La línea gris curva conecta las mejores "
+            "combinaciones posibles: la **frontera eficiente**. Los puntos grises "
+            "marcados son tus activos individuales. La línea punteada clara mezcla la "
+            "frontera con algo seguro. El **diamante naranja es tu portafolio real** — "
+            "mientras más a la derecha, más riesgo; mientras más arriba, más ganancia "
+            "esperada."
         )
         st.plotly_chart(
             figura_frontera(
@@ -254,6 +265,7 @@ if resultado:
                 est.mu,
                 est.sigma,
                 punto_usuario=(port_completo.sigma, port_completo.retorno),
+                nube_no_eficientes=resultado["nube"],
             ),
             use_container_width=True,
         )

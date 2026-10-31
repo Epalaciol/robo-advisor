@@ -2,7 +2,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from roboadvisor.core.markowitz import TOL, cal, frontera, min_varianza, tangente
+from roboadvisor.core.markowitz import (
+    TOL,
+    cal,
+    frontera,
+    min_varianza,
+    portafolios_aleatorios,
+    tangente,
+)
 from roboadvisor.core.retornos import Estimacion
 
 
@@ -110,3 +117,27 @@ def test_determinismo_dos_corridas_mismos_pesos(estimacion_sintetica):
     w1 = tangente(est, 0.40).w
     w2 = tangente(est, 0.40).w
     pd.testing.assert_series_equal(w1, w2)
+
+
+def test_portafolios_aleatorios_son_factibles_y_deterministas(estimacion_sintetica):
+    est = estimacion_sintetica
+    w_max = 0.40
+
+    nube1 = portafolios_aleatorios(est, w_max, n=200)
+    nube2 = portafolios_aleatorios(est, w_max, n=200)
+
+    assert set(nube1.columns) == {"retorno", "sigma"}
+    assert len(nube1) >= 150  # tolerancia: el rechazo por w_max puede descartar algunos
+    assert (nube1["sigma"] >= 0).all()
+    pd.testing.assert_frame_equal(nube1, nube2)
+
+
+def test_portafolios_aleatorios_caen_dentro_o_sobre_la_frontera(estimacion_sintetica):
+    est = estimacion_sintetica
+    w_max = 0.40
+
+    nube = portafolios_aleatorios(est, w_max, n=300)
+    port_min_var = min_varianza(est, w_max)
+
+    # ninguno debería tener menor sigma que la mínima varianza (con tolerancia numérica)
+    assert (nube["sigma"] >= port_min_var.sigma - 1e-3).all()

@@ -203,3 +203,30 @@ def cal(port_tangente: Portafolio, rf: float) -> tuple[float, float]:
     Devuelve `(pendiente, intercepto) = (S*, rf)`.
     """
     return port_tangente.sharpe, rf
+
+
+def portafolios_aleatorios(
+    est: Estimacion, w_max: float, n: int = 400, semilla: int = 7
+) -> pd.DataFrame:
+    """Nube de portafolios factibles aleatorios (`Σw=1`, `0≤w≤w_max`), casi
+    todos **no eficientes** (por debajo/dentro de la frontera). Es solo para
+    graficar junto a `frontera()` y mostrar visualmente por qué la frontera es
+    la frontera; no influye en ningún cálculo. Determinista (semilla fija).
+    """
+    mu = est.mu.to_numpy()
+    sigma = est.sigma.to_numpy()
+    n_activos = len(mu)
+    w_max_eff, _ = _w_max_efectivo(w_max, n_activos)
+
+    rng = np.random.default_rng(semilla)
+    filas = []
+    intentos = 0
+    while len(filas) < n and intentos < n * 50:
+        intentos += 1
+        w = rng.dirichlet(np.ones(n_activos))
+        if (w > w_max_eff + TOL).any():
+            continue
+        retorno, sigma_p, _ = _metricas(w, mu, sigma, est.rf)
+        filas.append({"retorno": retorno, "sigma": sigma_p})
+
+    return pd.DataFrame(filas, columns=["retorno", "sigma"])

@@ -63,15 +63,31 @@ def figura_frontera(
     mu: pd.Series,
     sigma: pd.DataFrame,
     punto_usuario: tuple[float, float] | None = None,
+    nube_no_eficientes: pd.DataFrame | None = None,
 ) -> go.Figure:
     """Frontera eficiente, activos individuales, mínima varianza, tangente, CAL
-    y (opcional) el punto del portafolio completo del usuario.
+    y (opcional) el punto del portafolio completo del usuario y la nube de
+    portafolios factibles no eficientes (`nube_no_eficientes`, de
+    `core.markowitz.portafolios_aleatorios`) que muestra visualmente por qué
+    la frontera es la frontera.
 
     "Emphasis": todo lo anterior es contexto en gris; el tangente y el
     portafolio del usuario llevan los únicos dos colores vivos — son la
     historia que el gráfico cuenta.
     """
     fig = go.Figure()
+
+    if nube_no_eficientes is not None and not nube_no_eficientes.empty:
+        fig.add_trace(
+            go.Scatter(
+                x=nube_no_eficientes["sigma"],
+                y=nube_no_eficientes["retorno"],
+                mode="markers",
+                name="Carteras no eficientes (posibles, pero no óptimas)",
+                marker={"color": COLOR_CONTEXTO, "size": 4, "opacity": 0.35},
+                hoverinfo="skip",
+            )
+        )
 
     fig.add_trace(
         go.Scatter(

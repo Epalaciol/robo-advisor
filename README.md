@@ -44,7 +44,10 @@ MOCK_DATA=true streamlit run app/Inicio.py
 ```
 Usa un cliente Supabase falso en memoria (`roboadvisor/data/cliente_mock.py`): se siembra solo
 con el catálogo (`supabase/seed/activos.csv`) y, si existen, los precios reales de
-`data_local/` (`python scripts/descargar_precios_prueba.py`). Entra con el usuario ya creado
+`data_local/` (`python scripts/descargar_precios_prueba.py`, 10 años de los ETF del catálogo
+— excluye `CIB`/`EC`, que son acciones ADR individuales, y la cripto `BTC-USD`/`ETH-USD`,
+no ETF; `GXG` aparece deslistado en Yahoo, confirma el `VERIFICAR en E02` que ya tenía
+anotado el catálogo). Entra con el usuario ya creado
 `prueba@local.test` / `Prueba1234!`. Los datos viven solo en la memoria del proceso del
 servidor y se pierden al reiniciarlo; los scripts sueltos (`cargar_catalogo.py`,
 `crear_usuario_prueba.py`) no los ven porque corren en otro proceso. **No reemplaza** las
