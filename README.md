@@ -37,5 +37,18 @@ Datos de Yahoo Finance cargados por un pipeline diario en Supabase; app en Strea
    `python scripts/crear_usuario_prueba.py` (correo `prueba@local.test`, clave `Prueba1234!`;
    `--borrar` para eliminarlo). Solo para desarrollo local.
 
+## Modo mock (correr la app sin Supabase)
+Para probar la app completa en local sin crear un proyecto Supabase:
+```bash
+MOCK_DATA=true streamlit run app/Inicio.py
+```
+Usa un cliente Supabase falso en memoria (`roboadvisor/data/cliente_mock.py`): se siembra solo
+con el catálogo (`supabase/seed/activos.csv`) y, si existen, los precios reales de
+`data_local/` (`python scripts/descargar_precios_prueba.py`). Entra con el usuario ya creado
+`prueba@local.test` / `Prueba1234!`. Los datos viven solo en la memoria del proceso del
+servidor y se pierden al reiniciarlo; los scripts sueltos (`cargar_catalogo.py`,
+`crear_usuario_prueba.py`) no los ven porque corren en otro proceso. **No reemplaza** las
+pruebas de RLS de `tests/db/test_rls.py`, que siguen corriendo solo contra un Supabase real.
+
 ## Fechas
 Taller 1: **12-nov-2026** · Taller 2: 19-nov-2026 (incremental, después).

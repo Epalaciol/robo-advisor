@@ -199,7 +199,7 @@ if resultado:
 
     with tab_composicion:
         st.write("**Portafolio de riesgo**")
-        st.dataframe(port_tangente.w.rename("peso").to_frame())
+        st.dataframe(port_tangente.w.rename("peso").to_frame().style.format("{:.2%}"))
         st.plotly_chart(
             figura_pesos(port_tangente.w, "Pesos del portafolio de riesgo"),
             use_container_width=True,
@@ -209,7 +209,7 @@ if resultado:
         pesos_completo_rf = pd.concat(
             [port_completo.pesos_completo, pd.Series({"Libre de riesgo": port_completo.peso_rf})]
         )
-        st.dataframe(pesos_completo_rf.rename("peso").to_frame())
+        st.dataframe(pesos_completo_rf.rename("peso").to_frame().style.format("{:.2%}"))
         st.plotly_chart(
             figura_pesos(pesos_completo_rf, "Pesos del portafolio completo"),
             use_container_width=True,
@@ -235,7 +235,7 @@ if resultado:
             st.caption("Sin activos de renta variable seleccionados.")
         else:
             st.write("**Betas vs ACWI**")
-            st.dataframe(resultado["betas"].rename("beta").to_frame())
+            st.dataframe(resultado["betas"].rename("beta").to_frame().style.format("{:.2f}"))
             beta_normalizada = resultado["beta_portafolio"]["beta_normalizada"]
             st.metric("Beta del portafolio", f"{beta_normalizada:.2f}")
 
@@ -243,7 +243,7 @@ if resultado:
             st.caption("Sin activos de renta fija seleccionados.")
         else:
             st.write("**Duration**")
-            st.dataframe(resultado["duration"].rename("duration").to_frame())
+            st.dataframe(resultado["duration"].rename("duration").to_frame().style.format("{:.2f}"))
             st.metric(
                 "Duration del portafolio (renta fija)",
                 f"{resultado['duration_portafolio']['duration_rf_normalizada']:.2f}",
