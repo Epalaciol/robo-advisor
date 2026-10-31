@@ -45,6 +45,6 @@ streamlit run app/Inicio.py
 - [ ] Revisar en el navegador/red que no viaja `service_role`.
 
 ## Criterios de aceptación
-- [ ] Todo lo anterior marcado.
-- [ ] `grep -ri service_role app/ src/roboadvisor/data/repositorio_usuario.py` vacío.
-- [ ] `pytest` y `ruff` verdes.
+- [ ] Todo lo anterior marcado. **Parcial**: la app levanta (verificado con `streamlit run`, health check OK, sin trazas) y muestra instrucciones de configuración sin `.env`. El checklist de registro/login real contra Supabase está **pendiente** (requiere el proyecto de E01).
+- [x] `grep -ri service_role app/ src/roboadvisor/data/repositorio_usuario.py` vacío.
+- [x] `pytest` y `ruff` verdes.
