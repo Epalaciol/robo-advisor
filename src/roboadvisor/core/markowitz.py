@@ -183,6 +183,21 @@ def _retorno_maximo_factible(mu: np.ndarray, w_max_eff: float) -> float:
     return float(-resultado.fun)
 
 
+def _retorno_minimo_factible(mu: np.ndarray, w_max_eff: float) -> float:
+    """Mínimo `wᵀμ` alcanzable con `Σw=1`, `0≤w≤w_max` (programa lineal)."""
+    n = len(mu)
+    resultado = linprog(
+        c=mu,
+        A_eq=[np.ones(n)],
+        b_eq=[1.0],
+        bounds=[(0.0, w_max_eff)] * n,
+        method="highs",
+    )
+    if not resultado.success:
+        raise RuntimeError(f"No se pudo hallar el retorno mínimo factible: {resultado.message}")
+    return float(resultado.fun)
+
+
 def frontera(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
     """Frontera eficiente: para una malla de `n_puntos` retornos objetivo entre
     el retorno de mínima varianza y el máximo alcanzable, `min wᵀΣw` s.t. `wᵀμ=target`.
@@ -220,6 +235,51 @@ def frontera(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
     if not filas:
         raise RuntimeError("No se pudo calcular ningún punto de la frontera eficiente.")
     return pd.DataFrame(filas)
+
+
+def rama_ineficiente(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
+    """Rama **no eficiente** de la frontera: mínima varianza para retornos
+    objetivo por debajo del retorno de mínima varianza global, hasta el mínimo
+    factible. Junto con `frontera()` (rama eficiente) completa la hipérbola
+    de Markowitz, la forma de "bala" que se ve en los libros de texto — esta
+    rama está dominada (para el mismo σ, la rama eficiente da más retorno) y
+    es solo para visualización, nunca para elegir un portafolio.
+
+    Devuelve el mismo formato que `frontera()`. Vacío si no hay rama (el
+    mínimo factible coincide con el de mínima varianza, ej. 2 activos con
+    `w_max` muy ajustado).
+    """
+    mu = est.mu.to_numpy()
+    sigma = est.sigma.to_numpy()
+    n = len(mu)
+    w_max_eff, _ = w_max_efectivo(w_max, n)
+
+    retorno_tope = min_varianza(est, w_max).retorno
+    retorno_min = _retorno_minimo_factible(mu, w_max_eff)
+
+    if retorno_min >= retorno_tope - TOL:
+        return pd.DataFrame(columns=["retorno", "sigma", "pesos"])
+
+    # excluye el último punto (el vértice): ya es el primer punto de frontera()
+    objetivos = np.linspace(retorno_min, retorno_tope, n_puntos)[:-1]
+    filas = []
+    x0 = None
+    for objetivo in objetivos:
+        try:
+            w = _resolver_min_varianza(mu, sigma, w_max_eff, objetivo_retorno=objetivo, x0=x0)
+        except RuntimeError:
+            continue
+        x0 = w
+        retorno, sigma_p, _ = _metricas(w, mu, sigma, est.rf)
+        filas.append(
+            {
+                "retorno": retorno,
+                "sigma": sigma_p,
+                "pesos": dict(zip(est.tickers, w, strict=True)),
+            }
+        )
+
+    return pd.DataFrame(filas, columns=["retorno", "sigma", "pesos"])
 
 
 def cal(port_tangente: Portafolio, rf: float) -> tuple[float, float]:

@@ -64,12 +64,17 @@ def figura_frontera(
     sigma: pd.DataFrame,
     punto_usuario: tuple[float, float] | None = None,
     nube_no_eficientes: pd.DataFrame | None = None,
+    rama_ineficiente: pd.DataFrame | None = None,
+    a_usuario: float | None = None,
 ) -> go.Figure:
     """Frontera eficiente, activos individuales, mínima varianza, tangente, CAL
-    y (opcional) el punto del portafolio completo del usuario y la nube de
+    y (opcional) el punto del portafolio completo del usuario, la nube de
     portafolios factibles no eficientes (`nube_no_eficientes`, de
-    `core.markowitz.portafolios_aleatorios`) que muestra visualmente por qué
-    la frontera es la frontera.
+    `core.markowitz.portafolios_aleatorios`), la rama no eficiente
+    (`rama_ineficiente`, de `core.markowitz.rama_ineficiente`) que junto con
+    `frontera_df` completa la forma de "bala" (hipérbola) de Markowitz, y la
+    curva de indiferencia del usuario (`a_usuario`) tangente a la CAL en su
+    portafolio completo.
 
     "Emphasis": todo lo anterior es contexto en gris; el tangente y el
     portafolio del usuario llevan los únicos dos colores vivos — son la
@@ -99,6 +104,20 @@ def figura_frontera(
             hovertemplate="σ=%{x:.1%}, retorno=%{y:.1%}<extra></extra>",
         )
     )
+
+    if rama_ineficiente is not None and not rama_ineficiente.empty:
+        # Misma hipérbola que la frontera eficiente, pero del lado dominado:
+        # completa la forma de "bala" (el mínimo de varianza es la punta).
+        fig.add_trace(
+            go.Scatter(
+                x=rama_ineficiente["sigma"],
+                y=rama_ineficiente["retorno"],
+                mode="lines",
+                name="Frontera (rama no eficiente, dominada)",
+                line={"color": COLOR_CONTEXTO, "width": 2, "dash": "dot"},
+                hovertemplate="σ=%{x:.1%}, retorno=%{y:.1%}<extra></extra>",
+            )
+        )
 
     sigma_activos = np.sqrt(np.diag(sigma.to_numpy()))
     fig.add_trace(
@@ -144,6 +163,9 @@ def figura_frontera(
             nube_no_eficientes["sigma"].to_numpy()
             if nube_no_eficientes is not None and not nube_no_eficientes.empty
             else [],
+            rama_ineficiente["sigma"].to_numpy()
+            if rama_ineficiente is not None and not rama_ineficiente.empty
+            else [],
             [punto_usuario[0]] if punto_usuario is not None else [],
         ]
     )
@@ -154,6 +176,9 @@ def figura_frontera(
             [port_min_var.retorno, port_tangente.retorno],
             nube_no_eficientes["retorno"].to_numpy()
             if nube_no_eficientes is not None and not nube_no_eficientes.empty
+            else [],
+            rama_ineficiente["retorno"].to_numpy()
+            if rama_ineficiente is not None and not rama_ineficiente.empty
             else [],
             [punto_usuario[1]] if punto_usuario is not None else [],
         ]
@@ -173,6 +198,27 @@ def figura_frontera(
             hovertemplate="σ=%{x:.1%}, retorno=%{y:.1%}<extra></extra>",
         )
     )
+
+    if punto_usuario is not None and a_usuario is not None:
+        # Curva de indiferencia U = er - 0.5*A*σ² que pasa por el portafolio
+        # completo del usuario, despejada como er(σ) = U + 0.5*A*σ². Si y* es
+        # interior (0<y*<1) es tangente a la CAL justo en ese punto — es la
+        # definición de "el mejor punto sobre la CAL dado tu A". Se recorta al
+        # mismo rango de ejes que el resto (ver nota sobre sigma_max_visible):
+        # crece cuadrático en σ y un rango no recortado la dispararía fuera
+        # de la vista útil.
+        u_usuario = _utilidad(punto_usuario[1], punto_usuario[0], a_usuario)
+        sigmas_curva = np.linspace(0, sigma_max_visible, 100)
+        fig.add_trace(
+            go.Scatter(
+                x=sigmas_curva,
+                y=u_usuario + 0.5 * a_usuario * sigmas_curva**2,
+                mode="lines",
+                name="Tu curva de utilidad (tangente a la CAL)",
+                line={"color": COLOR_PORTAFOLIO_USUARIO, "dash": "dash", "width": 1.5},
+                hovertemplate="σ=%{x:.1%}, retorno=%{y:.1%}<extra></extra>",
+            )
+        )
 
     fig.add_trace(
         go.Scatter(

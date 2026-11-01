@@ -8,6 +8,7 @@ from roboadvisor.core.markowitz import (
     frontera,
     min_varianza,
     portafolios_aleatorios,
+    rama_ineficiente,
     tangente,
 )
 from roboadvisor.core.retornos import Estimacion
@@ -94,6 +95,32 @@ def test_frontera_sigma_no_decreciente_en_rama_eficiente(estimacion_sintetica):
 
     port_min_var = min_varianza(est, w_max)
     assert sigmas[0] == pytest.approx(port_min_var.sigma, abs=1e-3)
+
+
+def test_rama_ineficiente_completa_la_bala_y_esta_dominada(estimacion_sintetica):
+    est = estimacion_sintetica
+    w_max = 0.40
+    rama = rama_ineficiente(est, w_max, n_puntos=40)
+    port_min_var = min_varianza(est, w_max)
+
+    assert not rama.empty
+    assert {"retorno", "sigma", "pesos"}.issubset(rama.columns)
+
+    # todos los retornos de la rama no eficiente son <= el de mínima varianza
+    # (es la continuación hacia abajo de la hipérbola, desde la misma punta)
+    assert (rama["retorno"].to_numpy() <= port_min_var.retorno + 1e-4).all()
+
+    # sigma decrece (en valor absoluto) a medida que el retorno sube hacia la
+    # punta: ordenando por retorno ascendente, sigma debe ser no-creciente
+    rama_ordenada = rama.sort_values("retorno")
+    sigmas = rama_ordenada["sigma"].to_numpy()
+    assert (np.diff(sigmas) <= 1e-4).all()
+
+    for pesos in rama["pesos"]:
+        valores = np.array(list(pesos.values()))
+        assert valores.sum() == pytest.approx(1.0, abs=1e-6)
+        assert (valores >= -1e-6).all()
+        assert (valores <= w_max + 1e-6).all()
 
 
 def test_cal_pasa_por_rf_y_por_el_tangente(estimacion_sintetica):
