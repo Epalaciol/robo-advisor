@@ -21,7 +21,12 @@ from ui.estilos import pie_de_pagina  # noqa: E402
 
 from roboadvisor.config import Settings  # noqa: E402
 from roboadvisor.data.cliente import modo_mock_activo  # noqa: E402
-from roboadvisor.data.cliente_mock import CLAVE_PRUEBA, CORREO_PRUEBA  # noqa: E402
+from roboadvisor.data.cliente_mock import (  # noqa: E402
+    CLAVE_A3,
+    CLAVE_PRUEBA,
+    CORREO_A3,
+    CORREO_PRUEBA,
+)
 from roboadvisor.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
 
 st.set_page_config(page_title="Robo-advisor académico", page_icon="📈")
@@ -44,9 +49,10 @@ def _pagina_login_registro() -> None:
     )
     if modo_mock_activo():
         st.info(
-            "**Modo mock activo**: datos en memoria, no hay Supabase real. "
-            f"Usuario de prueba ya creado — correo `{CORREO_PRUEBA}`, "
-            f"clave `{CLAVE_PRUEBA}`."
+            "**Modo mock activo**: datos en memoria, no hay Supabase real. Usuarios ya creados:\n\n"
+            f"- **Para hacer la encuesta** (admin): `{CORREO_PRUEBA}` · clave `{CLAVE_PRUEBA}`\n"
+            f"- **Para construir el portafolio** (encuesta hecha, A = 3): "
+            f"`{CORREO_A3}` · clave `{CLAVE_A3}`"
         )
 
     tab_login, tab_registro = st.tabs(["Iniciar sesión", "Registrarme"])
