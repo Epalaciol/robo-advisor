@@ -58,7 +58,7 @@ el catálogo (`supabase/seed/activos.csv`) y, si existen, los precios reales de 
 (corre primero `python scripts/descargar_precios_prueba.py` — 10 años de los ETF del catálogo;
 excluye `CIB`/`EC`, acciones ADR individuales, y la cripto `BTC-USD`/`ETH-USD`, que no son ETF;
 `GXG` suele aparecer deslistado en Yahoo, consistente con el `VERIFICAR en E02` que ya tenía
-anotado el catálogo). Entra con el usuario ya creado `prueba@local.test` / `Prueba1234!`.
+anotado el catálogo). Entra con `prueba@local.test` / `Prueba1234!`, o con `a3@local.test` / `Prueba1234!` (encuesta ya hecha, A = 3, sin portafolio: listo para armarlo).
 
 Los datos viven solo en la memoria del proceso del servidor y **se pierden al reiniciarlo**;
 `data_local/` está en `.gitignore`, cada quien la descarga localmente. Los scripts sueltos

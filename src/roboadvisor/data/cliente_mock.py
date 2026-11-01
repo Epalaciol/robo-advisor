@@ -20,7 +20,8 @@ corren en su propio proceso. El catálogo y los precios se siembran
 automáticamente la primera vez que se usa el mock, desde
 `supabase/seed/activos.csv` y `data_local/precios.csv`/`rf.csv` (si existen:
 ver `scripts/descargar_precios_prueba.py`). También se crea un usuario de
-prueba fijo: correo `prueba@local.test`, clave `Prueba1234!`.
+prueba fijo: correo `prueba@local.test`, clave `Prueba1234!`; y otro con encuesta
+hecha (A = 3) y sin portafolio: `a3@local.test`, misma clave.
 """
 
 import uuid
@@ -40,6 +41,15 @@ TABLAS_CON_USER_ID_UNICO = {"encuestas", "portafolios"}
 CORREO_PRUEBA = "prueba@local.test"
 CLAVE_PRUEBA = "Prueba1234!"
 ALIAS_PRUEBA = "Usuario de prueba"
+
+# Segundo usuario: encuesta ya respondida (puntaje 23 → "moderado_agresivo", A = 3), sin portafolio.
+CORREO_A3 = "a3@local.test"
+CLAVE_A3 = "Prueba1234!"
+ALIAS_A3 = "Usuario A=3"
+RESPUESTAS_A3 = {
+    "q1": "c", "q2a": "b", "q2b": "c", "q2c": "c", "q3": "b",
+    "q4": "c", "q5": "b", "q6": "c", "q7": "b",
+}  # 5·c + 4·b = 15 + 8 = 23
 
 # Estado global del proceso (persiste mientras corre el servidor; no se comparte entre procesos).
 _TABLAS: dict[str, list[dict]] = {}
@@ -91,10 +101,41 @@ def _sembrar_usuario_prueba() -> None:
     )
 
 
+def _sembrar_usuario_a3() -> None:
+    if CORREO_A3 in _USUARIOS:
+        return
+    user_id = str(uuid.uuid4())
+    ahora = datetime.now(UTC).isoformat()
+    _USUARIOS[CORREO_A3] = {"id": user_id, "correo": CORREO_A3, "clave": CLAVE_A3}
+    _tabla("perfiles").append(
+        {
+            "user_id": user_id,
+            "alias": ALIAS_A3,
+            "edad_rango": "35-44",
+            "factores": {},
+            "consentimiento_at": ahora,
+            "created_at": ahora,
+        }
+    )
+    _tabla("encuestas").append(
+        {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "respuestas": RESPUESTAS_A3,
+            "puntaje": 23,
+            "perfil": "moderado_agresivo",
+            "a": 3,
+            "version_cuestionario": "v1",
+            "created_at": ahora,
+        }
+    )
+
+
 def _sembrar_todo() -> None:
     _sembrar_catalogo()
     _sembrar_precios_y_rf()
     _sembrar_usuario_prueba()
+    _sembrar_usuario_a3()
 
 
 class _RespuestaFalsa:
