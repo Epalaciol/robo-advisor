@@ -318,3 +318,47 @@ def figura_composicion(pesos: pd.Series, titulo: str) -> go.Figure:
         margin={"l": 10, "r": 10, "t": 40, "b": 10},
     )
     return fig
+
+
+def figura_valor_vs_benchmark(
+    valor_portafolio: pd.Series,
+    valor_benchmark: pd.Series | None,
+    nombre_benchmark: str,
+) -> go.Figure:
+    """Curva de valor (base 100) del portafolio desde `fecha_base`, frente al
+    benchmark si hay datos. "Emphasis": el portafolio del usuario lleva el
+    único color vivo; el benchmark es contexto en gris.
+    """
+    fig = go.Figure()
+
+    if valor_benchmark is not None and not valor_benchmark.empty:
+        fig.add_trace(
+            go.Scatter(
+                x=valor_benchmark.index,
+                y=valor_benchmark,
+                mode="lines",
+                name=nombre_benchmark,
+                line={"color": COLOR_CONTEXTO, "width": 2},
+                hovertemplate="%{x|%Y-%m-%d}: %{y:.1f}<extra></extra>",
+            )
+        )
+
+    fig.add_trace(
+        go.Scatter(
+            x=valor_portafolio.index,
+            y=valor_portafolio,
+            mode="lines",
+            name="Tu portafolio",
+            line={"color": COLOR_PORTAFOLIO_USUARIO, "width": 2.5},
+            hovertemplate="%{x|%Y-%m-%d}: %{y:.1f}<extra></extra>",
+        )
+    )
+
+    fig.update_layout(
+        title="Valor desde que armaste tu portafolio (base 100)",
+        xaxis_title=None,
+        yaxis_title="Valor (base 100)",
+        height=380,
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02},
+    )
+    return fig

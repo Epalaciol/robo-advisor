@@ -22,6 +22,19 @@ Cada entregable es **probable y commiteable por sí solo**: deja el repo en verd
 
 `E03`, `E04` no necesitan base de datos: se pueden hacer **en paralelo** con E01/E02 (otra persona del grupo o un worktree distinto).
 
+## Orden real seguido (actualizado 2026-11-01)
+El esquema y las migraciones de E01 ya están escritos y commiteados, pero
+**no se ha creado un proyecto Supabase real todavía** — E00–E10 se
+desarrollaron y probaron contra el cliente mock en memoria
+(`MOCK_DATA=true`, ver `data/cliente_mock.py`), que respeta el mismo
+filtrado por usuario que tendría RLS. Decisión: desplegar con datos mock
+(ver `docs/06-despliegue-y-operacion.md` Fase B) para que el equipo dé
+feedback de UX con una URL real, **antes** de gastar tiempo conectando un
+proyecto Supabase real — conectar Supabase real es la parte más cara de
+deshacer si algo del modelo de datos cambia con el feedback. Conectar
+Supabase real (Fase C de `06`) y correr el pipeline en vivo pasa a ser lo
+**último** antes de E12, en vez de un prerrequisito de E07.
+
 ```
 E00 ─┬─ E01 ── E02 ─────────────┐
      ├─ E03 ──────────────┐     │

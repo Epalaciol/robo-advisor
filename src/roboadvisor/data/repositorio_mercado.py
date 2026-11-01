@@ -36,7 +36,7 @@ class RepositorioMercado:
             .data
         )
         if not filas:
-            return pd.DataFrame(columns=tickers)
+            return pd.DataFrame(columns=tickers, index=pd.DatetimeIndex([], name="fecha"))
 
         df = pd.DataFrame(filas)
         df["fecha"] = pd.to_datetime(df["fecha"])

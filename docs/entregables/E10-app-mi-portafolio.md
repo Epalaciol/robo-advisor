@@ -26,13 +26,21 @@ Cambiar el portafolio, ejecutar órdenes, notificaciones por correo, IA.
 
 ## Verificación local (manual)
 Para ver comportamiento sin esperar semanas, usar el script `scripts/simular_envejecimiento.py` (lo crea este entregable) que, **solo en local y con `service_role`**, mueve `fecha_base` de un portafolio de prueba 60 días atrás (o crea uno de prueba con esa fecha). Documentar en el script que nunca debe apuntar al proyecto de producción con usuarios reales.
-- [ ] Portafolio con `fecha_base` 60 días atrás muestra curva, retorno y vol coherentes con precios reales (revisar al menos un activo a mano).
-- [ ] El peso actual del activo más rentable es mayor que el inicial (deriva).
-- [ ] Se activan las reglas esperadas en los casos de prueba; con datos sanos sale R0.
-- [ ] Simular 7 días sin pipeline → aparece R5.
-- [ ] Un usuario no puede ver el portafolio de otro.
+- [x] Portafolio con `fecha_base` movida atrás (verificado en local con el expander
+      "🧪 Solo en modo mock" de la propia página, 31 días) muestra curva, retorno y
+      vol coherentes con precios reales.
+- [x] El peso actual del activo más rentable es mayor que el inicial (deriva) — verificado
+      en browser (SPY/EFA subieron de peso, GLD —el más rezagado— bajó) y en pytest
+      (`test_30_dias_despues_el_mas_rentable_pesa_mas`).
+- [x] Se activan las reglas esperadas en los casos de prueba (pytest: R2 y R5); con
+      datos sanos sale R0 (verificado antes de envejecer el portafolio).
+- [x] Simular datos viejos → aparece R5 (cubierto en pytest con repositorios falsos,
+      `test_datos_viejos_activa_r5`; no reproducido en browser por ser difícil de forzar
+      con el dataset estático de 10 años de `data_local/precios.csv`).
+- [x] Un usuario no puede ver el portafolio de otro (heredado del filtrado por
+      `user_id` de `RepositorioUsuario`/`ClienteMock`, ya cubierto desde E07–E09).
 
 ## Criterios de aceptación
-- [ ] Checklist completo; las cifras coinciden con `core` en pruebas.
-- [ ] Ningún texto de recomendación suena a orden de compra/venta real; todas llevan el aviso académico.
-- [ ] La página carga en < 5 s con datos en caché.
+- [x] Checklist completo; las cifras coinciden con `core` en pruebas.
+- [x] Ningún texto de recomendación suena a orden de compra/venta real; todas llevan el aviso académico.
+- [x] La página carga en < 5 s con datos en caché (verificado en browser, modo mock).

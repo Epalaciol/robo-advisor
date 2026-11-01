@@ -1,8 +1,33 @@
 # 06 · Despliegue y operación
 
-Estrategia: **primero todo local contra Supabase real**, y solo cuando esté estable se promueve a Streamlit Community Cloud.
+Estrategia (actualizada 2026-11-01, ver `docs/05-plan-entregables.md` §"Orden
+real seguido"): **primero desplegar con datos mock para que el equipo dé
+feedback**, y solo al final —cuando la app ya esté validada— conectar el
+proyecto Supabase real. Antes seguíamos el orden inverso (Supabase real desde
+E01); se invirtió porque conectar la base de datos real es la parte más lenta
+de deshacer si algo cambia, mientras que el modo mock (`MOCK_DATA=true`, ver
+`data/cliente_mock.py`) ya se comporta igual que producción para cualquier
+flujo de usuario (incluye su propio filtrado por `user_id`).
 
-## Fase A — Local (E00–E10)
+## Fase A — Local con datos mock (E00–E10)
+Sin Supabase: `MOCK_DATA=true streamlit run app/Inicio.py` (ver quickstart del
+`README.md`). Mismo flujo de usuario, mismas pruebas manuales; los datos viven
+en memoria del proceso y se pierden al reiniciar — adecuado para iterar rápido
+y para que el equipo pruebe sin necesitar credenciales de nadie.
+
+## Fase B — Despliegue de feedback con datos mock (E11, primera mitad)
+Objetivo: una URL que el equipo pueda abrir para dar feedback, **sin** depender
+de un proyecto Supabase real todavía.
+1. Repo en GitHub (puede ser público: no hay secretos ni datos de usuarios reales en modo mock).
+2. share.streamlit.io → New app → repo, rama `master`, archivo `app/Inicio.py`.
+3. Secret de la app (Advanced settings → Secrets): `MOCK_DATA = "true"`. No se necesita ninguna credencial de Supabase en esta fase.
+4. Compartir la URL con el equipo; recoger feedback antes de pasar a la Fase C.
+
+Limitación conocida: los datos (usuarios, encuestas, portafolios) se reinician
+cada vez que Streamlit Community Cloud duerme/reinicia la app — aceptable para
+feedback de UX, no para los 5 voluntarios reales (eso espera a la Fase C).
+
+## Fase C — Conectar Supabase real (al final, antes de E12)
 1. **Supabase:** crear proyecto gratuito. En Authentication → Providers: email habilitado; para desarrollo desactivar "Confirm email" (o usar correos reales). Anotar URL, `anon` key y `service_role` key.
 2. **Esquema:** pegar `supabase/migrations/0001_init.sql` en el SQL Editor y ejecutar; luego importar `supabase/seed/activos.csv` en la tabla `activos` (Table Editor → Import) o ejecutar el script de E01.
 3. **`.env`:** copiar `.env.example` → `.env` y completar. El `service_role` solo se usa al correr el pipeline en tu máquina.
@@ -10,7 +35,7 @@ Estrategia: **primero todo local contra Supabase real**, y solo cuando esté est
 5. **App:** `streamlit run app/Inicio.py`. Registrar usuarios de prueba (no los 5 voluntarios aún).
 6. **Pruebas:** `pytest -q` (sin red) y recorrido manual de los 3 flujos (primer ingreso, reingreso, datos viejos).
 
-## Fase B — Promoción a producción (E11)
+## Fase D — Promoción a producción con datos reales (E11, segunda mitad / E12)
 Criterios para promover (todos):
 - [ ] `pytest` y `ruff` verdes en CI.
 - [ ] Pipeline corrió ≥ 3 días hábiles seguidos desde GitHub Actions sin error.

@@ -29,7 +29,9 @@ class SenalMultiplo:
 
 
 def _peers_validos(fundamentales: pd.DataFrame, fecha_referencia: pd.Timestamp) -> pd.DataFrame:
-    antiguedad = (fecha_referencia - fundamentales["fecha"]).dt.days
+    if fundamentales.empty:
+        return fundamentales
+    antiguedad = (fecha_referencia - pd.to_datetime(fundamentales["fecha"])).dt.days
     return fundamentales[(antiguedad <= DIAS_ANTIGUEDAD_MAX) & (fundamentales["pe"] > 0)]
 
 
