@@ -9,7 +9,7 @@ Una plataforma que ayuda a una persona a armar su portafolio de inversión segú
 
 ## Dónde probarla
 
-**🔗 Aplicación: `https://TU-APP.streamlit.app`** <!-- TODO: reemplazar por la URL real de Streamlit Cloud -->
+**🔗 Aplicación: <https://mft-investements.streamlit.app/>**
 
 Si la página dice que la app "se fue a dormir", pulse el botón para despertarla; tarda unos segundos.
 
