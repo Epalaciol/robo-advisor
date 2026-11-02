@@ -55,51 +55,45 @@ def _formulario_nuevo() -> None:
         "aversión al riesgo (`A`) con el que se asigna el portafolio completo."
     )
 
-    with st.form("encuesta"):
-        respuestas: dict[str, str] = {}
-        for i, pregunta in enumerate(PREGUNTAS, start=1):
-            st.markdown(f"**{i}. {pregunta.texto}**")
-            # El texto completo de cada opción va aparte, como párrafo normal:
-            # un st.radio con labels largos desalinea el círculo respecto al
-            # texto cuando la opción ocupa varias líneas (confunde cuál
-            # círculo corresponde a cuál opción). El radio de abajo queda
-            # corto y sin ambigüedad: solo "a) / b) / c)".
-            for letra, texto_opcion in pregunta.opciones.items():
-                st.markdown(f"{letra}) {texto_opcion}")
-
+    respuestas: dict[str, str] = {}
+    total = len(PREGUNTAS)
+    for i, pregunta in enumerate(PREGUNTAS, start=1):
+        with st.container(border=True):
+            st.markdown(f"**Pregunta {i} de {total}**")
+            st.markdown(pregunta.texto)
             seleccion = st.radio(
                 label=f"pregunta_{pregunta.id}",
                 options=list(pregunta.opciones.keys()),
-                format_func=lambda letra: f"Opción {letra}",
+                format_func=lambda letra, p=pregunta: f"{letra}) {p.opciones[letra]}",
                 index=None,
-                horizontal=True,
                 key=f"radio_{pregunta.id}",
                 label_visibility="collapsed",
             )
-            if seleccion is not None:
-                respuestas[pregunta.id] = seleccion
-            st.markdown("")
+        if seleccion is not None:
+            respuestas[pregunta.id] = seleccion
 
-        st.divider()
-        st.subheader("Información complementaria (opcional)")
-        st.caption(
-            "Variables que permiten analizar los determinantes de la aversión al "
-            "riesgo. No se recolecta cédula, teléfono ni nombre completo."
+    st.progress(len(respuestas) / total, text=f"{len(respuestas)} de {total} respondidas")
+
+    st.divider()
+    st.subheader("Información complementaria (opcional)")
+    st.caption(
+        "Variables que permiten analizar los determinantes de la aversión al "
+        "riesgo. No se recolecta cédula, teléfono ni nombre completo."
+    )
+    factores: dict = {}
+    for clave in FACTORES_SUGERIDOS:
+        etiqueta = clave.replace("_", " ").capitalize()
+        seleccion_factor = st.selectbox(
+            etiqueta,
+            OPCIONES_FACTORES[clave],
+            index=None,
+            placeholder="Seleccione...",
+            key=f"factor_{clave}",
         )
-        factores: dict = {}
-        for clave in FACTORES_SUGERIDOS:
-            etiqueta = clave.replace("_", " ").capitalize()
-            seleccion_factor = st.selectbox(
-                etiqueta,
-                OPCIONES_FACTORES[clave],
-                index=None,
-                placeholder="Seleccione...",
-                key=f"factor_{clave}",
-            )
-            if seleccion_factor is not None:
-                factores[clave] = seleccion_factor
+        if seleccion_factor is not None:
+            factores[clave] = seleccion_factor
 
-        calcular = st.form_submit_button("Calcular perfil")
+    calcular = st.button("Calcular perfil", type="primary", disabled=len(respuestas) < total)
 
     if calcular:
         try:

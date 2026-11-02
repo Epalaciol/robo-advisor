@@ -21,6 +21,9 @@ _CSS = f"""
 h1, h2, h3 {{ letter-spacing: 0.01em; }}
 hr {{ border: none; height: 2px;
   background: linear-gradient(90deg, {", ".join(COLORES_MARCA)}); opacity: 0.55; }}
+[data-testid="stRadio"] label[data-baseweb="radio"] {{
+  align-items: flex-start; padding: 0.35rem 0; }}
+[data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {{ margin-top: 0.2rem; }}
 [data-testid="stSidebar"] {{ border-right: 1px solid #2a2530; }}
 </style>
 """

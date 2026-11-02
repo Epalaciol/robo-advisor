@@ -126,9 +126,7 @@ tab_composicion, tab_comportamiento, tab_recomendaciones, tab_referencia = st.ta
 )
 
 with tab_composicion:
-    st.caption(
-        "Portafolio de riesgo: ponderaciones a la constitución vs. actuales (deriva)."
-    )
+    st.caption("Portafolio de riesgo: ponderaciones a la constitución vs. actuales (deriva).")
     col1, col2 = st.columns(2)
     with col1:
         st.plotly_chart(
