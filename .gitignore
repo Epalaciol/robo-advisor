@@ -14,3 +14,8 @@ exports/
 # Entorno de editor/contenedor (no forma parte de la entrega)
 .vscode/
 .devcontainer/
+
+# Material interno de desarrollo (solo local; se sube únicamente si el equipo lo necesita)
+CLAUDE.md
+.claude/
+docs/planificacion/

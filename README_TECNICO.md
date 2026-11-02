@@ -34,17 +34,14 @@ Abre `http://localhost:8501`. Inicia sesión con el usuario ya creado por el mod
 nada de claves) — ver [Modo mock](#modo-mock-correr-la-app-sin-supabase) más abajo.
 
 ## Estado del proyecto
-Motor financiero y app completos (E00–E10), con Supabase real conectado y datos de Yahoo cargados.
-Pendiente: secretos y primera corrida del pipeline en GitHub Actions, verificación de tickers con el
-profesor, despliegue final (E11) y reporte (E12). Ver `docs/05-plan-entregables.md` y
-`docs/planificacion/E0X-*.md`.
+Motor financiero y app completos, con Supabase real conectado, datos de Yahoo cargados y el
+pipeline diario activo en GitHub Actions. Pendiente: verificación de tickers con el profesor,
+pruebas finales en producción y reporte. Ver `docs/05-plan-entregables.md`.
 
 ## Qué hay en este paquete
 | Ruta | Contenido |
 |---|---|
-| `CLAUDE.md` | Contexto y reglas para Claude Code |
 | `docs/00…06` | Requisitos, arquitectura, datos, motor, pipeline, plan, despliegue |
-| `docs/planificacion/E00…E12` | Especificación de cada entregable (alcance, pruebas, verificación, aceptación) |
 | `src/roboadvisor/core/` | Motor financiero puro (cuestionario, Markowitz, riesgo, recomendaciones) |
 | `src/roboadvisor/data/` | Supabase, Yahoo Finance y el cliente mock |
 | `src/roboadvisor/pipeline/` | Carga diaria de precios/fundamentales |
@@ -102,10 +99,6 @@ de RLS de `tests/db/test_rls.py`, que siguen corriendo solo contra un Supabase r
    Para una demo sin base de datos usar solo `MOCK_DATA = "true"`. **Nunca** poner la clave `service_role`.
 3. Tras cambios en módulos de `app/ui/` o `src/`, usar **Manage app → Reboot app** (Streamlit conserva módulos viejos en memoria).
 4. Pipeline: en GitHub → Settings → Secrets → Actions crear `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY`; el workflow `pipeline.yml` corre de lunes a viernes.
-
-## Cómo arrancar con Claude Code
-1. Abre `claude` en la carpeta. Lee primero `CLAUDE.md` y `docs/05-plan-entregables.md`.
-2. Ejecuta los entregables en orden: `/entregable E00`, luego `/entregable E01`, etc. Cada uno se prueba y se commitea por separado.
 
 ## Fechas
 Taller 1: **12-nov-2026** · Taller 2: 19-nov-2026 (incremental, después).
