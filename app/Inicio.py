@@ -17,7 +17,7 @@ from ui.auth import (  # noqa: E402
     registrar,
 )
 from ui.estado import estado_usuario, mostrar_barra_lateral  # noqa: E402
-from ui.estilos import configurar_pagina, logo_grande, pie_de_pagina  # noqa: E402
+from ui.estilos import barra_superior, configurar_pagina, logo_grande, pie_de_pagina  # noqa: E402
 
 from roboadvisor.config import Settings  # noqa: E402
 from roboadvisor.data.cliente import modo_mock_activo  # noqa: E402
@@ -42,6 +42,7 @@ def _mostrar_instrucciones_configuracion() -> None:
 
 
 def _pagina_login_registro() -> None:
+    barra_superior()
     logo_grande()
     st.caption(
         "Quantitative Research & Asset Management · Plataforma de asignación de "

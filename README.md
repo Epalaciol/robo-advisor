@@ -1,86 +1,52 @@
-# Robo-advisor — Taller 1 de Inversiones (EAFIT, 2026-II)
+# MFT Investments · Robo-advisor
 
-Proto robo-advisor: registro, cuestionario de aversión al riesgo, portafolio óptimo (Markowitz) con CAL, seguimiento y recomendaciones por reglas fijas.
-Datos de Yahoo Finance cargados por un pipeline diario en Supabase; app en Streamlit. **Ejercicio académico; no constituye asesoría financiera.**
+**Taller 1 de Inversiones — Maestría en Finanzas, EAFIT (2026-II)**
+*Quantitative Research & Asset Management*
 
-## Quickstart (jugar con la app en 5 minutos, sin Supabase)
+Una plataforma que ayuda a una persona a armar su portafolio de inversión según cuánto riesgo está dispuesta a asumir, usando el modelo media-varianza de Markowitz. **Es un ejercicio académico: no constituye asesoría de inversión.**
 
-Requiere Python ≥ 3.11.
+---
 
-```bash
-git clone <url-del-repo>
-cd robo-advisor
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
+## Dónde probarla
 
-python scripts/descargar_precios_prueba.py   # ~1 min, descarga 10 años de ETF reales de Yahoo
-MOCK_DATA=true streamlit run app/Inicio.py
-```
+**🔗 Aplicación: `https://TU-APP.streamlit.app`** <!-- TODO: reemplazar por la URL real de Streamlit Cloud -->
 
-Abre `http://localhost:8501`. Inicia sesión con el usuario ya creado por el modo mock:
-**correo `prueba@local.test`, clave `Prueba1234!`**. Todo corre en memoria (nada de Supabase,
-nada de claves) — ver [Modo mock](#modo-mock-correr-la-app-sin-supabase) más abajo.
+Si la página dice que la app "se fue a dormir", pulse el botón para despertarla; tarda unos segundos.
 
-## Estado del proyecto
-Motor financiero y app completos (E00–E09); falta Mi portafolio/seguimiento (E10), despliegue
-(E11) y reporte (E12). Ver `docs/05-plan-entregables.md` para el detalle de cada entregable y
-`docs/entregables/E0X-*.md` para sus criterios de aceptación marcados.
+### Usuarios de demostración
+| Para qué | Correo | Clave |
+|---|---|---|
+| Recorrer **todo el flujo desde cero** (responder la encuesta) | `prueba@local.test` | `Prueba1234!` |
+| Saltar directo a **construir el portafolio** (perfil ya definido, A = 3) | `a3@local.test` | `Prueba1234!` |
 
-## Qué hay en este paquete
-| Ruta | Contenido |
-|---|---|
-| `CLAUDE.md` | Contexto y reglas para Claude Code |
-| `docs/00…06` | Requisitos, arquitectura, datos, motor, pipeline, plan, despliegue |
-| `docs/entregables/E00…E12` | Especificación de cada entregable (alcance, pruebas, verificación, aceptación) |
-| `src/roboadvisor/core/` | Motor financiero puro (cuestionario, Markowitz, riesgo, recomendaciones) |
-| `src/roboadvisor/data/` | Supabase, Yahoo Finance y el cliente mock |
-| `src/roboadvisor/pipeline/` | Carga diaria de precios/fundamentales |
-| `app/` | App Streamlit (multipágina) |
-| `tests/` | `pytest -q` (unitarias) y `pytest -m integration -q` (requieren Supabase real) |
-| `supabase/migrations/0001_init.sql` | Esquema + RLS |
-| `supabase/seed/activos.csv` | Catálogo inicial (23 filas, sin GXG; los tickers se verifican en E02) |
-| `.env.example`, `.gitignore` | Variables y exclusiones (nunca se commitea `.env`) |
+También puede **crear su propia cuenta** en la pestaña "Crear cuenta" (solo pide correo, un alias y un rango de edad; no se recolectan cédula, teléfono ni nombre completo).
 
-## Correr las pruebas
-```bash
-pytest -q && ruff check .
-```
-100+ pruebas unitarias, sin red ni Supabase. Las de integración (`-m integration`, RLS real)
-se saltan automáticamente si no hay `.env`.
+---
 
-## Modo mock (correr la app sin Supabase)
-Para desarrollo/demo sin un proyecto Supabase real:
-```bash
-MOCK_DATA=true streamlit run app/Inicio.py
-```
-Usa un cliente Supabase falso en memoria (`roboadvisor/data/cliente_mock.py`): se siembra con
-el catálogo (`supabase/seed/activos.csv`) y, si existen, los precios reales de `data_local/`
-(corre primero `python scripts/descargar_precios_prueba.py` — 10 años de los ETF del catálogo;
-excluye `CIB`/`EC`, acciones ADR individuales, y la cripto `BTC-USD`/`ETH-USD`, que no son ETF;
-`GXG` suele aparecer deslistado en Yahoo, consistente con el `VERIFICAR en E02` que ya tenía
-anotado el catálogo). Entra con `prueba@local.test` / `Prueba1234!`, o con `a3@local.test` / `Prueba1234!` (encuesta ya hecha, A = 3, sin portafolio: listo para armarlo).
+## Cómo interactuar (recorrido de 5 minutos)
 
-Los datos viven solo en la memoria del proceso del servidor y **se pierden al reiniciarlo**;
-`data_local/` está en `.gitignore`, cada quien la descarga localmente. Los scripts sueltos
-(`cargar_catalogo.py`, `crear_usuario_prueba.py`) no ven los datos del mock porque corren en
-otro proceso — son para el flujo con Supabase real. **El modo mock no reemplaza** las pruebas
-de RLS de `tests/db/test_rls.py`, que siguen corriendo solo contra un Supabase real.
+1. **Ingrese o cree una cuenta.** Arriba aparece quién tiene la sesión abierta.
+2. **Perfil de riesgo.** Nueve preguntas sobre cómo reacciona ante ganancias y pérdidas. Con el puntaje (9–27) la plataforma define su perfil y su coeficiente de aversión al riesgo **A** (8, 6, 4, 3 o 1). El perfil se mide una sola vez.
+3. **Construcción del portafolio.** Elija de 3 a 11 activos del catálogo (ETF de renta variable y renta fija, REIT, oro, bitcoin y ether) y, si quiere, un peso máximo por activo. La plataforma calcula:
+   - el **portafolio óptimo de riesgo** (frontera eficiente y portafolio tangente),
+   - el **portafolio completo**: cuánto va a riesgo (**y\***) y cuánto al activo libre de riesgo, según su A (línea CAL, sin apalancamiento),
+   - gráficos de la frontera, la CAL y su curva de indiferencia, además de betas y duration.
+   El portafolio se guarda **una sola vez**.
+4. **Seguimiento.** En cada ingreso se muestra cómo ha rendido el portafolio con los precios nuevos frente al benchmark (ACWI), la deriva de pesos y **recomendaciones con reglas fijas** (sin inteligencia artificial): desvío del óptimo, volatilidad fuera de perfil, activos rezagados, señales de múltiplos y datos desactualizados.
 
-## Conectar un Supabase real (para el entregable final)
-1. Crear el proyecto Supabase gratuito (acción humana).
-2. Copiar `.env.example` a `.env` y completar `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
-   `SUPABASE_SERVICE_ROLE_KEY` (nunca se commitea).
-3. En el SQL Editor del proyecto, pegar y ejecutar `supabase/migrations/0001_init.sql` (una sola vez).
-4. Cargar el catálogo: `python scripts/cargar_catalogo.py` (idempotente, usa `service_role`).
-5. Verificar la seguridad: `pytest -m integration -q` (crea y borra usuarios de prueba).
-6. (Opcional) Usuario fijo para no pasar por el registro cada vez:
-   `python scripts/crear_usuario_prueba.py` (mismo correo/clave que el modo mock;
-   `--borrar` para eliminarlo). Solo para desarrollo local.
-7. Cargar precios reales: `python -m roboadvisor.pipeline.update_prices` (ver `docs/04`).
+> Para ver el seguimiento con movimiento recomendamos dejar pasar algunos días de precios; el pipeline diario trae los datos nuevos cada tarde.
 
-## Cómo arrancar con Claude Code
-1. Abre `claude` en la carpeta. Lee primero `CLAUDE.md` y `docs/05-plan-entregables.md`.
-2. Ejecuta los entregables en orden: `/entregable E00`, luego `/entregable E01`, etc. Cada uno se prueba y se commitea por separado.
+---
 
-## Fechas
-Taller 1: **12-nov-2026** · Taller 2: 19-nov-2026 (incremental, después).
+## Qué debe saber
+
+- **Datos:** precios diarios de Yahoo Finance, actualizados de lunes a viernes a las 5:00 pm (hora de Bogotá). Base de datos y autenticación en Supabase.
+- **Moneda base:** USD. **Solo posiciones largas**, sin apalancamiento.
+- **Los tickers del catálogo** están pendientes de validación con el profesor.
+- **Privacidad:** cada usuario solo ve sus propios datos (seguridad a nivel de fila en la base de datos).
+- Las recomendaciones son **reglas fijas y explicables**; no hay IA en esta fase.
+
+## Para ver cómo está hecho
+La explicación técnica (tecnologías, carpetas, cómo levantar la aplicación en local, pruebas y despliegue) está en [**README_TECNICO.md**](README_TECNICO.md). Las especificaciones y fórmulas están en la carpeta [`docs/`](docs/).
+
+**Fechas:** Taller 1 — 12 de noviembre de 2026 · Taller 2 — 19 de noviembre de 2026.

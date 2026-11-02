@@ -2,6 +2,8 @@
 
 import streamlit as st
 
+from .estilos import barra_superior
+
 
 def estado_usuario(repositorio_usuario) -> str:
     """`'sin_encuesta' | 'sin_portafolio' | 'completo'` según lo que ya guardó el usuario."""
@@ -22,11 +24,7 @@ ETIQUETAS_ESTADO = {
 def bloque_usuario(alias: str, estado: str | None = None) -> None:
     """Usuario en sesión: bloque en la barra lateral y chip arriba a la derecha."""
     correo = st.session_state.get("correo", "")
-    st.markdown(
-        f'<div style="text-align:right;font-size:0.85rem;opacity:0.85">'
-        f"Sesión: <b>{alias}</b>" + (f" · {correo}" if correo else "") + "</div>",
-        unsafe_allow_html=True,
-    )
+    barra_superior(alias, correo)
     with st.sidebar:
         st.markdown(f"**{alias}**")
         if correo:

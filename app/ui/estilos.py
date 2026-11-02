@@ -24,6 +24,18 @@ hr {{ border: none; height: 2px;
 [data-testid="stRadio"] label[data-baseweb="radio"] {{
   align-items: flex-start; padding: 0.35rem 0; }}
 [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {{ margin-top: 0.2rem; }}
+.mft-barra {{ display:flex; justify-content:space-between; align-items:center;
+  padding: 0 0 0.6rem 0; margin-bottom: 0.8rem; border-bottom: 1px solid #2a2530; }}
+.mft-migas {{ display:flex; align-items:center; gap:0.55rem; font-size:0.9rem; }}
+.mft-sep {{ opacity:0.35; }}
+.mft-pastilla {{ border:1px solid; border-radius:999px; padding:0.05rem 0.55rem;
+  font-size:0.68rem; letter-spacing:0.06em; font-weight:600; }}
+.mft-usuario {{ display:flex; align-items:center; gap:0.6rem; font-size:0.85rem;
+  line-height:1.15; text-align:right; }}
+.mft-correo {{ font-size:0.72rem; opacity:0.65; }}
+.mft-avatar {{ width:2rem; height:2rem; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-weight:700; color:#fff;
+  background: linear-gradient(135deg, #e8761e, #8a5cf5); }}
 [data-testid="stSidebar"] {{ border-right: 1px solid #2a2530; }}
 </style>
 """
@@ -34,6 +46,36 @@ def configurar_pagina(titulo: str) -> None:
     st.set_page_config(page_title=f"{titulo} · MFT Investments", page_icon=ICONO)
     st.logo(LOGO, icon_image=ICONO, size="large")
     st.markdown(_CSS, unsafe_allow_html=True)
+
+
+def barra_superior(alias: str | None = None, correo: str | None = None) -> None:
+    """Barra superior tipo consola: migas de pan, entorno y usuario en sesión."""
+    from roboadvisor.data.cliente import modo_mock_activo
+
+    demo = modo_mock_activo()
+    pastilla = ("DEMO", "#1fa79a") if demo else ("PRODUCCIÓN", "#e8761e")
+    usuario = ""
+    if alias:
+        inicial = alias.strip()[:1].upper() or "?"
+        usuario = (
+            f'<span class="mft-usuario"><span class="mft-avatar">{inicial}</span>'
+            f"<span><b>{alias}</b>"
+            + (f'<br><span class="mft-correo">{correo}</span>' if correo else "")
+            + "</span></span>"
+        )
+    st.markdown(
+        f"""
+<div class="mft-barra">
+  <div class="mft-migas">
+    <span>MFT Investments</span><span class="mft-sep">/</span>
+    <span>Robo-advisor</span><span class="mft-sep">/</span>
+    <span class="mft-pastilla" style="color:{pastilla[1]};border-color:{pastilla[1]}">
+      {pastilla[0]}</span>
+  </div>
+  {usuario}
+</div>""",
+        unsafe_allow_html=True,
+    )
 
 
 def logo_grande() -> None:
