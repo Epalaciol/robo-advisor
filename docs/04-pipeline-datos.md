@@ -52,3 +52,6 @@ Antes de cargar historia, un script `verificar_catalogo` descarga 1 mes de cada 
 
 ## Alternativa descartada
 Consultar Yahoo directo desde la app (sin base): más simple en el papel, pero frágil (límites de Yahoo en servidores compartidos), lento en cada ingreso y no reproducible. Si se quisiera "casi tiempo real", se podría llamar `yahoo.py` desde un botón de refresco **con caché** y manejo de errores, sin websockets.
+
+## Verificación del catálogo (2026-11-01)
+`verificar_catalogo` contra Yahoo real: los 22 tickers activos pasaron (con datos, historia suficiente y fecha reciente). No se desactivó ni se cambió ningún ticker.
