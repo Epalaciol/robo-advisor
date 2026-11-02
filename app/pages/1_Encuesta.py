@@ -48,24 +48,62 @@ def _mostrar_resultado_existente(encuesta: dict) -> None:
         st.switch_page("pages/2_Constructor.py")
 
 
+def _confirmar_envio(envio: dict) -> None:
+    """Paso de confirmación: no muestra puntaje ni perfil (evita sesgar las respuestas)."""
+    st.subheader("Confirmar envío")
+    st.warning(
+        "Una vez confirmado, las respuestas quedan registradas y **no podrán "
+        "modificarse**. El perfil se mostrará únicamente después de la confirmación. "
+        "¿Desea continuar?"
+    )
+    col_confirmar, col_volver = st.columns(2)
+    if col_confirmar.button("Sí, confirmar y registrar", type="primary", width="stretch"):
+        try:
+            resultado = puntuar(envio["respuestas"])
+            user_id = st.session_state["user_id"]
+            payload = construir_payload_encuesta(user_id, resultado, envio["respuestas"])
+            repositorio.guardar_encuesta(payload)
+            repositorio.actualizar_factores(user_id, envio["factores"])
+        except ValueError as error:
+            st.error(str(error))
+        except Exception:
+            st.error("No fue posible guardar el cuestionario. Intente de nuevo.")
+        else:
+            st.session_state.pop("encuesta_envio", None)
+            st.rerun()
+    if col_volver.button("Volver a revisar mis respuestas", width="stretch"):
+        st.session_state["encuesta_borrador"] = envio
+        st.session_state.pop("encuesta_envio", None)
+        st.rerun()
+
+
 def _formulario_nuevo() -> None:
+    envio = st.session_state.get("encuesta_envio")
+    if envio:
+        _confirmar_envio(envio)
+        return
+
+    borrador = st.session_state.get("encuesta_borrador", {"respuestas": {}, "factores": {}})
     st.markdown(
         "Cuestionario de nueve preguntas para medir la tolerancia al riesgo. Las "
         "respuestas determinan el perfil del inversionista y el coeficiente de "
-        "aversión al riesgo (`A`) con el que se asigna el portafolio completo."
+        "aversión al riesgo (`A`) con el que se asigna el portafolio completo. "
+        "El perfil se muestra una vez que usted confirma el envío."
     )
 
     respuestas: dict[str, str] = {}
     total = len(PREGUNTAS)
     for i, pregunta in enumerate(PREGUNTAS, start=1):
+        letras = list(pregunta.opciones.keys())
+        previa = borrador["respuestas"].get(pregunta.id)
         with st.container(border=True):
             st.markdown(f"**Pregunta {i} de {total}**")
             st.markdown(pregunta.texto)
             seleccion = st.radio(
                 label=f"pregunta_{pregunta.id}",
-                options=list(pregunta.opciones.keys()),
+                options=letras,
                 format_func=lambda letra, p=pregunta: f"{letra}) {p.opciones[letra]}",
-                index=None,
+                index=letras.index(previa) if previa in letras else None,
                 key=f"radio_{pregunta.id}",
                 label_visibility="collapsed",
             )
@@ -83,57 +121,21 @@ def _formulario_nuevo() -> None:
     factores: dict = {}
     for clave in FACTORES_SUGERIDOS:
         etiqueta = clave.replace("_", " ").capitalize()
+        opciones = list(OPCIONES_FACTORES[clave])
+        previa_factor = borrador["factores"].get(clave)
         seleccion_factor = st.selectbox(
             etiqueta,
-            OPCIONES_FACTORES[clave],
-            index=None,
+            opciones,
+            index=opciones.index(previa_factor) if previa_factor in opciones else None,
             placeholder="Seleccione...",
             key=f"factor_{clave}",
         )
         if seleccion_factor is not None:
             factores[clave] = seleccion_factor
 
-    calcular = st.button("Calcular perfil", type="primary", disabled=len(respuestas) < total)
-
-    if calcular:
-        try:
-            resultado = puntuar(respuestas)
-        except ValueError as error:
-            st.error(f"No fue posible calcular el perfil: {error}")
-            return
-
-        st.session_state["encuesta_pendiente"] = {
-            "resultado": resultado,
-            "respuestas": respuestas,
-            "factores": factores,
-        }
-
-    pendiente = st.session_state.get("encuesta_pendiente")
-    if pendiente:
-        resultado = pendiente["resultado"]
-        st.info(
-            f"Puntaje **{resultado.puntaje}** · perfil **{resultado.etiqueta}** "
-            f"(A = {resultado.a}). Al confirmar, el resultado queda registrado y no "
-            "podrá modificarse."
-        )
-        col_confirmar, col_cancelar = st.columns(2)
-        if col_confirmar.button("Confirmar y guardar", type="primary"):
-            user_id = st.session_state["user_id"]
-            payload = construir_payload_encuesta(user_id, resultado, pendiente["respuestas"])
-            try:
-                repositorio.guardar_encuesta(payload)
-                repositorio.actualizar_factores(user_id, pendiente["factores"])
-            except ValueError as error:
-                st.error(str(error))
-            except Exception:
-                st.error("No fue posible guardar el cuestionario. Intente de nuevo.")
-            else:
-                del st.session_state["encuesta_pendiente"]
-                st.success("Perfil registrado.")
-                st.rerun()
-        if col_cancelar.button("Cancelar"):
-            del st.session_state["encuesta_pendiente"]
-            st.rerun()
+    if st.button("Enviar respuestas", type="primary", disabled=len(respuestas) < total):
+        st.session_state["encuesta_envio"] = {"respuestas": respuestas, "factores": factores}
+        st.rerun()
 
 
 encuesta_existente = repositorio.obtener_encuesta()
