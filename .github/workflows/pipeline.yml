@@ -3,7 +3,10 @@ name: Pipeline de precios
 on:
   # Requiere los secretos del repo: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.
   schedule:
-    - cron: "0 22 * * 1-5"  # 5:00 pm Bogotá, lunes a viernes
+    # GitHub puede retrasar o descartar corridas programadas al inicio de cada hora (alta carga),
+    # así que se evita el minuto 0. La segunda es un respaldo: el pipeline es idempotente (upsert).
+    - cron: "23 22 * * 1-5"  # ~5:23 pm Bogotá, lunes a viernes
+    - cron: "47 23 * * 1-5"  # respaldo, ~6:47 pm Bogotá
   workflow_dispatch:
 
 jobs:
