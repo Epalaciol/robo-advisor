@@ -10,3 +10,7 @@ __pycache__/
 exports/
 *.egg-info/
 .DS_Store
+
+# Entorno de editor/contenedor (no forma parte de la entrega)
+.vscode/
+.devcontainer/

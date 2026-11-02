@@ -34,6 +34,12 @@ where = ["src"]
 markers = [
     "integration: requiere un proyecto Supabase real (SUPABASE_SERVICE_ROLE_KEY en .env); se omite si no está",
 ]
+# Avisos de deprecación de librerías de terceros (supabase); no son de este código.
+filterwarnings = [
+    "ignore:The 'timeout' parameter is deprecated:DeprecationWarning",
+    "ignore:The 'verify' parameter is deprecated:DeprecationWarning",
+    "ignore:.*iscoroutinefunction.*:DeprecationWarning",
+]
 
 [tool.ruff]
 line-length = 100

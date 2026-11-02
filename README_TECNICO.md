@@ -37,14 +37,14 @@ nada de claves) — ver [Modo mock](#modo-mock-correr-la-app-sin-supabase) más 
 Motor financiero y app completos (E00–E10), con Supabase real conectado y datos de Yahoo cargados.
 Pendiente: secretos y primera corrida del pipeline en GitHub Actions, verificación de tickers con el
 profesor, despliegue final (E11) y reporte (E12). Ver `docs/05-plan-entregables.md` y
-`docs/entregables/E0X-*.md`.
+`docs/planificacion/E0X-*.md`.
 
 ## Qué hay en este paquete
 | Ruta | Contenido |
 |---|---|
 | `CLAUDE.md` | Contexto y reglas para Claude Code |
 | `docs/00…06` | Requisitos, arquitectura, datos, motor, pipeline, plan, despliegue |
-| `docs/entregables/E00…E12` | Especificación de cada entregable (alcance, pruebas, verificación, aceptación) |
+| `docs/planificacion/E00…E12` | Especificación de cada entregable (alcance, pruebas, verificación, aceptación) |
 | `src/roboadvisor/core/` | Motor financiero puro (cuestionario, Markowitz, riesgo, recomendaciones) |
 | `src/roboadvisor/data/` | Supabase, Yahoo Finance y el cliente mock |
 | `src/roboadvisor/pipeline/` | Carga diaria de precios/fundamentales |

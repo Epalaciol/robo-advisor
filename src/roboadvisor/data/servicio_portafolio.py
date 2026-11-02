@@ -1,7 +1,7 @@
 """Orquesta repositorios + `core` para producir el resumen de "Mi portafolio".
 
 Única función que combina acceso a datos y motor financiero (E10, ver
-docs/03 §7 y docs/entregables/E10-app-mi-portafolio.md); testable con
+docs/03 §7 y docs/planificacion/E10-app-mi-portafolio.md); testable con
 repositorios falsos (duck-typing: cualquier objeto con los mismos métodos
 que `RepositorioUsuario`/`RepositorioMercado` sirve).
 """

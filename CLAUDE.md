@@ -20,10 +20,10 @@ El Taller 2 (Nelson-Siegel, DV01) es **incremental y posterior**: no lo implemen
 - `docs/04-pipeline-datos.md` — pipeline y validaciones
 - `docs/05-plan-entregables.md` — orden, dependencias, cronograma
 - `docs/06-despliegue-y-operacion.md` — local → producción, secretos, runbook
-- `docs/entregables/E00…E12` — una especificación por entregable
+- `docs/planificacion/E00…E12` — una especificación por entregable
 
 ## Cómo trabajar (flujo por entregable)
-1. Usa `/entregable E03` (ver `.claude/commands/entregable.md`) o lee a mano `docs/entregables/E03-*.md`.
+1. Usa `/entregable E03` (ver `.claude/commands/entregable.md`) o lee a mano `docs/planificacion/E03-*.md`.
 2. Verifica que las dependencias del entregable estén commiteadas.
 3. Implementa **solo** lo que dice el entregable (sección "Fuera de alcance" es vinculante).
 4. Escribe/ejecuta las pruebas indicadas. `pytest` y `ruff check .` deben pasar.
