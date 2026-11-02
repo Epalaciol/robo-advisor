@@ -33,6 +33,11 @@ def bloque_usuario(alias: str, estado: str | None = None) -> None:
             )
         if estado:
             st.caption(ETIQUETAS_ESTADO.get(estado, estado))
+        if correo and st.button("Cerrar sesión", key="cerrar_sesion_lateral", width="stretch"):
+            from .auth import cerrar_sesion
+
+            cerrar_sesion()
+            st.switch_page("Inicio.py")
 
 
 def mostrar_usuario_en_barra() -> None:

@@ -307,7 +307,10 @@ if resultado:
             "seleccionados, en su mayoría ineficientes. La curva gris es la **frontera "
             "eficiente**; su prolongación punteada es la rama dominada, y juntas "
             'conforman la "bala" de Markowitz, con el portafolio de mínima varianza en '
-            "el vértice. Los puntos grises son los activos individuales. La línea "
+            "el vértice. Cada punto de color es un activo individual. En la leyenda, "
+            "un clic oculta o "
+            "muestra una serie y doble clic la aísla; arrastra para acercar y doble "
+            "clic en el gráfico restablece la vista. La línea "
             "punteada clara es la **CAL** (combinación del portafolio tangente con el "
             "activo libre de riesgo). La curva punteada naranja es la **curva de "
             "indiferencia** del inversionista, tangente a la CAL en el portafolio "
@@ -329,6 +332,7 @@ if resultado:
                 a_usuario=a_usuario,
             ),
             use_container_width=True,
+            config={"displaylogo": False, "scrollZoom": False},
         )
 
     with tab_riesgo:

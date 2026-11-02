@@ -29,6 +29,11 @@ PALETA_CATEGORICA = [
     "#d55181",  # 6 magenta
     "#e66767",  # 7 rojo
 ]
+# Un color por activo en la frontera (12 tonos distinguibles sobre fondo oscuro).
+PALETA_ACTIVOS = [
+    "#4fc3f7", "#f06292", "#aed581", "#ffb74d", "#ba68c8", "#4db6ac",
+    "#fff176", "#ff8a65", "#7986cb", "#a1887f", "#81c784", "#e57373",
+]  # fmt: skip
 COLOR_LIBRE_DE_RIESGO = "#8a8a85"  # gris neutro: "seguro", no es una categoría de riesgo
 COLOR_CONTEXTO = "#6b6a63"  # gris para lo que es contexto, no la historia (frontera, activos...)
 COLOR_CAL = "#a9a9a0"  # gris claro, visible sobre fondo oscuro (antes: negro, invisible)
@@ -120,19 +125,27 @@ def figura_frontera(
         )
 
     sigma_activos = np.sqrt(np.diag(sigma.to_numpy()))
-    fig.add_trace(
-        go.Scatter(
-            x=sigma_activos,
-            y=mu.to_numpy(),
-            mode="markers+text",
-            text=list(mu.index),
-            textposition="top center",
-            textfont={"color": COLOR_CONTEXTO},
-            name="Activos elegidos",
-            marker={"color": COLOR_CONTEXTO, "size": 9, "symbol": "circle"},
-            hovertemplate="%{text}: σ=%{x:.1%}, retorno=%{y:.1%}<extra></extra>",
+    for i, ticker in enumerate(mu.index):
+        color = PALETA_ACTIVOS[i % len(PALETA_ACTIVOS)]
+        fig.add_trace(
+            go.Scatter(
+                x=[sigma_activos[i]],
+                y=[mu.iloc[i]],
+                mode="markers+text",
+                text=[ticker],
+                textposition="top center",
+                textfont={"color": color, "size": 12},
+                name=ticker,
+                legendgroup="activos",
+                marker={
+                    "color": color,
+                    "size": 11,
+                    "symbol": "circle",
+                    "line": {"color": "#1a1a19", "width": 1},
+                },
+                hovertemplate=f"{ticker}: σ=%{{x:.1%}}, retorno=%{{y:.1%}}<extra></extra>",
+            )
         )
-    )
 
     fig.add_trace(
         go.Scatter(
@@ -160,12 +173,6 @@ def figura_frontera(
             frontera_df["sigma"].to_numpy(),
             sigma_activos,
             [port_min_var.sigma, port_tangente.sigma],
-            nube_no_eficientes["sigma"].to_numpy()
-            if nube_no_eficientes is not None and not nube_no_eficientes.empty
-            else [],
-            rama_ineficiente["sigma"].to_numpy()
-            if rama_ineficiente is not None and not rama_ineficiente.empty
-            else [],
             [punto_usuario[0]] if punto_usuario is not None else [],
         ]
     )
@@ -174,15 +181,11 @@ def figura_frontera(
             frontera_df["retorno"].to_numpy(),
             mu.to_numpy(),
             [port_min_var.retorno, port_tangente.retorno],
-            nube_no_eficientes["retorno"].to_numpy()
-            if nube_no_eficientes is not None and not nube_no_eficientes.empty
-            else [],
-            rama_ineficiente["retorno"].to_numpy()
-            if rama_ineficiente is not None and not rama_ineficiente.empty
-            else [],
             [punto_usuario[1]] if punto_usuario is not None else [],
         ]
     )
+    # Escala inicial predeterminada: encuadra activos, frontera, tangente y tu
+    # portafolio (no la nube ni la rama dominada). "Reset axes" vuelve aquí.
     sigma_max_visible = float(sigmas_reales.max()) * 1.15
     margen_y = (float(retornos_reales.max()) - float(retornos_reales.min())) * 0.15
     retorno_min_visible = float(retornos_reales.min()) - margen_y
@@ -264,8 +267,20 @@ def figura_frontera(
         yaxis_tickformat=".0%",
         xaxis_range=[0, sigma_max_visible],
         yaxis_range=[retorno_min_visible, retorno_max_visible],
-        height=550,
-        legend={"orientation": "v", "yanchor": "top", "y": 1, "xanchor": "left", "x": 1.02},
+        height=600,
+        margin={"l": 10, "r": 10, "t": 50, "b": 10},
+        # Leyenda abajo: el gráfico usa todo el ancho; clic en un ítem oculta/muestra,
+        # doble clic aísla esa serie.
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.2,
+            "xanchor": "left",
+            "x": 0,
+            "font": {"size": 11},
+        },
+        hovermode="closest",
+        dragmode="zoom",
     )
     return fig
 
