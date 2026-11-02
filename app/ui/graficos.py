@@ -136,7 +136,7 @@ def figura_frontera(
                 textposition="top center",
                 textfont={"color": color, "size": 12},
                 name=ticker,
-                legendgroup="activos",
+                legend="legend2",
                 marker={
                     "color": color,
                     "size": 11,
@@ -267,17 +267,27 @@ def figura_frontera(
         yaxis_tickformat=".0%",
         xaxis_range=[0, sigma_max_visible],
         yaxis_range=[retorno_min_visible, retorno_max_visible],
-        height=600,
+        height=680,
         margin={"l": 10, "r": 10, "t": 50, "b": 10},
-        # Leyenda abajo: el gráfico usa todo el ancho; clic en un ítem oculta/muestra,
+        # Leyendas abajo: el gráfico usa todo el ancho; clic en un ítem oculta/muestra,
         # doble clic aísla esa serie.
         legend={
             "orientation": "h",
             "yanchor": "top",
-            "y": -0.2,
-            "xanchor": "left",
-            "x": 0,
+            "y": -0.17,
+            "xanchor": "center",
+            "x": 0.5,
             "font": {"size": 11},
+        },
+        # Segunda leyenda, solo para los activos: una fila de colores con su ticker.
+        legend2={
+            "title": {"text": "Activos", "side": "left"},
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.36,
+            "xanchor": "center",
+            "x": 0.5,
+            "font": {"size": 12},
         },
         hovermode="closest",
         dragmode="zoom",
@@ -286,51 +296,43 @@ def figura_frontera(
 
 
 def figura_composicion(pesos: pd.Series, titulo: str) -> go.Figure:
-    """Barra apilada al 100% (una sola barra, segmentos proporcionales): la
-    forma más clara para mostrar que un portafolio suma el 100%.
+    """Gráfico de dona con el peso de cada activo (suma 100%).
 
-    "Libre de riesgo" siempre lleva el gris neutro (es "plata segura", no una
-    categoría de riesgo); los demás activos toman la paleta categórica en
-    orden fijo.
+    Cada activo conserva el color que tiene en la frontera (según su posición en
+    `pesos`); "Libre de riesgo" lleva siempre el gris neutro. Los pesos ~0 no se
+    dibujan.
     """
-    fig = go.Figure()
-    indice_color = 0
-
-    for etiqueta, valor in pesos.items():
+    etiquetas, valores, colores = [], [], []
+    for posicion, (etiqueta, valor) in enumerate(pesos.items()):
         if valor <= 0.0005:
-            continue  # activos con peso ~0 no aportan nada visible; no gastan color ni leyenda
-
+            continue
         es_libre_de_riesgo = "libre de riesgo" in str(etiqueta).lower() or etiqueta == "RF"
-        if es_libre_de_riesgo:
-            color = COLOR_LIBRE_DE_RIESGO
-        else:
-            color = PALETA_CATEGORICA[indice_color % len(PALETA_CATEGORICA)]
-            indice_color += 1
-
-        texto = f"{etiqueta}<br>{valor:.0%}" if valor >= 0.06 else ""
-        fig.add_trace(
-            go.Bar(
-                name=str(etiqueta),
-                x=[valor],
-                y=[""],
-                orientation="h",
-                marker={"color": color, "line": {"color": "#1a1a19", "width": 2}},
-                text=texto,
-                textposition="inside",
-                insidetextanchor="middle",
-                textfont={"color": "white", "size": 12},
-                hovertemplate=f"{etiqueta}: {valor:.1%}<extra></extra>",
-            )
+        etiquetas.append(str(etiqueta))
+        valores.append(float(valor))
+        colores.append(
+            COLOR_LIBRE_DE_RIESGO
+            if es_libre_de_riesgo
+            else PALETA_ACTIVOS[posicion % len(PALETA_ACTIVOS)]
         )
 
+    fig = go.Figure(
+        go.Pie(
+            labels=etiquetas,
+            values=valores,
+            hole=0.55,
+            sort=False,
+            direction="clockwise",
+            marker={"colors": colores, "line": {"color": "#1a1a19", "width": 2}},
+            texttemplate="%{label}<br>%{percent:.0%}",
+            textposition="outside",
+            hovertemplate="%{label}: %{percent:.1%}<extra></extra>",
+        )
+    )
     fig.update_layout(
         title=titulo,
-        barmode="stack",
-        xaxis={"tickformat": ".0%", "range": [0, 1], "title": None},
-        yaxis={"visible": False},
-        height=220,
-        legend={"orientation": "h", "yanchor": "bottom", "y": -0.5},
-        margin={"l": 10, "r": 10, "t": 40, "b": 10},
+        height=380,
+        showlegend=False,
+        margin={"l": 10, "r": 10, "t": 50, "b": 10},
     )
     return fig
 

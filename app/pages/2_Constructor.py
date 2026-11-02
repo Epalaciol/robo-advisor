@@ -259,7 +259,7 @@ if resultado:
         w_max_elegido = resultado["w_max_elegido"]
         w_max_usado = resultado["w_max_usado"]
         st.caption(
-            "Cada barra representa el 100% del capital; el ancho de cada color es "
+            "Cada dona representa el 100% del capital; el tamaño de cada sector es "
             "la ponderación del activo."
         )
 
