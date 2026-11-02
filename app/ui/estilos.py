@@ -41,11 +41,15 @@ hr {{ border: none; height: 2px;
 """
 
 
+_CSS_MENU = "<style>" + (ESTATICO / "menu.css").read_text(encoding="utf-8") + "</style>"
+
+
 def configurar_pagina(titulo: str) -> None:
     """`set_page_config` con el ícono de la marca + logo + estilos. Llamar primero."""
     st.set_page_config(page_title=f"{titulo} · MFT Investments", page_icon=ICONO)
     st.logo(LOGO, icon_image=ICONO, size="large")
     st.markdown(_CSS, unsafe_allow_html=True)
+    st.markdown(_CSS_MENU, unsafe_allow_html=True)
 
 
 def barra_superior(alias: str | None = None, correo: str | None = None) -> None:
