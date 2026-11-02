@@ -27,10 +27,7 @@ st.title("Encuesta de aversión al riesgo")
 
 
 def _mostrar_resultado_existente(encuesta: dict) -> None:
-    st.success(
-        f"Ya respondiste la encuesta el {encuesta['created_at'][:10]}. "
-        "No se puede repetir."
-    )
+    st.success(f"Ya respondiste la encuesta el {encuesta['created_at'][:10]}. No se puede repetir.")
     col1, col2, col3 = st.columns(3)
     col1.metric("Puntaje", encuesta["puntaje"])
     col2.metric("Perfil", encuesta["perfil"].replace("_", " ").title())

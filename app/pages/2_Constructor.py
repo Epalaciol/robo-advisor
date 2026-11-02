@@ -155,8 +155,7 @@ seleccion_etiquetas = st.multiselect(
 )
 tickers_elegidos = [tickers_por_etiqueta[e] for e in seleccion_etiquetas]
 st.caption(
-    f"{len(tickers_elegidos)}/{PARAMS.n_max_activos} seleccionados "
-    f"(mínimo {PARAMS.n_min_activos})"
+    f"{len(tickers_elegidos)}/{PARAMS.n_max_activos} seleccionados (mínimo {PARAMS.n_min_activos})"
 )
 
 w_max_pct = st.slider(
@@ -220,7 +219,7 @@ if resultado:
             f"se guardan en algo seguro**. Con esa mezcla, en un año típico esperarías ganar "
             f"alrededor de **{port_completo.retorno:.1%}**, aunque el valor real puede subir o "
             f"bajar unos **{port_completo.sigma:.1%}** respecto a ese promedio — así de "
-            f"\"movido\" es este portafolio."
+            f'"movido" es este portafolio.'
         )
 
         col1, col2, col3 = st.columns(3)
@@ -266,22 +265,18 @@ if resultado:
                 "cada uno pesara menos que eso, no alcanzaría para sumar 100%). "
                 f"Se usó **{w_max_usado:.0%}** en este cálculo — no fue elegido por "
                 "la optimización, es un límite matemático con pocos activos. Para "
-                "que tu tope de {:.0%} sí se respete, elige más activos.".format(
-                    w_max_elegido
-                )
+                "que tu tope de {:.0%} sí se respete, elige más activos.".format(w_max_elegido)
             )
         else:
             st.info(
                 f"**Regla que elegiste:** ningún activo puede pesar más de "
                 f"**{w_max_usado:.0%}** de la parte de riesgo (evita que Markowitz "
-                "concentre todo en 1 o 2 activos; ajustable arriba, en \"Tope máximo "
-                "por activo\"). Si un activo llega justo a ese número, es porque tocó "
-                "el tope — no porque sea la \"mejor\" combinación matemática pura."
+                'concentre todo en 1 o 2 activos; ajustable arriba, en "Tope máximo '
+                'por activo"). Si un activo llega justo a ese número, es porque tocó '
+                'el tope — no porque sea la "mejor" combinación matemática pura.'
             )
 
-        activos_en_el_tope = [
-            t for t, w in port_tangente.w.items() if w >= w_max_usado - 1e-6
-        ]
+        activos_en_el_tope = [t for t, w in port_tangente.w.items() if w >= w_max_usado - 1e-6]
         if activos_en_el_tope:
             st.caption(f"🔒 En el tope ({w_max_usado:.0%}): {', '.join(activos_en_el_tope)}")
 
@@ -309,7 +304,7 @@ if resultado:
             "riesgo, se podría ganar más). La línea gris curva conecta las mejores "
             "combinaciones posibles: la **frontera eficiente**; su continuación "
             "punteada hacia abajo es la rama dominada (la misma matemática, pero del "
-            "lado malo) — juntas forman la clásica \"bala\" de Markowitz, con la "
+            'lado malo) — juntas forman la clásica "bala" de Markowitz, con la '
             "mínima varianza como punta. Los puntos grises marcados son tus activos "
             "individuales. La línea punteada clara es la CAL (mezcla la frontera con "
             "algo seguro). La curva punteada naranja es **tu curva de indiferencia**: "
@@ -358,9 +353,7 @@ if resultado:
                 "o bajan las tasas de interés. Un bono con duration 8 es más sensible que "
                 "uno con duration 3."
             )
-            st.dataframe(
-                resultado["duration"].rename("duration").to_frame().style.format("{:.2f}")
-            )
+            st.dataframe(resultado["duration"].rename("duration").to_frame().style.format("{:.2f}"))
             st.metric(
                 "Duration de tu portafolio (parte de renta fija)",
                 f"{resultado['duration_portafolio']['duration_rf_normalizada']:.2f}",

@@ -11,7 +11,8 @@ import streamlit as st
 from roboadvisor.data.cliente import cliente_anon, cliente_usuario
 from roboadvisor.data.repositorio_usuario import RepositorioUsuario
 
-RANGOS_EDAD = ["25-34", "35-44", "45-54", "55-64", "65-74", "otro"]
+MENOR_DE_EDAD = "Menor de 18"
+RANGOS_EDAD = [MENOR_DE_EDAD, "18-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75+"]
 MIN_LARGO_CONTRASENA = 8
 
 TEXTO_CONSENTIMIENTO = (
@@ -35,7 +36,9 @@ def validar_registro(
         errores.append(f"La contraseña debe tener al menos {MIN_LARGO_CONTRASENA} caracteres")
     if not alias or not alias.strip():
         errores.append("El alias es obligatorio")
-    if rango_edad not in RANGOS_EDAD:
+    if rango_edad == MENOR_DE_EDAD:
+        errores.append("Debes ser mayor de 18 años para registrarte (consentimiento de datos)")
+    elif rango_edad not in RANGOS_EDAD:
         errores.append("Rango de edad inválido")
     if not consentimiento:
         errores.append("Debes aceptar el consentimiento para continuar")
@@ -60,9 +63,7 @@ def registrar(
         raise ValueError(f"No se pudo registrar: {error}") from error
 
     if resultado.session is None:
-        raise ValueError(
-            "Registro creado; confirma tu correo antes de iniciar sesión."
-        )
+        raise ValueError("Registro creado; confirma tu correo antes de iniciar sesión.")
 
     cliente = cliente_usuario(resultado.session.access_token)
     RepositorioUsuario(cliente).crear_perfil(

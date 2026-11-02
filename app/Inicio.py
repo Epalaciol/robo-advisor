@@ -81,7 +81,7 @@ def _pagina_login_registro() -> None:
                 key="registro_alias",
                 help="Un nombre o apodo — no hace falta tu nombre completo.",
             )
-            edad_r = st.selectbox("Rango de edad", RANGOS_EDAD, key="registro_edad")
+            edad_r = st.selectbox("Rango de edad", RANGOS_EDAD, index=1, key="registro_edad")
             st.caption(TEXTO_CONSENTIMIENTO)
             consentimiento_r = st.checkbox(
                 "Acepto el tratamiento de mis datos", key="registro_consiente"

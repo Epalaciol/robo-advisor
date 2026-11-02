@@ -29,3 +29,13 @@ def test_rango_edad_invalido():
 def test_sin_consentimiento():
     errores = validar_registro("a@b.com", "x" * MIN_LARGO_CONTRASENA, "Pepe", "25-34", False)
     assert any("consentimiento" in e for e in errores)
+
+
+def test_menor_de_edad_no_puede_registrarse():
+    errores = validar_registro("a@b.com", "x" * MIN_LARGO_CONTRASENA, "Pepe", "Menor de 18", True)
+    assert any("mayor de 18" in e for e in errores)
+
+
+def test_rangos_nuevos_son_validos():
+    for rango in ("18-24", "75+"):
+        assert validar_registro("a@b.com", "x" * MIN_LARGO_CONTRASENA, "Pepe", rango, True) == []
