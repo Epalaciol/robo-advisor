@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 import pandas as pd
 
 from roboadvisor.data.cliente import cliente_servicio
+from roboadvisor.data.paginacion import leer_todo
 from supabase import Client
 
 TAMANO_LOTE_PRECIOS = 500
@@ -26,7 +27,14 @@ class Repositorio:
         return consulta.execute().data
 
     def ultima_fecha_por_ticker(self) -> dict[str, pd.Timestamp]:
-        filas = self._cliente.table("precios").select("ticker, fecha").execute().data
+        filas = leer_todo(
+            lambda: (
+                self._cliente.table("precios")
+                .select("ticker, fecha")
+                .order("ticker")
+                .order("fecha")
+            )
+        )
         if not filas:
             return {}
         df = pd.DataFrame(filas)

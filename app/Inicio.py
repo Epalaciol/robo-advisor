@@ -17,7 +17,7 @@ from ui.auth import (  # noqa: E402
     registrar,
 )
 from ui.estado import estado_usuario, mostrar_barra_lateral  # noqa: E402
-from ui.estilos import configurar_pagina, pie_de_pagina  # noqa: E402
+from ui.estilos import configurar_pagina, logo_grande, pie_de_pagina  # noqa: E402
 
 from roboadvisor.config import Settings  # noqa: E402
 from roboadvisor.data.cliente import modo_mock_activo  # noqa: E402
@@ -42,7 +42,7 @@ def _mostrar_instrucciones_configuracion() -> None:
 
 
 def _pagina_login_registro() -> None:
-    st.title("MFT Investments")
+    logo_grande()
     st.caption(
         "Quantitative Research & Asset Management · Plataforma de asignación de "
         "portafolios bajo el marco media-varianza de Markowitz. Ejercicio académico "
@@ -139,6 +139,7 @@ def main() -> None:
     estado = estado_usuario(repositorio)
 
     mostrar_barra_lateral(alias, estado, info_pipeline=repositorio.obtener_estado_pipeline())
+    logo_grande()
     st.title(f"Bienvenido, {alias}")
     _enrutar_segun_estado(estado)
     pie_de_pagina()

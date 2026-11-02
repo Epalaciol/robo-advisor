@@ -6,6 +6,7 @@ para cualquier usuario (RLS: `authenticated` lee, solo `service_role` escribe).
 
 import pandas as pd
 
+from roboadvisor.data.paginacion import leer_todo
 from supabase import Client
 
 
@@ -27,20 +28,24 @@ class RepositorioMercado:
 
     def precios(self, tickers: list[str], desde: str) -> pd.DataFrame:
         """Precios ajustados diarios de `tickers` desde `desde`: `DataFrame[fecha × ticker]`."""
-        filas = (
-            self._cliente.table("precios")
-            .select("ticker, fecha, adj_close")
-            .in_("ticker", tickers)
-            .gte("fecha", desde)
-            .execute()
-            .data
+        filas = leer_todo(
+            lambda: (
+                self._cliente.table("precios")
+                .select("ticker, fecha, adj_close")
+                .in_("ticker", tickers)
+                .gte("fecha", desde)
+                .order("ticker")
+                .order("fecha")
+            )
         )
         if not filas:
             return pd.DataFrame(columns=tickers, index=pd.DatetimeIndex([], name="fecha"))
 
         df = pd.DataFrame(filas)
         df["fecha"] = pd.to_datetime(df["fecha"])
-        return df.pivot(index="fecha", columns="ticker", values="adj_close").sort_index()
+        pivote = df.pivot(index="fecha", columns="ticker", values="adj_close").sort_index()
+        # Siempre todas las columnas pedidas (p. ej. desde un domingo solo hay cripto).
+        return pivote.reindex(columns=tickers)
 
     def rf_ultima(self) -> float:
         """Tasa libre de riesgo anual (decimal) de la fecha más reciente."""

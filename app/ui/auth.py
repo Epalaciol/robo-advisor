@@ -11,6 +11,8 @@ import streamlit as st
 from roboadvisor.data.cliente import cliente_anon, cliente_usuario
 from roboadvisor.data.repositorio_usuario import RepositorioUsuario
 
+from .estado import mostrar_usuario_en_barra
+
 MENOR_DE_EDAD = "Menor de 18"
 RANGOS_EDAD = [MENOR_DE_EDAD, "18-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75+"]
 MIN_LARGO_CONTRASENA = 8
@@ -75,6 +77,7 @@ def registrar(
 
     return {
         "user_id": resultado.user.id,
+        "correo": correo.strip(),
         "access_token": resultado.session.access_token,
         "refresh_token": resultado.session.refresh_token,
     }
@@ -90,6 +93,7 @@ def iniciar_sesion(correo: str, contrasena: str) -> dict:
 
     return {
         "user_id": resultado.user.id,
+        "correo": correo.strip(),
         "access_token": resultado.session.access_token,
         "refresh_token": resultado.session.refresh_token,
     }
@@ -97,12 +101,13 @@ def iniciar_sesion(correo: str, contrasena: str) -> dict:
 
 def guardar_sesion(datos: dict) -> None:
     st.session_state["user_id"] = datos["user_id"]
+    st.session_state["correo"] = datos.get("correo", "")
     st.session_state["access_token"] = datos["access_token"]
     st.session_state["refresh_token"] = datos["refresh_token"]
 
 
 def cerrar_sesion() -> None:
-    for clave in ("user_id", "access_token", "refresh_token"):
+    for clave in ("user_id", "correo", "access_token", "refresh_token"):
         st.session_state.pop(clave, None)
 
 
@@ -138,3 +143,4 @@ def requerir_sesion() -> None:
         if st.button("Ir a Inicio", type="primary"):
             st.switch_page("Inicio.py")
         st.stop()
+    mostrar_usuario_en_barra()

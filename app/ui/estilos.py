@@ -36,6 +36,12 @@ def configurar_pagina(titulo: str) -> None:
     st.markdown(_CSS, unsafe_allow_html=True)
 
 
+def logo_grande() -> None:
+    """Logo completo, centrado y grande (pantalla de inicio)."""
+    _, centro, _ = st.columns([1, 6, 1])
+    centro.image(LOGO, use_container_width=True)
+
+
 def pie_de_pagina() -> None:
     st.divider()
     st.caption(f"MFT Investments · Quantitative Research & Asset Management. {AVISO_ACADEMICO}")

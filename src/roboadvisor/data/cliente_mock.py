@@ -160,6 +160,7 @@ class _ConsultaFalsa:
         self._filtros: list[tuple[str, str, object]] = []
         self._orden: tuple[str, bool] | None = None
         self._limite: int | None = None
+        self._rango: tuple[int, int] | None = None
         self._modo: str | None = None
         self._payload: list[dict] | None = None
         self._on_conflict: str | None = None
@@ -207,6 +208,10 @@ class _ConsultaFalsa:
         self._orden = (columna, desc)
         return self
 
+    def range(self, desde: int, hasta: int) -> "_ConsultaFalsa":
+        self._rango = (desde, hasta)
+        return self
+
     def limit(self, n: int) -> "_ConsultaFalsa":
         self._limite = n
         return self
@@ -239,6 +244,8 @@ class _ConsultaFalsa:
         if self._orden:
             columna, desc = self._orden
             filas = sorted(filas, key=lambda f: f.get(columna) or "", reverse=desc)
+        if self._rango is not None:
+            filas = filas[self._rango[0] : self._rango[1] + 1]
         if self._limite is not None:
             filas = filas[: self._limite]
         return filas
