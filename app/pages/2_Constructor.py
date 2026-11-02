@@ -43,14 +43,20 @@ st.title("Construcción de portafolio")
 
 encuesta = repo_usuario.obtener_encuesta()
 if encuesta is None:
-    st.warning("Para construir el portafolio es necesario completar primero el perfil de riesgo.")
-    if st.button("Ir al perfil de riesgo", type="primary"):
+    st.info(
+        "Antes de construir tu portafolio necesitamos conocer tu perfil de riesgo: "
+        "son nueve preguntas breves y nos permiten ajustar la propuesta a tu forma "
+        "de invertir."
+    )
+    if st.button("Conocer mi perfil de riesgo", type="primary"):
         st.switch_page("pages/1_Encuesta.py")
     st.stop()
 
 if repo_usuario.obtener_portafolio() is not None:
-    st.info("Ya existe un portafolio registrado; no admite una nueva construcción.")
-    if st.button("Ir a Mi portafolio", type="primary"):
+    st.info(
+        "Tu portafolio ya está registrado. Puedes seguir su evolución en la sección de seguimiento."
+    )
+    if st.button("Ver el seguimiento de mi portafolio", type="primary"):
         st.switch_page("pages/3_Mi_portafolio.py")
     st.stop()
 

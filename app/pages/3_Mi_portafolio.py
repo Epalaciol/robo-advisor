@@ -27,17 +27,29 @@ cliente = cliente_sesion_actual()
 repo_usuario = RepositorioUsuario(cliente)
 repo_mercado = RepositorioMercado(cliente)
 
-st.title("Seguimiento del portafolio")
+_perfil_usuario = repo_usuario.obtener_perfil()
+_alias = _perfil_usuario["alias"] if _perfil_usuario else ""
+st.title(f"Seguimiento de portafolio · {_alias}" if _alias else "Seguimiento de portafolio")
 
 if repo_usuario.obtener_encuesta() is None:
-    st.warning("Para acceder al seguimiento es necesario completar primero el perfil de riesgo.")
-    if st.button("Ir al perfil de riesgo", type="primary"):
+    st.info(
+        f"{_alias + ', a' if _alias else 'A'}ún no conocemos tu perfil de riesgo. "
+        "Son nueve preguntas "
+        "breves sobre cómo vives la incertidumbre al invertir; con tus respuestas "
+        "definimos un punto de partida a tu medida. Cuando termines, aquí podrás "
+        "ver cómo evoluciona tu portafolio."
+    )
+    if st.button("Conocer mi perfil de riesgo", type="primary"):
         st.switch_page("pages/1_Encuesta.py")
     st.stop()
 
 if repo_usuario.obtener_portafolio() is None:
-    st.warning("Aún no hay un portafolio registrado.")
-    if st.button("Ir a la construcción de portafolio", type="primary"):
+    st.info(
+        "Ya conocemos tu perfil; el siguiente paso es construir tu portafolio. "
+        "Elige los activos que te interesan y calculamos juntos la mejor combinación "
+        "para ti. En cuanto lo registres, este espacio mostrará cómo evoluciona."
+    )
+    if st.button("Construir mi portafolio", type="primary"):
         st.switch_page("pages/2_Constructor.py")
     st.stop()
 
