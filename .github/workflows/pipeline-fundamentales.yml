@@ -1,23 +1,38 @@
 name: Pipeline de fundamentales
 
 on:
-  # APAGADO hasta cargar los secretos del repo (SUPABASE_URL, SUPABASE_ANON_KEY,
-  # SUPABASE_SERVICE_ROLE_KEY). Para activar el cron, descomentar estas 2 líneas:
-  # schedule:
-  #   - cron: "30 22 * * 5"
+  # Encadenado: corre cuando "Pipeline de precios" termina bien. Se ejecuta los viernes
+  # (o si lo lanzas a mano). Requiere los mismos secretos del repo.
+  workflow_run:
+    workflows: ["Pipeline de precios"]
+    types: [completed]
   workflow_dispatch:
 
 jobs:
   update-fundamentals:
     runs-on: ubuntu-latest
+    # Solo si los precios salieron bien (o si se lanzó a mano).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Decidir si hoy toca (viernes, o manual)
+        id: toca
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$(date -u +%u)" = "5" ]; then
+            echo "correr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "correr=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.toca.outputs.correr == 'true'
+        uses: actions/checkout@v4
+      - if: steps.toca.outputs.correr == 'true'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Instalar dependencias
+      - if: steps.toca.outputs.correr == 'true'
+        name: Instalar dependencias
         run: pip install -e .
-      - name: Actualizar fundamentales
+      - if: steps.toca.outputs.correr == 'true'
+        name: Actualizar fundamentales
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}

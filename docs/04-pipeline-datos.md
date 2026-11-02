@@ -7,7 +7,7 @@ Mantener `precios`, `tasa_libre_riesgo` y `fundamentales` al día sin tiempo rea
 `.github/workflows/pipeline.yml`
 - `cron: "0 22 * * 1-5"` → 22:00 UTC = **5:00 pm Bogotá** (UTC−5, sin horario de verano), lunes a viernes. Cae después del cierre de EE.UU. en cualquier época del año.
 - `workflow_dispatch` para correrlo a mano.
-- Fundamentales: workflow separado `pipeline-fundamentales.yml` con `cron: "30 22 * * 5"` (viernes 5:30 pm Bogotá).
+- Fundamentales: workflow `pipeline-fundamentales.yml`, encadenado (`workflow_run`) al de precios: corre solo si los precios terminaron bien y solo los viernes (o a mano con `workflow_dispatch`).
 - Secretos del repo: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
 - Nota: GitHub pausa los workflows programados de un repo sin actividad por 60 días; hacer un commit o reactivarlo.
 
