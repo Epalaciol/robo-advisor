@@ -95,9 +95,9 @@ def main() -> None:
         print("Vuelve a correr con --aplicar para desactivarlos (pide confirmación).")
         return
 
-    respuesta = input(
-        f"¿Marcar activo=false a {[r['ticker'] for r in fallidos]}? [s/N]: "
-    ).strip().lower()
+    respuesta = (
+        input(f"¿Marcar activo=false a {[r['ticker'] for r in fallidos]}? [s/N]: ").strip().lower()
+    )
     if respuesta != "s":
         print("Cancelado, no se modificó el catálogo.")
         return

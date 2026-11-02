@@ -13,9 +13,9 @@ def estado_usuario(repositorio_usuario) -> str:
 
 
 ETIQUETAS_ESTADO = {
-    "sin_encuesta": "Falta la encuesta de aversión al riesgo",
-    "sin_portafolio": "Falta armar tu portafolio",
-    "completo": "Portafolio activo",
+    "sin_encuesta": "Pendiente: perfil de riesgo",
+    "sin_portafolio": "Pendiente: construcción de portafolio",
+    "completo": "Portafolio constituido",
 }
 
 
@@ -24,9 +24,9 @@ def mostrar_barra_lateral(alias: str, estado: str, info_pipeline: dict | None) -
         st.write(f"**{alias}**")
         st.caption(ETIQUETAS_ESTADO.get(estado, estado))
 
-        st.subheader("Estado de datos")
+        st.subheader("Estado de los datos de mercado")
         if info_pipeline is None:
-            st.caption("Sin información de corridas todavía.")
+            st.caption("Sin registro de actualizaciones.")
         else:
-            st.caption(f"Última corrida: {info_pipeline.get('estado', 'desconocido')}")
+            st.caption(f"Última actualización: {info_pipeline.get('estado', 'desconocido')}")
             st.caption(f"Último precio: {info_pipeline.get('ultima_fecha_precio', 'sin dato')}")

@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import streamlit as st  # noqa: E402
 from ui.auth import cliente_sesion_actual, requerir_sesion  # noqa: E402
 from ui.encuesta import construir_payload_encuesta  # noqa: E402
-from ui.estilos import pie_de_pagina  # noqa: E402
+from ui.estilos import configurar_pagina, pie_de_pagina  # noqa: E402
 from ui.graficos import figura_utilidad_vs_sigma  # noqa: E402
 
 from roboadvisor.core.cuestionario import (  # noqa: E402
@@ -19,37 +19,40 @@ from roboadvisor.core.cuestionario import (  # noqa: E402
 )
 from roboadvisor.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
 
-st.set_page_config(page_title="Encuesta", page_icon="📝")
+configurar_pagina("Perfil de riesgo")
 requerir_sesion()
 
 repositorio = RepositorioUsuario(cliente_sesion_actual())
-st.title("Encuesta de aversión al riesgo")
+st.title("Perfil de riesgo del inversionista")
 
 
 def _mostrar_resultado_existente(encuesta: dict) -> None:
-    st.success(f"Ya respondiste la encuesta el {encuesta['created_at'][:10]}. No se puede repetir.")
+    st.success(
+        f"Cuestionario registrado el {encuesta['created_at'][:10]}. "
+        "El perfil es definitivo y no admite nueva medición."
+    )
     col1, col2, col3 = st.columns(3)
     col1.metric("Puntaje", encuesta["puntaje"])
     col2.metric("Perfil", encuesta["perfil"].replace("_", " ").title())
     col3.metric("Coeficiente A", encuesta["a"])
 
     st.markdown(
-        "La utilidad media-varianza que usa el portafolio completo es "
-        "**U = E(r) − ½·A·σ²**: a mayor aversión al riesgo (`A`), más penaliza "
-        "la utilidad la volatilidad (`σ`) del portafolio. La curva siguiente es "
-        "**ilustrativa** (a un retorno esperado fijo) solo para mostrar el efecto de tu `A`."
+        "El portafolio completo se optimiza bajo utilidad media-varianza, "
+        "**U = E(r) − ½·A·σ²**: a mayor coeficiente de aversión al riesgo (`A`), "
+        "mayor la penalización de la utilidad por volatilidad (`σ`). La curva es "
+        "**ilustrativa** (retorno esperado fijo) y muestra el efecto de su `A`."
     )
     st.plotly_chart(figura_utilidad_vs_sigma(float(encuesta["a"])), use_container_width=True)
 
-    if st.button("Ir al Constructor", type="primary"):
+    if st.button("Continuar al constructor de portafolio", type="primary"):
         st.switch_page("pages/2_Constructor.py")
 
 
 def _formulario_nuevo() -> None:
     st.markdown(
-        "Responde las 9 preguntas tal como aparecen en el formato del taller. "
-        "Tus respuestas determinan tu perfil de inversionista y el coeficiente "
-        "de aversión al riesgo (`A`) que usará el portafolio completo."
+        "Cuestionario de nueve preguntas para medir la tolerancia al riesgo. Las "
+        "respuestas determinan el perfil del inversionista y el coeficiente de "
+        "aversión al riesgo (`A`) con el que se asigna el portafolio completo."
     )
 
     with st.form("encuesta"):
@@ -78,10 +81,10 @@ def _formulario_nuevo() -> None:
             st.markdown("")
 
         st.divider()
-        st.subheader("Un poco sobre ti (opcional)")
+        st.subheader("Información complementaria (opcional)")
         st.caption(
-            "Ayuda a entender qué explica tu aversión al riesgo. No se recolecta "
-            "cédula, teléfono ni nombre completo."
+            "Variables que permiten analizar los determinantes de la aversión al "
+            "riesgo. No se recolecta cédula, teléfono ni nombre completo."
         )
         factores: dict = {}
         for clave in FACTORES_SUGERIDOS:
@@ -90,19 +93,19 @@ def _formulario_nuevo() -> None:
                 etiqueta,
                 OPCIONES_FACTORES[clave],
                 index=None,
-                placeholder="Selecciona...",
+                placeholder="Seleccione...",
                 key=f"factor_{clave}",
             )
             if seleccion_factor is not None:
                 factores[clave] = seleccion_factor
 
-        calcular = st.form_submit_button("Calcular mi perfil")
+        calcular = st.form_submit_button("Calcular perfil")
 
     if calcular:
         try:
             resultado = puntuar(respuestas)
         except ValueError as error:
-            st.error(f"No se pudo calcular tu perfil: {error}")
+            st.error(f"No fue posible calcular el perfil: {error}")
             return
 
         st.session_state["encuesta_pendiente"] = {
@@ -115,8 +118,9 @@ def _formulario_nuevo() -> None:
     if pendiente:
         resultado = pendiente["resultado"]
         st.info(
-            f"Tu puntaje es **{resultado.puntaje}**, perfil **{resultado.etiqueta}** "
-            f"(A = {resultado.a}). ¿Confirmas y guardas? No podrás repetir la encuesta."
+            f"Puntaje **{resultado.puntaje}** · perfil **{resultado.etiqueta}** "
+            f"(A = {resultado.a}). Al confirmar, el resultado queda registrado y no "
+            "podrá modificarse."
         )
         col_confirmar, col_cancelar = st.columns(2)
         if col_confirmar.button("Confirmar y guardar", type="primary"):
@@ -128,10 +132,10 @@ def _formulario_nuevo() -> None:
             except ValueError as error:
                 st.error(str(error))
             except Exception:
-                st.error("No se pudo guardar la encuesta. Inténtalo de nuevo en unos segundos.")
+                st.error("No fue posible guardar el cuestionario. Intente de nuevo.")
             else:
                 del st.session_state["encuesta_pendiente"]
-                st.success("¡Encuesta guardada!")
+                st.success("Perfil registrado.")
                 st.rerun()
         if col_cancelar.button("Cancelar"):
             del st.session_state["encuesta_pendiente"]

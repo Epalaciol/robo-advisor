@@ -38,7 +38,7 @@ Motor financiero y app completos (E00–E09); falta Mi portafolio/seguimiento (E
 | `app/` | App Streamlit (multipágina) |
 | `tests/` | `pytest -q` (unitarias) y `pytest -m integration -q` (requieren Supabase real) |
 | `supabase/migrations/0001_init.sql` | Esquema + RLS |
-| `supabase/seed/activos.csv` | Catálogo inicial (24 filas; los tickers se verifican en E02) |
+| `supabase/seed/activos.csv` | Catálogo inicial (23 filas, sin GXG; los tickers se verifican en E02) |
 | `.env.example`, `.gitignore` | Variables y exclusiones (nunca se commitea `.env`) |
 
 ## Correr las pruebas

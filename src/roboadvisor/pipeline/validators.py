@@ -48,7 +48,8 @@ def validar_precios(
     if (df["adj_close"] <= 0).any() or df["adj_close"].isna().any():
         errores.append("adj_close <= 0 o nulo")
 
-    if (df["fecha"] > fecha_corrida).any():
+    # tolerancia de 1 día: desfase UTC (la cripto cotiza 24/7)
+    if (df["fecha"] > fecha_corrida + pd.Timedelta(days=1)).any():
         errores.append("Fecha futura")
 
     if df["fecha"].duplicated().any():
@@ -67,9 +68,7 @@ def validar_precios(
         )
 
     ultima_fecha = ordenado["fecha"].max()
-    dias_habiles_atraso = int(
-        np.busday_count(ultima_fecha.date(), fecha_corrida.date())
-    )
+    dias_habiles_atraso = int(np.busday_count(ultima_fecha.date(), fecha_corrida.date()))
     if dias_habiles_atraso > dias_stale:
         advertencias.append(
             f"Último dato con {dias_habiles_atraso} días hábiles de atraso (> {dias_stale})"

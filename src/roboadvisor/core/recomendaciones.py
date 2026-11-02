@@ -12,7 +12,10 @@ import pandas as pd
 from roboadvisor.config import ParametrosFinancieros
 from roboadvisor.core.multiplos import SenalMultiplo
 
-AVISO_ACADEMICO = "Ejercicio académico; no constituye asesoría financiera."
+AVISO_ACADEMICO = (
+    "Ejercicio académico; no constituye asesoría de inversión ni recomendación de "
+    "compra o venta de valores."
+)
 
 _ORDEN_SEVERIDAD = {"accion": 0, "aviso": 1, "info": 2}
 
@@ -66,7 +69,7 @@ def _r1_deriva_pesos(ctx: ContextoRecomendacion) -> list[Recomendacion]:
                 titulo="Peso desviado del óptimo",
                 detalle=(
                     f"El peso actual de {ticker} se desvió {desvio:.1%} de su peso "
-                    "óptimo recalculado hoy. Considere revisar un rebalanceo."
+                    "óptimo recalculado hoy. Se sugiere evaluar un rebalanceo."
                 ),
                 datos={"peso_actual": actual, "peso_optimo_hoy": optimo, "desvio": desvio},
             )
@@ -87,7 +90,7 @@ def _r2_activo_rezagado(ctx: ContextoRecomendacion) -> list[Recomendacion]:
                     titulo="Activo rezagado frente a la tasa libre de riesgo",
                     detalle=(
                         f"{ticker} rindió {retorno:.1%} en 12 meses, por debajo de la "
-                        f"tasa libre de riesgo ({ctx.rf_12m:.1%}). Considere revisarlo."
+                        f"tasa libre de riesgo ({ctx.rf_12m:.1%}). Se sugiere revisar su posición."
                     ),
                     datos={
                         "retorno_12m": retorno,
@@ -116,7 +119,7 @@ def _r3_fuera_de_perfil(ctx: ContextoRecomendacion) -> list[Recomendacion]:
             detalle=(
                 f"La volatilidad realizada ({ctx.vol_realizada:.1%}) supera en más de "
                 f"{ctx.params.tol_vol:.0%} el objetivo de su perfil ({ctx.sigma_objetivo:.1%}). "
-                "Considere revisar su portafolio."
+                "Se sugiere revisar la asignación del portafolio."
             ),
             datos={
                 "vol_realizada": ctx.vol_realizada,
@@ -144,7 +147,7 @@ def _r4_multiplos(ctx: ContextoRecomendacion) -> list[Recomendacion]:
                 titulo=f"Señal de múltiplos: {senal.ticker} está {senal.senal}",
                 detalle=(
                     f"El P/E de {senal.ticker} ({senal.pe:.1f}) está {senal.senal} frente a "
-                    f"sus peers (z={senal.z:.2f}). Considere {verbo} ligeramente."
+                    f"sus comparables (z={senal.z:.2f}). Se sugiere {verbo} ligeramente."
                 ),
                 datos={"pe": senal.pe, "z": senal.z, "tilt_sugerido": senal.tilt_sugerido},
             )
@@ -164,7 +167,7 @@ def _r5_datos_viejos(ctx: ContextoRecomendacion) -> list[Recomendacion]:
                     titulo="Datos de precio desactualizados",
                     detalle=(
                         f"El último precio de {ticker} tiene {dias} días hábiles de "
-                        "antigüedad. Considere revisar la fuente de datos."
+                        "antigüedad. Se sugiere verificar la fuente de datos."
                     ),
                     datos={"dias_antiguedad": dias, "umbral": ctx.params.dias_stale},
                 )
@@ -192,7 +195,7 @@ def generar(ctx: ContextoRecomendacion) -> list[Recomendacion]:
                 severidad="info",
                 ticker=None,
                 titulo="Todo en orden",
-                detalle="No se detectaron desviaciones relevantes en este portafolio.",
+                detalle="Sin desviaciones relevantes frente a los parámetros del portafolio.",
                 datos={},
             )
         ]

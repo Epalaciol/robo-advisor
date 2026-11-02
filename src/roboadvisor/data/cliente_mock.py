@@ -47,8 +47,15 @@ CORREO_A3 = "a3@local.test"
 CLAVE_A3 = "Prueba1234!"
 ALIAS_A3 = "Usuario A=3"
 RESPUESTAS_A3 = {
-    "q1": "c", "q2a": "b", "q2b": "c", "q2c": "c", "q3": "b",
-    "q4": "c", "q5": "b", "q6": "c", "q7": "b",
+    "q1": "c",
+    "q2a": "b",
+    "q2b": "c",
+    "q2c": "c",
+    "q3": "b",
+    "q4": "c",
+    "q5": "b",
+    "q6": "c",
+    "q7": "b",
 }  # 5·c + 4·b = 15 + 8 = 23
 
 # Estado global del proceso (persiste mientras corre el servidor; no se comparte entre procesos).
@@ -222,9 +229,7 @@ class _ConsultaFalsa:
                 filas = [f for f in filas if f.get(columna) in valor]
             elif operador == "gte":
                 filas = [
-                    f
-                    for f in filas
-                    if f.get(columna) is not None and str(f[columna]) >= str(valor)
+                    f for f in filas if f.get(columna) is not None and str(f[columna]) >= str(valor)
                 ]
         return filas
 
@@ -366,9 +371,7 @@ class _AuthFalso:
             if datos["id"] == user_id:
                 del _USUARIOS[correo]
         for nombre_tabla in TABLAS_DEL_USUARIO:
-            _TABLAS[nombre_tabla] = [
-                f for f in _tabla(nombre_tabla) if f.get("user_id") != user_id
-            ]
+            _TABLAS[nombre_tabla] = [f for f in _tabla(nombre_tabla) if f.get("user_id") != user_id]
 
     def _admin_listar_usuarios(self, page: int = 1, per_page: int = 200) -> list[SimpleNamespace]:
         if page > 1:

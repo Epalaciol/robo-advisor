@@ -51,9 +51,7 @@ def estimar(
 
     cortos = n_validos[n_validos < min_meses].index.tolist()
     if cortos:
-        raise ValueError(
-            f"Historia insuficiente (< {min_meses} meses de retornos) para: {cortos}"
-        )
+        raise ValueError(f"Historia insuficiente (< {min_meses} meses de retornos) para: {cortos}")
 
     retornos = retornos_por_ticker.dropna(how="any").tail(ventana_meses)
 

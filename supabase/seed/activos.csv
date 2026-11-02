@@ -1,5 +1,4 @@
 ticker,nombre,clase,region,moneda,es_renta_fija,duration,rol,activo,notas
-GXG,Global X MSCI Colombia ETF,acciones_colombia_latam,Colombia,USD,false,,invertible,true,VERIFICAR en E02 que siga cotizando y tenga 36+ meses
 CIB,Bancolombia ADR,acciones_colombia_latam,Colombia,USD,false,,invertible,true,Acción individual (ADR); apta para múltiplos
 EC,Ecopetrol ADR,acciones_colombia_latam,Colombia,USD,false,,invertible,true,Acción individual (ADR); apta para múltiplos
 ILF,iShares Latin America 40 ETF,acciones_colombia_latam,Latinoamérica,USD,false,,invertible,true,

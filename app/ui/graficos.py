@@ -19,14 +19,14 @@ from roboadvisor.core.utilidad import utilidad as _utilidad
 
 ER_ILUSTRATIVO = 0.08  # solo para el gráfico explicativo de U vs σ, no es un cálculo real
 
-# Paleta categórica de referencia (modo oscuro), orden fijo. Ver skill dataviz § palette.md.
+# Paleta categórica (modo oscuro), orden fijo; los 4 primeros son los colores del logo MFT.
 PALETA_CATEGORICA = [
-    "#3987e5",  # 1 azul
-    "#d95926",  # 2 naranja
-    "#199e70",  # 3 aqua
-    "#c98500",  # 4 amarillo
-    "#d55181",  # 5 magenta
-    "#9085e9",  # 6 violeta
+    "#8a5cf5",  # 1 violeta (marca MFT)
+    "#e8761e",  # 2 naranja (marca MFT)
+    "#1fa79a",  # 3 verde azulado (marca MFT)
+    "#e9a93a",  # 4 dorado (marca MFT)
+    "#3987e5",  # 5 azul
+    "#d55181",  # 6 magenta
     "#e66767",  # 7 rojo
 ]
 COLOR_LIBRE_DE_RIESGO = "#8a8a85"  # gris neutro: "seguro", no es una categoría de riesgo

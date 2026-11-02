@@ -10,7 +10,7 @@ import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 from ui.auth import cliente_sesion_actual, requerir_sesion  # noqa: E402
 from ui.constructor import armar_registro_portafolio  # noqa: E402
-from ui.estilos import pie_de_pagina  # noqa: E402
+from ui.estilos import configurar_pagina, pie_de_pagina  # noqa: E402
 from ui.graficos import figura_composicion, figura_frontera  # noqa: E402
 
 from roboadvisor.config import ParametrosFinancieros  # noqa: E402
@@ -32,34 +32,34 @@ from roboadvisor.data.repositorio_usuario import RepositorioUsuario  # noqa: E40
 PARAMS = ParametrosFinancieros()
 EJEMPLO_DIVERSIFICADO = ["SPY", "EFA", "EMB", "LQD", "VNQ", "GLD"]
 
-st.set_page_config(page_title="Constructor", page_icon="🧮")
+configurar_pagina("Constructor")
 requerir_sesion()
 
 cliente = cliente_sesion_actual()
 repo_usuario = RepositorioUsuario(cliente)
 repo_mercado = RepositorioMercado(cliente)
 
-st.title("Constructor de portafolio")
+st.title("Construcción de portafolio")
 
 encuesta = repo_usuario.obtener_encuesta()
 if encuesta is None:
-    st.warning("Primero debes responder la encuesta de aversión al riesgo.")
-    if st.button("Ir a la encuesta", type="primary"):
+    st.warning("Para construir el portafolio es necesario completar primero el perfil de riesgo.")
+    if st.button("Ir al perfil de riesgo", type="primary"):
         st.switch_page("pages/1_Encuesta.py")
     st.stop()
 
 if repo_usuario.obtener_portafolio() is not None:
-    st.info("Ya tienes un portafolio guardado. No se puede armar otro.")
+    st.info("Ya existe un portafolio registrado; no admite una nueva construcción.")
     if st.button("Ir a Mi portafolio", type="primary"):
         st.switch_page("pages/3_Mi_portafolio.py")
     st.stop()
 
 a_usuario = float(encuesta["a"])
 perfil_usuario = encuesta["perfil"]
-st.caption(f"Tu perfil: **{perfil_usuario}** (A = {a_usuario}) — no editable aquí.")
+st.caption(f"Perfil: **{perfil_usuario}** · coeficiente de aversión al riesgo A = {a_usuario}.")
 
 
-@st.cache_data(show_spinner="Calculando portafolio óptimo...")
+@st.cache_data(show_spinner="Optimizando portafolio...")
 def _calcular(
     _repo_mercado: RepositorioMercado,
     _catalogo_por_ticker: dict,
@@ -141,40 +141,41 @@ catalogo_por_ticker = {a["ticker"]: a for a in catalogo}
 etiquetas_por_ticker = {a["ticker"]: _etiqueta_activo(a) for a in catalogo}
 tickers_por_etiqueta = {v: k for k, v in etiquetas_por_ticker.items()}
 
-st.subheader("1. Elige de 3 a 11 activos")
-if st.button("Usar ejemplo diversificado"):
+st.subheader("1. Universo de inversión (3 a 11 activos)")
+if st.button("Cargar selección diversificada de referencia"):
     st.session_state["constructor_seleccion"] = [
         etiquetas_por_ticker[t] for t in EJEMPLO_DIVERSIFICADO if t in etiquetas_por_ticker
     ]
 
 seleccion_etiquetas = st.multiselect(
-    "Catálogo (agrupado por clase en el nombre)",
+    "Universo de activos (por clase)",
     options=sorted(etiquetas_por_ticker.values()),
     max_selections=PARAMS.n_max_activos,
     key="constructor_seleccion",
 )
 tickers_elegidos = [tickers_por_etiqueta[e] for e in seleccion_etiquetas]
 st.caption(
-    f"{len(tickers_elegidos)}/{PARAMS.n_max_activos} seleccionados (mínimo {PARAMS.n_min_activos})"
+    f"{len(tickers_elegidos)}/{PARAMS.n_max_activos} activos (mínimo {PARAMS.n_min_activos})"
 )
 
 w_max_pct = st.slider(
-    "Tope máximo por activo",
+    "Peso máximo por activo (w_max)",
     min_value=10,
     max_value=100,
     value=int(PARAMS.w_max * 100),
     step=5,
     format="%d%%",
     help=(
-        "Qué tanto puede concentrarse Markowitz en un solo activo. Más bajo = más "
-        "diversificado (obligado); 100% = sin tope, puede poner todo en 1-2 activos "
-        f"si eso maximiza el Sharpe. Valor por defecto del taller: {PARAMS.w_max:.0%}."
+        "Restricción de concentración máxima por activo en la optimización de Markowitz. "
+        "Un tope menor impone mayor diversificación; 100% elimina la restricción y el "
+        "optimizador puede concentrarse en pocos activos si eso maximiza el Sharpe. "
+        f"Valor de referencia: {PARAMS.w_max:.0%}."
     ),
 )
 w_max_usuario = w_max_pct / 100
 
 puede_calcular = PARAMS.n_min_activos <= len(tickers_elegidos) <= PARAMS.n_max_activos
-if st.button("Calcular", disabled=not puede_calcular, type="primary"):
+if st.button("Optimizar portafolio", disabled=not puede_calcular, type="primary"):
     ultima_fecha = repo_mercado.ultima_fecha_precios()
     rf = repo_mercado.rf_ultima()
     try:
@@ -190,61 +191,60 @@ if st.button("Calcular", disabled=not puede_calcular, type="primary"):
             PARAMS.benchmark,
         )
     except ValueError as error:
-        st.error(f"No se pudo calcular: {error}")
+        st.error(f"No fue posible optimizar el portafolio: {error}")
     except Exception:
         st.error(
-            "No se pudo calcular el portafolio con esta combinación de activos. "
-            "Prueba quitando o cambiando alguno, o inténtalo de nuevo en unos segundos."
+            "No fue posible optimizar el portafolio con esta combinación de activos. "
+            "Modifique la selección o intente nuevamente en unos segundos."
         )
     else:
         st.session_state["constructor_resultado"] = resultado
 
 resultado = st.session_state.get("constructor_resultado")
 if resultado:
-    st.subheader("2. Resultados")
+    st.subheader("2. Resultados de la optimización")
     est = resultado["est"]
     port_tangente = resultado["port_tangente"]
     port_min_var = resultado["port_min_var"]
     port_completo = componer(port_tangente, est.rf, a_usuario)
 
     tab_resumen, tab_composicion, tab_frontera, tab_riesgo, tab_supuestos = st.tabs(
-        ["Resumen", "Composición", "Frontera y CAL", "Betas y duration", "Supuestos"]
+        ["Resumen", "Composición", "Frontera y CAL", "Beta y duration", "Metodología"]
     )
 
     with tab_resumen:
         st.markdown(
-            f"### En palabras simples\n"
-            f"De cada \\$100 que inviertas, **\\${port_completo.y * 100:,.0f} van a activos "
-            f"con riesgo** (acciones, bonos, oro...) y **\\${port_completo.peso_rf * 100:,.0f} "
-            f"se guardan en algo seguro**. Con esa mezcla, en un año típico esperarías ganar "
-            f"alrededor de **{port_completo.retorno:.1%}**, aunque el valor real puede subir o "
-            f"bajar unos **{port_completo.sigma:.1%}** respecto a ese promedio — así de "
-            f'"movido" es este portafolio.'
+            f"### Síntesis de la asignación\n"
+            f"Por cada \\$100 de capital, **\\${port_completo.y * 100:,.0f}** se asignan al "
+            f"portafolio de riesgo óptimo y **\\${port_completo.peso_rf * 100:,.0f}** al activo "
+            f"libre de riesgo. El retorno esperado anualizado es de "
+            f"**{port_completo.retorno:.1%}**, con una volatilidad anualizada de "
+            f"**{port_completo.sigma:.1%}**."
         )
 
         col1, col2, col3 = st.columns(3)
-        col1.metric("% en riesgo (y*)", f"{port_completo.y:.1%}")
-        col1.caption("Qué parte de tu plata va a activos con riesgo vs. algo seguro.")
+        col1.metric("Asignación a riesgo (y*)", f"{port_completo.y:.1%}")
+        col1.caption("Fracción del capital en el portafolio de riesgo; el resto, libre de riesgo.")
         col2.metric("Retorno esperado", f"{port_completo.retorno:.1%}")
-        col2.caption("Ganancia promedio esperada por año. No está garantizada.")
-        col3.metric("σ — qué tan movido", f"{port_completo.sigma:.1%}")
-        col3.caption("Qué tanto puede variar el valor de un año a otro.")
+        col2.caption("Retorno anualizado esperado. No está garantizado.")
+        col3.metric("Volatilidad (σ)", f"{port_completo.sigma:.1%}")
+        col3.caption("Desviación estándar anualizada de los retornos del portafolio completo.")
 
-        with st.expander("Ver también: Sharpe y Utilidad (métricas técnicas)"):
+        with st.expander("Métricas técnicas: Sharpe y utilidad"):
             col4, col5 = st.columns(2)
-            col4.metric("Sharpe (riesgo)", f"{port_tangente.sharpe:.2f}")
-            col4.caption("Ganancia extra por cada unidad de riesgo tomado. Más alto es mejor.")
+            col4.metric("Sharpe (portafolio de riesgo)", f"{port_tangente.sharpe:.2f}")
+            col4.caption("Prima de riesgo por unidad de volatilidad. Mayor es mejor.")
             col5.metric("Utilidad", f"{port_completo.utilidad:.4f}")
             col5.caption(
-                "Puntaje interno que combina tu ganancia esperada y tu tolerancia al riesgo; "
-                "solo sirve para comparar opciones, no tiene una unidad propia."
+                "U = E(r) − ½·A·σ². Medida ordinal para comparar alternativas bajo el A "
+                "del inversionista; no tiene unidad propia."
             )
 
         if port_completo.apalancamiento_requerido:
             st.warning(
-                "Tu perfil de riesgo pediría invertir más del 100% en activos con riesgo "
-                "(pedir prestado para invertir más). Por seguridad, se recortó a un máximo "
-                "de 100%: no se pide dinero prestado."
+                "El perfil de riesgo implicaría una asignación superior al 100% en el "
+                "portafolio de riesgo (apalancamiento). Se restringió a y* = 100%: el "
+                "modelo no admite endeudamiento."
             )
         if port_tangente.advertencia:
             st.warning(port_tangente.advertencia)
@@ -253,41 +253,39 @@ if resultado:
         w_max_elegido = resultado["w_max_elegido"]
         w_max_usado = resultado["w_max_usado"]
         st.caption(
-            "Cada barra representa el 100% de tu plata: el ancho de cada color es "
-            "la parte que le toca a ese activo."
+            "Cada barra representa el 100% del capital; el ancho de cada color es "
+            "la ponderación del activo."
         )
 
         if abs(w_max_usado - w_max_elegido) > 1e-9:
             st.warning(
-                f"**Pediste un tope de {w_max_elegido:.0%}**, pero con "
-                f"{len(port_tangente.w)} activos elegidos el mínimo matemáticamente "
-                f"posible es **{w_max_usado:.0%}** (= 1/{len(port_tangente.w)}: si "
-                "cada uno pesara menos que eso, no alcanzaría para sumar 100%). "
-                f"Se usó **{w_max_usado:.0%}** en este cálculo — no fue elegido por "
-                "la optimización, es un límite matemático con pocos activos. Para "
-                "que tu tope de {:.0%} sí se respete, elige más activos.".format(w_max_elegido)
+                f"**El tope solicitado ({w_max_elegido:.0%}) es inviable** con "
+                f"{len(port_tangente.w)} activos: el mínimo factible es "
+                f"**{w_max_usado:.0%}** (= 1/{len(port_tangente.w)}), pues ponderaciones "
+                f"menores no suman 100%. La optimización se ejecutó con {w_max_usado:.0%}; "
+                "es una cota matemática, no un resultado del optimizador. Para respetar "
+                "un tope de {:.0%}, amplíe el universo de activos.".format(w_max_elegido)
             )
         else:
             st.info(
-                f"**Regla que elegiste:** ningún activo puede pesar más de "
-                f"**{w_max_usado:.0%}** de la parte de riesgo (evita que Markowitz "
-                'concentre todo en 1 o 2 activos; ajustable arriba, en "Tope máximo '
-                'por activo"). Si un activo llega justo a ese número, es porque tocó '
-                'el tope — no porque sea la "mejor" combinación matemática pura.'
+                f"**Restricción activa:** ningún activo supera **{w_max_usado:.0%}** "
+                "del portafolio de riesgo (parámetro `w_max`, ajustable arriba). Un "
+                "activo que alcanza exactamente ese peso está en la restricción; no "
+                "corresponde al óptimo sin restricciones."
             )
 
         activos_en_el_tope = [t for t, w in port_tangente.w.items() if w >= w_max_usado - 1e-6]
         if activos_en_el_tope:
-            st.caption(f"🔒 En el tope ({w_max_usado:.0%}): {', '.join(activos_en_el_tope)}")
+            st.caption(f"Activos en el tope ({w_max_usado:.0%}): {', '.join(activos_en_el_tope)}")
 
-        st.write("**Solo la parte de riesgo**")
+        st.write("**Portafolio de riesgo (tangente)**")
         st.plotly_chart(
             figura_composicion(port_tangente.w, "Portafolio de riesgo (100%)"),
             use_container_width=True,
         )
         st.dataframe(port_tangente.w.rename("peso").to_frame().style.format("{:.2%}"))
 
-        st.write("**Tu plata completa (riesgo + seguro)**")
+        st.write("**Portafolio completo (riesgo + libre de riesgo)**")
         pesos_completo_rf = pd.concat(
             [port_completo.pesos_completo, pd.Series({"Libre de riesgo": port_completo.peso_rf})]
         )
@@ -299,20 +297,16 @@ if resultado:
 
     with tab_frontera:
         st.caption(
-            "Cómo leerlo: la nube de puntitos tenues son miles de combinaciones "
-            "posibles entre tus activos — casi todas **no son eficientes** (para ese "
-            "riesgo, se podría ganar más). La línea gris curva conecta las mejores "
-            "combinaciones posibles: la **frontera eficiente**; su continuación "
-            "punteada hacia abajo es la rama dominada (la misma matemática, pero del "
-            'lado malo) — juntas forman la clásica "bala" de Markowitz, con la '
-            "mínima varianza como punta. Los puntos grises marcados son tus activos "
-            "individuales. La línea punteada clara es la CAL (mezcla la frontera con "
-            "algo seguro). La curva punteada naranja es **tu curva de indiferencia**: "
-            "todos los puntos ahí te dan la misma utilidad; toca la CAL exactamente en "
-            "tu portafolio, porque ese es — dado tu nivel de aversión al riesgo — el "
-            "mejor punto alcanzable sobre la CAL. El **diamante naranja es tu "
-            "portafolio real** — mientras más a la derecha, más riesgo; mientras más "
-            "arriba, más ganancia esperada."
+            "La nube tenue corresponde a combinaciones factibles de los activos "
+            "seleccionados, en su mayoría ineficientes. La curva gris es la **frontera "
+            "eficiente**; su prolongación punteada es la rama dominada, y juntas "
+            'conforman la "bala" de Markowitz, con el portafolio de mínima varianza en '
+            "el vértice. Los puntos grises son los activos individuales. La línea "
+            "punteada clara es la **CAL** (combinación del portafolio tangente con el "
+            "activo libre de riesgo). La curva punteada naranja es la **curva de "
+            "indiferencia** del inversionista, tangente a la CAL en el portafolio "
+            "completo óptimo para su A. El **diamante naranja** es ese portafolio: "
+            "hacia la derecha, mayor volatilidad; hacia arriba, mayor retorno esperado."
         )
         st.plotly_chart(
             figura_frontera(
@@ -333,52 +327,52 @@ if resultado:
 
     with tab_riesgo:
         if resultado["betas"].empty:
-            st.caption("Sin activos de renta variable (acciones) seleccionados.")
+            st.caption("Sin activos de renta variable en la selección.")
         else:
-            st.write("**Beta — qué tan fuerte se mueve cada acción frente al mercado global**")
+            st.write("**Beta frente al mercado global (ACWI)**")
             st.caption(
-                "Beta = 1: se mueve igual que el mercado (ACWI). Beta > 1: se mueve más "
-                "fuerte (más riesgoso). Beta < 1: se mueve menos (más tranquilo)."
+                "β = 1: sensibilidad igual a la del mercado. β > 1: amplifica los "
+                "movimientos del mercado (mayor riesgo sistemático). β < 1: los atenúa."
             )
             st.dataframe(resultado["betas"].rename("beta").to_frame().style.format("{:.2f}"))
             beta_normalizada = resultado["beta_portafolio"]["beta_normalizada"]
-            st.metric("Beta de tu portafolio", f"{beta_normalizada:.2f}")
+            st.metric("Beta del portafolio (renta variable)", f"{beta_normalizada:.2f}")
 
         if resultado["duration"].empty:
-            st.caption("Sin activos de renta fija (bonos) seleccionados.")
+            st.caption("Sin activos de renta fija en la selección.")
         else:
-            st.write("**Duration — qué tan sensible es cada bono a cambios en las tasas**")
+            st.write("**Duration: sensibilidad a la tasa de interés**")
             st.caption(
-                "En años: a mayor duration, más le afecta el precio del bono cuando suben "
-                "o bajan las tasas de interés. Un bono con duration 8 es más sensible que "
-                "uno con duration 3."
+                "Medida en años: a mayor duration, mayor variación del precio ante cambios "
+                "en las tasas. Una duration de 8 implica aproximadamente el doble de "
+                "sensibilidad que una de 4."
             )
             st.dataframe(resultado["duration"].rename("duration").to_frame().style.format("{:.2f}"))
             st.metric(
-                "Duration de tu portafolio (parte de renta fija)",
+                "Duration del portafolio (renta fija)",
                 f"{resultado['duration_portafolio']['duration_rf_normalizada']:.2f}",
             )
 
     with tab_supuestos:
-        st.write(f"Ventana: {PARAMS.ventana_meses} meses (mínimo {PARAMS.min_meses})")
-        st.write(f"Meses efectivamente usados: {est.n_meses}")
+        st.write(f"Ventana de estimación: {PARAMS.ventana_meses} meses (mínimo {PARAMS.min_meses})")
+        st.write(f"Meses efectivamente utilizados: {est.n_meses}")
         st.write(f"Tasa libre de riesgo: {est.rf:.2%}")
-        st.write("Shrinkage de covarianza: Ledoit-Wolf")
+        st.write("Estimador de covarianza: Ledoit-Wolf (shrinkage)")
         if abs(resultado["w_max_usado"] - resultado["w_max_elegido"]) > 1e-9:
             st.write(
-                f"Tope por activo (w_max) elegido: {resultado['w_max_elegido']:.0%} — "
-                f"tope realmente usado: {resultado['w_max_usado']:.0%} "
-                "(ajustado al mínimo matemático posible, ver advertencia arriba)"
+                f"w_max solicitado: {resultado['w_max_elegido']:.0%} · "
+                f"w_max aplicado: {resultado['w_max_usado']:.0%} "
+                "(ajustado a la cota factible; ver advertencia en Composición)"
             )
         else:
-            st.write(f"Tope por activo (w_max): {resultado['w_max_usado']:.0%} (elegido por ti)")
-        st.write(f"Fecha de datos (fecha_base): {resultado['fecha_base']}")
+            st.write(f"Peso máximo por activo (w_max): {resultado['w_max_usado']:.0%}")
+        st.write(f"Fecha de corte de los datos (fecha_base): {resultado['fecha_base']}")
 
-    st.subheader("3. Guardar")
+    st.subheader("3. Registro del portafolio")
     confirmar = st.checkbox(
-        "Entiendo que el portafolio se guarda una sola vez y no se puede editar."
+        "Entiendo que el portafolio se registra una única vez y no podrá modificarse."
     )
-    if st.button("Confirmar y guardar", type="primary", disabled=not confirmar):
+    if st.button("Confirmar y registrar", type="primary", disabled=not confirmar):
         params_usados = replace(PARAMS, w_max=resultado["w_max_usado"])
         payload = armar_registro_portafolio(
             user_id=st.session_state["user_id"],
@@ -396,11 +390,11 @@ if resultado:
         except ValueError as error:
             st.error(str(error))
         except Exception:
-            st.error("No se pudo guardar el portafolio. Inténtalo de nuevo en unos segundos.")
+            st.error("No fue posible registrar el portafolio. Intente nuevamente en unos segundos.")
         else:
             del st.session_state["constructor_resultado"]
-            st.success("¡Portafolio guardado!")
-            if st.button("Ver mi portafolio", type="primary"):
+            st.success("Portafolio registrado.")
+            if st.button("Ver seguimiento del portafolio", type="primary"):
                 st.switch_page("pages/3_Mi_portafolio.py")
 
 pie_de_pagina()
