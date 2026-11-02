@@ -1,8 +1,10 @@
 name: Pipeline de fundamentales
 
 on:
-  schedule:
-    - cron: "30 22 * * 5"
+  # APAGADO hasta cargar los secretos del repo (SUPABASE_URL, SUPABASE_ANON_KEY,
+  # SUPABASE_SERVICE_ROLE_KEY). Para activar el cron, descomentar estas 2 líneas:
+  # schedule:
+  #   - cron: "30 22 * * 5"
   workflow_dispatch:
 
 jobs:
