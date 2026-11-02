@@ -12,7 +12,7 @@ Datos de Yahoo Finance cargados por un pipeline diario en Supabase; app en Strea
 | Motor financiero | Python 3.11+, numpy, pandas, scipy (SLSQP), scikit-learn (Ledoit-Wolf) |
 | App | Streamlit (multipágina), plotly |
 | Datos | Supabase (Postgres + Auth + RLS), `supabase-py`, `yfinance` |
-| Automatización | GitHub Actions (cron 22:00 UTC = 5:00 pm Bogotá) |
+| Automatización | GitHub Actions (cron 22:23 UTC ≈ 5:23 pm Bogotá, con respaldo) |
 | Calidad | pytest, ruff, CI en GitHub Actions |
 
 ## Quickstart (jugar con la app en 5 minutos, sin Supabase)
