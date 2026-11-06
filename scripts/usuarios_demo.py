@@ -11,6 +11,8 @@ Uso (con `.env` apuntando al proyecto Supabase):
     python scripts/usuarios_demo.py              # crea lo que falte
     python scripts/usuarios_demo.py --reiniciar  # borra encuesta/portafolio: todos de cero
     python scripts/usuarios_demo.py --listar     # muestra los usuarios y su estado
+    python scripts/usuarios_demo.py --cambiar demo.a4@local.test --a 1      # le pone A=1
+    python scripts/usuarios_demo.py --cambiar demo.a4@local.test --puntaje 19  # por puntaje
 
 Usa `service_role` (ignora RLS): solo desde tu máquina, nunca en la app.
 """
@@ -101,6 +103,36 @@ def sembrar(reiniciar: bool) -> None:
     print(f"\nClave de todos: {CLAVE}")
 
 
+# Puntaje representativo de cada perfil (A -> puntaje dentro de su rango).
+PUNTAJE_POR_A = {8: 10, 6: 14, 4: 18, 3: 22, 1: 26}
+
+
+def cambiar_perfil(correo: str, puntaje: int) -> None:
+    """Reemplaza la encuesta del usuario por una con `puntaje` y borra su portafolio
+    (un portafolio armado con otro A ya no sería coherente)."""
+    assert correo.endswith(SUFIJO_PERMITIDO), "Solo se permiten correos @local.test"
+    admin = cliente_servicio()
+    user_id = _buscar_usuario(admin, correo)
+    if user_id is None:
+        raise SystemExit(f"No existe {correo}. Corre primero: python scripts/usuarios_demo.py")
+
+    respuestas = respuestas_para(puntaje)
+    r = puntuar(respuestas)  # valida el rango 9-27
+    admin.table("portafolios").delete().eq("user_id", user_id).execute()
+    admin.table("encuestas").delete().eq("user_id", user_id).execute()
+    admin.table("encuestas").insert(
+        {
+            "user_id": user_id,
+            "respuestas": respuestas,
+            "puntaje": r.puntaje,
+            "perfil": r.perfil,
+            "a": r.a,
+            "version_cuestionario": "v1",
+        }
+    ).execute()
+    print(f"  {correo}: puntaje {r.puntaje} -> {r.etiqueta} (A = {r.a}), sin portafolio")
+
+
 def listar() -> None:
     admin = cliente_servicio()
     for correo, _, _, _ in USUARIOS:
@@ -112,8 +144,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Usuarios de demostración en Supabase")
     parser.add_argument("--reiniciar", action="store_true", help="Borra encuesta y portafolio")
     parser.add_argument("--listar", action="store_true", help="Solo muestra el estado")
+    parser.add_argument("--cambiar", metavar="CORREO", help="Cambia el perfil de ese usuario")
+    parser.add_argument("--a", type=int, choices=sorted(PUNTAJE_POR_A), help="A deseado")
+    parser.add_argument("--puntaje", type=int, help="Puntaje de la encuesta (9-27)")
     args = parser.parse_args()
-    listar() if args.listar else sembrar(args.reiniciar)
+
+    if args.cambiar:
+        puntaje = args.puntaje if args.puntaje is not None else PUNTAJE_POR_A.get(args.a)
+        if puntaje is None:
+            parser.error("--cambiar necesita --a (8, 6, 4, 3, 1) o --puntaje (9-27)")
+        cambiar_perfil(args.cambiar, puntaje)
+    elif args.listar:
+        listar()
+    else:
+        sembrar(args.reiniciar)
 
 
 if __name__ == "__main__":
