@@ -87,6 +87,10 @@ de RLS de `tests/db/test_rls.py`, que siguen corriendo solo contra un Supabase r
 6. (Opcional) Usuario fijo para no pasar por el registro cada vez:
    `python scripts/crear_usuario_prueba.py` (mismo correo/clave que el modo mock;
    `--borrar` para eliminarlo). Solo para desarrollo local.
+   Para probar cada perfil: `python scripts/usuarios_demo.py` crea en la base 6 usuarios fijos
+   `@local.test` (clave `Prueba1234!`): `prueba@` (sin encuesta), `demo.a8@`, `demo.a6@`,
+   `demo.a4@`, `a3@` y `demo.a1@` (encuesta hecha, sin portafolio). `--reiniciar` los deja de
+   cero (borra encuesta y portafolio) para volver a jugar; `--listar` muestra su estado.
 7. Cargar precios reales: `python -m roboadvisor.pipeline.update_prices` (ver `docs/04`).
 
 ## Desplegar en Streamlit Community Cloud
