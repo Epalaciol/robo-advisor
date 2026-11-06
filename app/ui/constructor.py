@@ -50,11 +50,11 @@ def armar_registro_portafolio(
             "apalancamiento_requerido": port_completo.apalancamiento_requerido,
         },
         "parametros": {
-            "ventana_meses": params.ventana_meses,
-            "min_meses": params.min_meses,
+            "ventana_dias": params.ventana_dias,
+            "min_dias": params.min_dias,
             "w_max": params.w_max,
             "rf": est.rf,
-            "n_meses_usados": est.n_meses,
+            "n_obs_usadas": est.n_obs,
         },
         "fecha_base": fecha_base,
     }

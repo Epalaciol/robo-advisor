@@ -7,7 +7,7 @@ Todo puro y determinista. Cada función indica su fórmula porque el PDF del tal
 core/
   cuestionario.py        PREGUNTAS, puntuar(respuestas) -> ResultadoEncuesta
   utilidad.py            utilidad(er, sigma, a)
-  retornos.py            retornos_mensuales(precios), estimar(retornos, ...) -> Estimacion
+  retornos.py            retornos_diarios(precios), estimar(retornos, ...) -> Estimacion
   markowitz.py           min_varianza, tangente, frontera, cal
   portafolio_completo.py y_star, componer
   riesgo.py              betas, duration_portafolio, metricas_portafolio, contribucion_riesgo
@@ -26,12 +26,12 @@ core/
 `U = E(r) − ½·A·σ²`  (r y σ en términos anuales decimales).
 
 ## 3. Estimación (`retornos.py`)
-1. Precios diarios `adj_close` de los tickers elegidos → cierre de mes (`resample("ME").last()`; alinear por fecha común, `dropna`).
-2. Retornos mensuales simples `r_t = P_t / P_{t−1} − 1`; ventana = últimos `ventana_meses` (60); exigir ≥ `min_meses` (36) o error claro indicando el ticker con historia corta.
-3. `μ = 12 · media(r)` (anualizada, aritmética).
-4. `Σ = 12 · LedoitWolf().fit(r).covariance_`.
+1. Precios diarios `adj_close` de los tickers elegidos (todos ETF, mismo calendario); alinear por fecha común, `dropna`.
+2. Retornos diarios simples `r_t = P_t / P_{t−1} − 1`; ventana = últimos `ventana_dias` (1260); exigir ≥ `min_dias` (504) o error claro indicando el ticker con historia corta.
+3. `μ = 252 · media(r)` (anualizada, aritmética).
+4. `Σ = 252 · LedoitWolf().fit(r).covariance_`.
 5. `rf` = tasa anual de `tasa_libre_riesgo` en la última fecha disponible (decimal).
-Devuelve `Estimacion(tickers, mu, sigma, rf, n_meses, fecha_fin)`.
+Devuelve `Estimacion(tickers, mu, sigma, rf, n_obs, fecha_fin)`.
 
 ## 4. Markowitz (`markowitz.py`)
 Restricciones: `Σw = 1`, `0 ≤ w_i ≤ w_max` (con `w_max ≥ 1/n`; si no, se ajusta y se avisa). Solver: `scipy.optimize.minimize(method="SLSQP")`.
@@ -48,7 +48,7 @@ Peso en riesgo del activo i: `y*·w_i`; peso libre de riesgo: `1 − y*`.
 Se informa si el recorte a 1 fue activo (`apalancamiento_requerido = y*_sin_recorte > 1`).
 
 ## 6. Riesgo (`riesgo.py`)
-- **Beta** de cada acción/ETF de renta variable vs. `ACWI`: `β = Cov(r_i, r_m) / Var(r_m)` (retornos mensuales, misma ventana). Betas del portafolio = suma ponderada.
+- **Beta** de cada acción/ETF de renta variable vs. `ACWI`: `β = Cov(r_i, r_m) / Var(r_m)` (retornos diarios, misma ventana). Betas del portafolio = suma ponderada.
 - **Duration** de renta fija: valor fijo del catálogo; `Duration_portafolio = Σ w_i · D_i` sobre la parte de renta fija (y duration contribuida al total).
 - **Métricas:** σ, retorno esperado, Sharpe, `VaR` paramétrico opcional (no requerido), contribución al riesgo `w_i (Σw)_i / σ_p²`.
 - **Max drawdown** y **vol realizada** a partir de series diarias (en `seguimiento`).

@@ -2,8 +2,7 @@
 por git) para probar el motor financiero (`core/`) y el modo mock de la app con
 datos de mercado reales, sin necesitar Supabase.
 
-Solo ETFs (incluye el benchmark `ACWI`): se excluyen las acciones individuales
-ADR de Colombia (`CIB`, `EC`) y cripto (`BTC-USD`, `ETH-USD`), que no son ETF.
+Solo ETFs (incluye el benchmark `ACWI`); el catálogo ya no tiene acciones individuales.
 """
 
 from pathlib import Path
@@ -17,7 +16,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 DATA_LOCAL = RAIZ / "data_local"
 
 BENCHMARK = "ACWI"
-NO_ETF = {"CIB", "EC", "BTC-USD", "ETH-USD"}  # acciones individuales ADR y cripto
+NO_ETF: set[str] = set()  # el catálogo ya es solo ETF; se deja por si se agrega otro tipo
 ANIOS_HISTORIA = 10
 
 

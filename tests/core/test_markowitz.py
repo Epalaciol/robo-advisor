@@ -23,7 +23,7 @@ def _estimacion_dos_activos_no_correlacionados() -> Estimacion:
         mu=mu,
         sigma=sigma,
         rf=0.02,
-        n_meses=60,
+        n_obs=1260,
         fecha_fin=pd.Timestamp("2024-12-31"),
     )
 

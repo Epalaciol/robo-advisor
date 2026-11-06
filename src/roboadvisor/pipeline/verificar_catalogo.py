@@ -1,7 +1,7 @@
 """Verificación inicial del catálogo (antes de cargar la historia completa).
 
 Para cada ticker `activo = true` descarga su historia disponible y reporta:
-sin datos, historia corta (`< ventana_meses` meses) o última fecha vieja.
+sin datos, historia corta (`< min_dias` días) o última fecha vieja.
 Con `--aplicar` marca `activo = false` en Supabase a los que fallan, pidiendo
 confirmación interactiva. Ver docs/04 §Verificación inicial del catálogo.
 """
@@ -41,16 +41,16 @@ def verificar(
             reportes.append({"ticker": ticker, "estado": "sin_datos", "motivo": "Sin precios"})
             continue
 
-        meses_disponibles = df["fecha"].dt.to_period("M").nunique()
+        dias_disponibles = len(df)
         ultima_fecha = df["fecha"].max()
         dias_atraso = (fecha_corrida - ultima_fecha).days
 
-        if meses_disponibles < params.ventana_meses:
+        if dias_disponibles < params.min_dias:
             reportes.append(
                 {
                     "ticker": ticker,
                     "estado": "historia_corta",
-                    "motivo": f"Solo {meses_disponibles} meses (< {params.ventana_meses})",
+                    "motivo": f"Solo {dias_disponibles} días (< {params.min_dias})",
                 }
             )
         elif dias_atraso > DIAS_STALE_VERIFICACION:

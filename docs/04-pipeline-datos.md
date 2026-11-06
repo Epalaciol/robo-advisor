@@ -44,7 +44,7 @@ data/
 `yfinance.Ticker(t).info` → `trailingPE`, `priceToBook`, `enterpriseToEbitda`, `dividendYield`. Muchos ETF no traen P/E: guardar `NULL`, no ceros. Registrar `fuente = "yahoo"`. Es información informativa, no se usa para optimizar.
 
 ## Verificación inicial del catálogo (E02)
-Antes de cargar historia, un script `verificar_catalogo` descarga 1 mes de cada ticker y reporta cuáles fallan, cuáles tienen historia < 60 meses y cuáles no traen precio. Esos se marcan `activo = false` en el seed hasta resolverlos. **No se asume que todos los tickers del seed son válidos.**
+Antes de cargar historia, un script `verificar_catalogo` descarga 1 mes de cada ticker y reporta cuáles fallan, cuáles tienen historia < `min_dias` días hábiles (504) y cuáles no traen precio. Esos se marcan `activo = false` en el seed hasta resolverlos. **No se asume que todos los tickers del seed son válidos.**
 
 ## Monitoreo
 - Página/Sección "Estado de datos" en la app (sidebar): última corrida, estado, fecha del último precio. Alimenta la regla R5.

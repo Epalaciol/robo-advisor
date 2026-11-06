@@ -1,6 +1,4 @@
 ticker,nombre,clase,region,moneda,es_renta_fija,duration,rol,activo,notas
-CIB,Bancolombia ADR,acciones_colombia_latam,Colombia,USD,false,,invertible,true,Acción individual (ADR); apta para múltiplos
-EC,Ecopetrol ADR,acciones_colombia_latam,Colombia,USD,false,,invertible,true,Acción individual (ADR); apta para múltiplos
 ILF,iShares Latin America 40 ETF,acciones_colombia_latam,Latinoamérica,USD,false,,invertible,true,
 SPY,SPDR S&P 500 ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,
 QQQ,Invesco QQQ (Nasdaq 100),acciones_eeuu,Estados Unidos,USD,false,,invertible,true,
@@ -18,7 +16,12 @@ EMB,iShares JP Morgan USD Emerging Markets Bond ETF,renta_fija_emergente,Mercado
 TES_COP,TES Colombia (curva local),renta_fija_colombia,Colombia,COP,true,5.0,invertible,false,Inactivo: se habilita con el Taller 2 (Nelson-Siegel); no tiene precio en Yahoo
 VNQ,Vanguard Real Estate ETF,reit,Estados Unidos,USD,false,,invertible,true,
 VNQI,Vanguard Global ex-US Real Estate ETF,reit,Resto del mundo,USD,false,,invertible,true,
-BTC-USD,Bitcoin,cripto,Global,USD,false,,invertible,true,Cotiza 7 días; el motor alinea al calendario de acciones
-ETH-USD,Ethereum,cripto,Global,USD,false,,invertible,true,Cotiza 7 días; historia desde 2017
 GLD,SPDR Gold Shares,materias_primas,Global,USD,false,,invertible,true,
+IBIT,iShares Bitcoin Trust ETF,cripto,Global,USD,false,,invertible,true,ETF de bitcoin spot (desde ene-2024); alta volatilidad; historia corta limita la ventana común
+TQQQ,ProShares UltraPro QQQ (3x Nasdaq 100),acciones_eeuu,Estados Unidos,USD,false,,invertible,true,ETF apalancado 3x diario; volatilidad muy alta (uso táctico; ver pruebas de perfil)
+ARKK,ARK Innovation ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,Innovación disruptiva; alta volatilidad
+SMH,VanEck Semiconductor ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,Sector semiconductores; volatilidad alta
+XBI,SPDR S&P Biotech ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,Biotecnología equiponderada; volatilidad alta
+EWZ,iShares MSCI Brazil ETF,acciones_emergentes,Brasil,USD,false,,invertible,true,País emergente; volatilidad alta
+FXI,iShares China Large-Cap ETF,acciones_emergentes,China,USD,false,,invertible,true,China large caps; volatilidad alta
 ACWI,iShares MSCI ACWI ETF,benchmark,Global,USD,false,,benchmark,true,Benchmark de betas; no se ofrece al usuario

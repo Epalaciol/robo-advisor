@@ -24,7 +24,7 @@ from roboadvisor.core.markowitz import (  # noqa: E402
     w_max_efectivo,
 )
 from roboadvisor.core.portafolio_completo import componer  # noqa: E402
-from roboadvisor.core.retornos import estimar, retornos_mensuales  # noqa: E402
+from roboadvisor.core.retornos import estimar, retornos_diarios  # noqa: E402
 from roboadvisor.core.riesgo import beta_portafolio, betas, duration_portafolio  # noqa: E402
 from roboadvisor.data.repositorio_mercado import RepositorioMercado  # noqa: E402
 from roboadvisor.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
@@ -73,15 +73,15 @@ def _calcular(
     ultima_fecha: str | None,
     rf: float,
     w_max: float,
-    ventana_meses: int,
-    min_meses: int,
+    ventana_dias: int,
+    min_dias: int,
     benchmark: str,
 ) -> dict:
     tickers_lista = list(tickers)
-    desde = (pd.Timestamp.today() - pd.DateOffset(months=ventana_meses + 6)).date().isoformat()
+    desde = (pd.Timestamp.today() - pd.DateOffset(months=ventana_dias // 21 + 6)).date().isoformat()
 
     precios = _repo_mercado.precios([*tickers_lista, benchmark], desde)
-    est = estimar(precios[tickers_lista], rf, ventana_meses, min_meses)
+    est = estimar(precios[tickers_lista], rf, ventana_dias, min_dias)
 
     w_max_usado, _ = w_max_efectivo(w_max, len(tickers_lista))
 
@@ -92,7 +92,7 @@ def _calcular(
     nube = portafolios_aleatorios(est, w_max)
     pendiente, intercepto = cal(port_tangente, est.rf)
 
-    retornos = retornos_mensuales(precios).tail(est.n_meses)
+    retornos = retornos_diarios(precios).tail(est.n_obs)
     equity_tickers = [t for t in tickers_lista if not _catalogo_por_ticker[t]["es_renta_fija"]]
     rf_tickers = [t for t in tickers_lista if _catalogo_por_ticker[t]["es_renta_fija"]]
 
@@ -192,8 +192,8 @@ if st.button("Optimizar portafolio", disabled=not puede_calcular, type="primary"
             ultima_fecha,
             rf,
             w_max_usuario,
-            PARAMS.ventana_meses,
-            PARAMS.min_meses,
+            PARAMS.ventana_dias,
+            PARAMS.min_dias,
             PARAMS.benchmark,
         )
     except ValueError as error:
@@ -364,8 +364,11 @@ if resultado:
             )
 
     with tab_supuestos:
-        st.write(f"Ventana de estimación: {PARAMS.ventana_meses} meses (mínimo {PARAMS.min_meses})")
-        st.write(f"Meses efectivamente utilizados: {est.n_meses}")
+        st.write(
+            f"Ventana de estimación: {PARAMS.ventana_dias} días hábiles "
+            f"(mínimo {PARAMS.min_dias})"
+        )
+        st.write(f"Días efectivamente utilizados: {est.n_obs}")
         st.write(f"Tasa libre de riesgo: {est.rf:.2%}")
         st.write("Estimador de covarianza: Ledoit-Wolf (shrinkage)")
         if abs(resultado["w_max_usado"] - resultado["w_max_elegido"]) > 1e-9:

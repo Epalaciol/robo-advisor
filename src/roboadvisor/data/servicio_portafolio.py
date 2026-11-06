@@ -15,7 +15,7 @@ from roboadvisor.config import ParametrosFinancieros
 from roboadvisor.core.markowitz import Portafolio, tangente
 from roboadvisor.core.multiplos import SenalMultiplo, senales_multiplos
 from roboadvisor.core.recomendaciones import ContextoRecomendacion, Recomendacion, generar
-from roboadvisor.core.retornos import estimar, retornos_mensuales
+from roboadvisor.core.retornos import DIAS_ANIO, estimar, retornos_diarios
 from roboadvisor.core.seguimiento import Seguimiento, valorar, valorar_benchmark
 
 
@@ -82,7 +82,7 @@ def construir_resumen(
 
     # Historia larga (independiente de `fecha_base`) para recalcular hoy la
     # estimación/tangente, igual que haría el Constructor si se armara hoy.
-    desde_historia = (hoy - pd.DateOffset(months=params.ventana_meses + 6)).date().isoformat()
+    desde_historia = (hoy - pd.DateOffset(months=params.meses_historia)).date().isoformat()
     precios_historia = repo_mercado.precios([*tickers, benchmark], desde_historia)
 
     pesos_completo = pd.Series({k: float(v) for k, v in portafolio["pesos_completo"].items()})
@@ -103,13 +103,13 @@ def construir_resumen(
     rf_hoy = repo_mercado.rf_ultima()
     tangente_hoy: Portafolio | None = None
     try:
-        est_hoy = estimar(precios_historia[tickers], rf_hoy, params.ventana_meses, params.min_meses)
+        est_hoy = estimar(precios_historia[tickers], rf_hoy, params.ventana_dias, params.min_dias)
         tangente_hoy = tangente(est_hoy, w_max_usado)
     except ValueError:
         tangente_hoy = None  # historia insuficiente hoy (raro, pero posible con catálogo corto)
 
-    retornos_m = retornos_mensuales(precios_historia[tickers]).tail(12)
-    retornos_12m = (1 + retornos_m).prod() - 1 if len(retornos_m) else pd.Series(dtype=float)
+    retornos_d = retornos_diarios(precios_historia[tickers]).tail(DIAS_ANIO)
+    retornos_12m = (1 + retornos_d).prod() - 1 if len(retornos_d) else pd.Series(dtype=float)
 
     antiguedad_dias: dict[str, int] = {}
     for t in tickers:

@@ -6,8 +6,8 @@ from roboadvisor.config import ParametrosFinancieros, Settings
 
 def test_parametros_financieros_valores_por_defecto():
     p = ParametrosFinancieros()
-    assert p.ventana_meses == 60
-    assert p.min_meses == 36
+    assert p.ventana_dias == 1260
+    assert p.min_dias == 504
     assert p.w_max == 0.40
     assert p.n_min_activos == 3
     assert p.n_max_activos == 11

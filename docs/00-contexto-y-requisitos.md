@@ -35,7 +35,7 @@ Registro → encuesta → guardar usuario y resultado → escoger activos y arma
 | Selección | El usuario elige **de 3 a 11 activos**; la app optimiza los pesos | El taller habla de "11 activos"; el equipo pidió que el usuario escoja |
 | Posiciones | Solo largas, sin apalancamiento: `0 ≤ y* ≤ 1` | A=1 podría dar y*>100% |
 | Tope por activo | `w_max = 40%` (config) | Markowitz con medias históricas concentra en 1–2 activos |
-| Retornos | Mensuales simples sobre `adj_close`, ventana **60 meses**, mínimo 36 | Estabilidad y comparabilidad |
+| Retornos | Diarios simples sobre `adj_close`, ventana **1260 días hábiles (~5 años)**, mínimo 504 (~2 años) | Todos los activos son ETF con el mismo calendario; más observaciones por activo |
 | μ | Media histórica anualizada (×12) | Es lo que pide el taller; se documenta su fragilidad |
 | Σ | Covarianza anualizada (×12) con **Ledoit-Wolf** | Reduce ruido de estimación |
 | Tasa libre de riesgo | Letra del Tesoro 3 meses (`^IRX`) | Sin llave de API; coherente con activos en USD |
@@ -62,16 +62,16 @@ Registro → encuesta → guardar usuario y resultado → escoger activos y arma
    (puede estar inflado por una racha reciente, ej. oro 2021–2026); CAPM refleja lo que
    *debería* rendir según su riesgo sistemático, independiente de su historia. Usamos el
    histórico por ser el estándar del enfoque Markowitz clásico del taller.
-8. ¿Por qué retornos mensuales y no diarios para estimar `μ`/`Σ`? Decisión deliberada
-   (ver tabla §3 "Estabilidad y comparabilidad"): con datos diarios, `μ` es mucho más ruidoso
-   (el error estándar de la media baja lento frente a la volatilidad de alta frecuencia) y `Σ`
-   se distorsiona por efectos de no-sincronía/autocorrelación de corto plazo entre activos con
-   distintos calendarios de cotización (cripto 7 días vs. acciones 5, distintas zonas horarias).
-   Como el portafolio es de asignación estratégica de largo plazo (no trading), el ruido diario
-   no aporta señal útil a Markowitz y sí perjudica la estabilidad de la estimación.
+8. ¿Por qué retornos diarios para estimar `μ`/`Σ`? Desde nov-2026 el catálogo es solo ETF (se
+   retiraron CIB, EC, BTC-USD y ETH-USD; el bitcoin entra vía el ETF `IBIT`). Al compartir todos
+   el calendario de la bolsa de EE.UU. ya no hay no-sincronía (cripto 7 días vs. acciones 5) y los
+   retornos diarios dan ~1260 observaciones por activo en vez de 60. `μ` sigue siendo ruidoso
+   (su error estándar depende del horizonte total, no de la frecuencia), pero `Σ` se estima mejor.
+   Limitación: `IBIT` existe desde ene-2024, así que un portafolio que lo incluya usa ~700 días
+   (ventana común), por eso `min_dias = 504`.
 
 ## 6. Riesgos conocidos
 - `yfinance` no es API oficial: puede fallar o limitar peticiones → por eso existe el pipeline y la app nunca llama a Yahoo.
-- Cripto cotiza 7 días; acciones 5 → se alinea al calendario de acciones (cierre mensual).
+- La exposición a cripto es solo vía ETF (`IBIT`, historia corta desde 2024): acota la ventana común.
 - Múltiplos de ETF en Yahoo son incompletos → la regla de múltiplos aplica solo donde hay dato (ver E06).
 - Datos personales de voluntarios: consentimiento explícito, RLS y alias; nada en el repo.

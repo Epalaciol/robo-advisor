@@ -3,7 +3,7 @@ from scripts.cargar_catalogo import cargar_filas
 
 def test_cargar_filas_normaliza_tipos():
     filas = cargar_filas()
-    assert len(filas) == 23
+    assert len(filas) == 26
 
     por_ticker = {f["ticker"]: f for f in filas}
 
@@ -12,7 +12,7 @@ def test_cargar_filas_normaliza_tipos():
     assert tes["activo"] is False
     assert tes["duration"] == 5.0
 
-    gxg = por_ticker["EC"]
-    assert gxg["es_renta_fija"] is False
-    assert gxg["activo"] is True
-    assert gxg["duration"] is None
+    spy = por_ticker["SPY"]
+    assert spy["es_renta_fija"] is False
+    assert spy["activo"] is True
+    assert spy["duration"] is None

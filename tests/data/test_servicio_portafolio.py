@@ -89,7 +89,7 @@ def _portafolio(tickers: list[str], fecha_base: str, rf: float = 0.03) -> dict:
             "retorno_completo": 0.08,
             "sigma_completo": 0.12,
         },
-        "parametros": {"ventana_meses": 60, "min_meses": 36, "w_max": 0.40, "rf": rf},
+        "parametros": {"ventana_dias": 1260, "min_dias": 504, "w_max": 0.40, "rf": rf},
         "fecha_base": fecha_base,
     }
 

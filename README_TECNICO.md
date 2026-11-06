@@ -67,7 +67,7 @@ MOCK_DATA=true streamlit run app/Inicio.py
 Usa un cliente Supabase falso en memoria (`roboadvisor/data/cliente_mock.py`): se siembra con
 el catálogo (`supabase/seed/activos.csv`) y, si existen, los precios reales de `data_local/`
 (corre primero `python scripts/descargar_precios_prueba.py` — 10 años de los ETF del catálogo;
-excluye `CIB`/`EC`, acciones ADR individuales, y la cripto `BTC-USD`/`ETH-USD`, que no son ETF;
+el catálogo es solo ETF;
 `GXG` suele aparecer deslistado en Yahoo, consistente con el `VERIFICAR en E02` que ya tenía
 anotado el catálogo). Entra con `prueba@local.test` / `Prueba1234!`, o con `a3@local.test` / `Prueba1234!` (encuesta ya hecha, A = 3, sin portafolio: listo para armarlo).
 
