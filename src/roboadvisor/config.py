@@ -26,7 +26,7 @@ class ParametrosFinancieros:
     """Parámetros fijos del motor financiero (sin valores mágicos en el código)."""
 
     ventana_dias: int = 1260  # ≈ 5 años de retornos diarios (252 días/año)
-    min_dias: int = 504  # ≈ 2 años; permite ETF jóvenes como IBIT (desde 2024)
+    min_dias: int = 504  # ≈ 2 años
     w_max: float = 0.40
     n_min_activos: int = 3
     n_max_activos: int = 11

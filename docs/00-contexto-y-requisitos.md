@@ -63,15 +63,13 @@ Registro → encuesta → guardar usuario y resultado → escoger activos y arma
    *debería* rendir según su riesgo sistemático, independiente de su historia. Usamos el
    histórico por ser el estándar del enfoque Markowitz clásico del taller.
 8. ¿Por qué retornos diarios para estimar `μ`/`Σ`? Desde nov-2026 el catálogo es solo ETF (se
-   retiraron CIB, EC, BTC-USD y ETH-USD; el bitcoin entra vía el ETF `IBIT`). Al compartir todos
+   retiraron CIB, EC, BTC-USD y ETH-USD; no se incluye cripto). Al compartir todos
    el calendario de la bolsa de EE.UU. ya no hay no-sincronía (cripto 7 días vs. acciones 5) y los
    retornos diarios dan ~1260 observaciones por activo en vez de 60. `μ` sigue siendo ruidoso
    (su error estándar depende del horizonte total, no de la frecuencia), pero `Σ` se estima mejor.
-   Limitación: `IBIT` existe desde ene-2024, así que un portafolio que lo incluya usa ~700 días
-   (ventana común), por eso `min_dias = 504`.
 
 ## 6. Riesgos conocidos
 - `yfinance` no es API oficial: puede fallar o limitar peticiones → por eso existe el pipeline y la app nunca llama a Yahoo.
-- La exposición a cripto es solo vía ETF (`IBIT`, historia corta desde 2024): acota la ventana común.
+- Un ETF con historia corta acota la ventana común de todo el portafolio (el más joven fija el inicio).
 - Múltiplos de ETF en Yahoo son incompletos → la regla de múltiplos aplica solo donde hay dato (ver E06).
 - Datos personales de voluntarios: consentimiento explícito, RLS y alias; nada en el repo.

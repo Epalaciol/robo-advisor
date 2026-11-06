@@ -17,7 +17,6 @@ TES_COP,TES Colombia (curva local),renta_fija_colombia,Colombia,COP,true,5.0,inv
 VNQ,Vanguard Real Estate ETF,reit,Estados Unidos,USD,false,,invertible,true,
 VNQI,Vanguard Global ex-US Real Estate ETF,reit,Resto del mundo,USD,false,,invertible,true,
 GLD,SPDR Gold Shares,materias_primas,Global,USD,false,,invertible,true,
-IBIT,iShares Bitcoin Trust ETF,cripto,Global,USD,false,,invertible,true,ETF de bitcoin spot (desde ene-2024); alta volatilidad; historia corta limita la ventana común
 TQQQ,ProShares UltraPro QQQ (3x Nasdaq 100),acciones_eeuu,Estados Unidos,USD,false,,invertible,true,ETF apalancado 3x diario; volatilidad muy alta (uso táctico; ver pruebas de perfil)
 ARKK,ARK Innovation ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,Innovación disruptiva; alta volatilidad
 SMH,VanEck Semiconductor ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,Sector semiconductores; volatilidad alta
