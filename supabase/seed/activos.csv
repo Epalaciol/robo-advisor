@@ -23,4 +23,11 @@ SMH,VanEck Semiconductor ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,
 XBI,SPDR S&P Biotech ETF,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,Biotecnología equiponderada; volatilidad alta
 EWZ,iShares MSCI Brazil ETF,acciones_emergentes,Brasil,USD,false,,invertible,true,País emergente; volatilidad alta
 FXI,iShares China Large-Cap ETF,acciones_emergentes,China,USD,false,,invertible,true,China large caps; volatilidad alta
+URA,Global X Uranium ETF,materias_primas,Global,USD,false,,invertible,true,Mineras de uranio; volatilidad alta (~43%)
+KWEB,KraneShares CSI China Internet ETF,acciones_emergentes,China,USD,false,,invertible,true,Internet chino; volatilidad alta (~46%)
+UPRO,ProShares UltraPro S&P 500 (3x),acciones_eeuu,Estados Unidos,USD,false,,invertible,true,ETF apalancado 3x diario; volatilidad ~51%
+TNA,Direxion Small Cap Bull 3X,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,ETF apalancado 3x diario (Russell 2000); volatilidad ~67%
+TECL,Direxion Technology Bull 3X,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,ETF apalancado 3x diario (tecnología); volatilidad ~79%
+SOXL,Direxion Semiconductor Bull 3X,acciones_eeuu,Estados Unidos,USD,false,,invertible,true,ETF apalancado 3x diario (semiconductores); volatilidad ~117%
+UCO,ProShares Ultra Bloomberg Crude Oil (2x),materias_primas,Global,USD,false,,invertible,true,ETF apalancado 2x diario sobre futuros de petróleo; volatilidad ~61%
 ACWI,iShares MSCI ACWI ETF,benchmark,Global,USD,false,,benchmark,true,Benchmark de betas; no se ofrece al usuario
