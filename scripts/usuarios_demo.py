@@ -37,6 +37,7 @@ USUARIOS = [
     ("demo.a4@local.test", "Demo A=4 (moderado)", "35-44", 18),
     ("a3@local.test", "Usuario A=3", "35-44", 23),
     ("demo.a1@local.test", "Demo A=1 (agresivo)", "25-34", 26),
+    ("hist.a3@local.test", "Histórico A=3 (mod.-agresivo)", "35-44", 22),
 ]
 
 
