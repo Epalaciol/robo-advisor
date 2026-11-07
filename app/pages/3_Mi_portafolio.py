@@ -14,7 +14,6 @@ from ui.graficos import (  # noqa: E402
     MODO_PORCENTAJE,
     figura_comportamiento,
     figura_composicion,
-    figura_deriva,
 )
 
 from roboadvisor.config import ParametrosFinancieros  # noqa: E402
@@ -159,10 +158,14 @@ with tab_composicion:
         .sort_values(ascending=False)
         .index.tolist()
     )
-    st.plotly_chart(
-        figura_deriva(resumen.pesos_iniciales, resumen.pesos_actuales_riesgo),
-        use_container_width=True,
+    # Mismo orden en ambas dona para que cada activo conserve su color.
+    inicial = resumen.pesos_iniciales.reindex(activos_con_peso)
+    actual = resumen.pesos_actuales_riesgo.reindex(activos_con_peso).fillna(0.0)
+    col1, col2 = st.columns(2)
+    col1.plotly_chart(
+        figura_composicion(inicial, "Al armar el portafolio"), use_container_width=True
     )
+    col2.plotly_chart(figura_composicion(actual, "Hoy (con deriva)"), use_container_width=True)
     retorno_activo = resumen.evolucion_activos.iloc[-1] / 100 - 1
     tabla = pd.DataFrame(
         {

@@ -46,7 +46,7 @@ _CSS_MENU = "<style>" + (ESTATICO / "menu.css").read_text(encoding="utf-8") + "<
 
 def configurar_pagina(titulo: str) -> None:
     """`set_page_config` con el ícono de la marca + logo + estilos. Llamar primero."""
-    st.set_page_config(page_title=f"{titulo} · MFT Investments", page_icon=ICONO)
+    st.set_page_config(page_title=f"{titulo} · MFT Investments", page_icon=ICONO, layout="wide")
     st.logo(LOGO, icon_image=ICONO, size="large")
     st.markdown(_CSS, unsafe_allow_html=True)
     st.markdown(_CSS_MENU, unsafe_allow_html=True)
