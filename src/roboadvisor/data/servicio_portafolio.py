@@ -39,6 +39,7 @@ class ResumenPortafolio:
     tangente_hoy: Portafolio | None
     recomendaciones: list[Recomendacion]
     senales_multiplos: list[SenalMultiplo]
+    evolucion_activos: pd.DataFrame  # precio de cada activo desde la fecha base, base 100
 
 
 def _pesos_actuales_riesgo(seguimiento: Seguimiento) -> pd.Series:
@@ -96,6 +97,11 @@ def construir_resumen(
         seguimiento_benchmark = valorar_benchmark(
             precios[benchmark].dropna(), fecha_base, nombre=benchmark
         )
+
+    precios_periodo = precios.loc[precios.index >= fecha_base, tickers].dropna(how="all")
+    evolucion_activos = (
+        precios_periodo / precios_periodo.iloc[0] * 100 if len(precios_periodo) else precios_periodo
+    )
 
     pesos_iniciales = pd.Series({k: float(v) for k, v in portafolio["pesos_riesgo"].items()})
     pesos_actuales_riesgo = _pesos_actuales_riesgo(seguimiento)
@@ -159,4 +165,5 @@ def construir_resumen(
         tangente_hoy=tangente_hoy,
         recomendaciones=recomendaciones,
         senales_multiplos=senales,
+        evolucion_activos=evolucion_activos,
     )

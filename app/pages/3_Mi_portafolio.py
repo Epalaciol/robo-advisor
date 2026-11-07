@@ -9,7 +9,13 @@ import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 from ui.auth import cliente_sesion_actual, requerir_sesion  # noqa: E402
 from ui.estilos import AVISO_ACADEMICO, configurar_pagina, pie_de_pagina  # noqa: E402
-from ui.graficos import figura_composicion, figura_valor_vs_benchmark  # noqa: E402
+from ui.graficos import (  # noqa: E402
+    MODO_BASE_100,
+    MODO_PORCENTAJE,
+    figura_comportamiento,
+    figura_composicion,
+    figura_deriva,
+)
 
 from roboadvisor.config import ParametrosFinancieros  # noqa: E402
 from roboadvisor.data.cliente import modo_mock_activo  # noqa: E402
@@ -114,9 +120,9 @@ encuesta = resumen.encuesta
 portafolio = resumen.portafolio
 
 st.caption(
-    f"Perfil **{encuesta['perfil']}** (A = {encuesta['a']}) · constituido el "
-    f"{portafolio.get('created_at', '—')[:10]} · datos desde **{resumen.fecha_base.date()}** "
-    f"({resumen.dias_desde_base} días) · último dato: **{resumen.ultima_fecha_precio or '—'}**"
+    f"Perfil **{encuesta['perfil']}** (A = {encuesta['a']}) · portafolio armado con datos al "
+    f"**{resumen.fecha_base.date()}** ({resumen.dias_desde_base} días atrás) · "
+    f"último dato: **{resumen.ultima_fecha_precio or '—'}**"
 )
 
 if not resumen.seguimiento.suficiente:
@@ -133,39 +139,93 @@ if not resumen.seguimiento.suficiente:
     pie_de_pagina()
     st.stop()
 
-tab_composicion, tab_comportamiento, tab_recomendaciones, tab_referencia = st.tabs(
-    ["Composición", "Comportamiento", "Recomendaciones", "Referencia a la fecha"]
+tab_comportamiento, tab_composicion, tab_recomendaciones, tab_referencia = st.tabs(
+    ["Comportamiento", "Composición", "Recomendaciones", "Referencia a la fecha"]
 )
 
 with tab_composicion:
-    st.caption("Portafolio de riesgo: ponderaciones a la constitución vs. actuales (deriva).")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.plotly_chart(
-            figura_composicion(resumen.pesos_iniciales, "Constitución"),
-            use_container_width=True,
-        )
-    with col2:
-        st.plotly_chart(
-            figura_composicion(resumen.pesos_actuales_riesgo, "Actual (con deriva)"),
-            use_container_width=True,
-        )
+    st.markdown(
+        "**Qué es esto.** Al armar el portafolio se compró cada ETF con un peso fijo. "
+        "Desde entonces *no se rebalanceó* (nadie vendió ni compró): cada activo sube o "
+        "baja por su cuenta, así que su peso cambia. A ese cambio le llamamos **deriva**: "
+        "el activo que rinde mejor pesa más, el que rinde peor pesa menos."
+    )
+    st.caption(
+        "Pesos sobre la parte de riesgo (suman 100 %, sin contar la parte en tasa libre "
+        "de riesgo). Solo se muestran los activos que el optimizador sí eligió."
+    )
+    activos_con_peso = (
+        resumen.pesos_iniciales[resumen.pesos_iniciales > 0.0005]
+        .sort_values(ascending=False)
+        .index.tolist()
+    )
+    st.plotly_chart(
+        figura_deriva(resumen.pesos_iniciales, resumen.pesos_actuales_riesgo),
+        use_container_width=True,
+    )
+    retorno_activo = resumen.evolucion_activos.iloc[-1] / 100 - 1
     tabla = pd.DataFrame(
         {
-            "inicial": resumen.pesos_iniciales,
-            "hoy": resumen.pesos_actuales_riesgo,
+            "Peso al armar": resumen.pesos_iniciales,
+            "Peso hoy": resumen.pesos_actuales_riesgo,
+            "Retorno del activo desde la fecha base": retorno_activo,
         }
-    ).fillna(0.0)
-    tabla["deriva"] = tabla["hoy"] - tabla["inicial"]
-    st.dataframe(tabla.style.format("{:.2%}"))
+    ).loc[activos_con_peso]
+    tabla["Cambio de peso (deriva)"] = tabla["Peso hoy"] - tabla["Peso al armar"]
+    tabla = tabla[
+        [
+            "Peso al armar",
+            "Peso hoy",
+            "Cambio de peso (deriva)",
+            "Retorno del activo desde la fecha base",
+        ]
+    ]
+    st.dataframe(
+        tabla.style.format(
+            {
+                "Peso al armar": "{:.1%}",
+                "Peso hoy": "{:.1%}",
+                "Cambio de peso (deriva)": "{:+.1%}",
+                "Retorno del activo desde la fecha base": "{:+.1%}",
+            }
+        )
+    )
+    sin_peso = [t for t in resumen.pesos_iniciales.index if t not in activos_con_peso]
+    if sin_peso:
+        st.caption(
+            f"No se muestran {', '.join(sorted(sin_peso))}: estaban en el universo pero el "
+            "optimizador les asignó 0 % al armar el portafolio."
+        )
 
 with tab_comportamiento:
     seg = resumen.seguimiento
+    st.caption(
+        "Cómo ha evolucionado tu portafolio desde la fecha en que se armó, comparado con "
+        f"el benchmark ({resumen.benchmark}, mercado global). Es el punto de partida para "
+        "entender la pestaña *Composición*."
+    )
+    col_modo, col_activos = st.columns([2, 2])
+    modo = col_modo.radio(
+        "Escala",
+        [MODO_BASE_100, MODO_PORCENTAJE],
+        horizontal=True,
+        help="Base 100: el portafolio parte de 100 (115 = ganó 15 %). "
+        "Porcentaje: variación acumulada desde la fecha base (+15 % = ganó 15 %).",
+    )
+    ver_activos = col_activos.checkbox(
+        "Mostrar cada activo del portafolio",
+        value=True,
+        help="Líneas finas: cómo le fue a cada ETF por separado. "
+        "Explican por qué el portafolio subió o bajó.",
+    )
+    activos_con_peso = [t for t, w in resumen.pesos_iniciales.items() if w > 0.0005]
     st.plotly_chart(
-        figura_valor_vs_benchmark(
+        figura_comportamiento(
             seg.valor,
             resumen.seguimiento_benchmark.valor if resumen.seguimiento_benchmark else None,
             resumen.benchmark,
+            resumen.evolucion_activos[activos_con_peso] if ver_activos else None,
+            modo,
         ),
         use_container_width=True,
     )
@@ -237,7 +297,10 @@ with tab_referencia:
                 "óptimo a la fecha": resumen.tangente_hoy.w,
             }
         ).fillna(0.0)
-        st.dataframe(comparacion.style.format("{:.2%}"))
+        comparacion = comparacion[(comparacion > 0.0005).any(axis=1)].sort_values(
+            "registrado", ascending=False
+        )
+        st.dataframe(comparacion.style.format("{:.1%}"))
         st.caption(
             f"Sharpe del óptimo a la fecha: {resumen.tangente_hoy.sharpe:.2f} · "
             f"σ: {resumen.tangente_hoy.sigma:.1%} · retorno: {resumen.tangente_hoy.retorno:.1%}"

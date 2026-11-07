@@ -337,45 +337,136 @@ def figura_composicion(pesos: pd.Series, titulo: str) -> go.Figure:
     return fig
 
 
+MODO_BASE_100 = "Base 100"
+MODO_PORCENTAJE = "Porcentaje (%)"
+
+
+def _convertir(serie: pd.Series, modo: str) -> pd.Series:
+    """Base 100 → tal cual; porcentaje → variación desde la fecha base (`valor − 100`)."""
+    return serie if modo == MODO_BASE_100 else serie - 100
+
+
+def figura_comportamiento(
+    valor_portafolio: pd.Series,
+    valor_benchmark: pd.Series | None,
+    nombre_benchmark: str,
+    evolucion_activos: pd.DataFrame | None = None,
+    modo: str = MODO_BASE_100,
+) -> go.Figure:
+    """Evolución desde la fecha base: portafolio, benchmark y (opcional) cada activo.
+
+    `modo`: "Base 100" (el valor parte de 100) o "Porcentaje (%)" (variación acumulada
+    desde la fecha base). "Emphasis": el portafolio lleva el color vivo; el benchmark es
+    gris; los activos usan sus colores y líneas finas para explicar de dónde sale el
+    resultado del portafolio.
+    """
+    en_porcentaje = modo == MODO_PORCENTAJE
+    fmt_hover = "%{x|%Y-%m-%d}: %{y:+.1f}%" if en_porcentaje else "%{x|%Y-%m-%d}: %{y:.1f}"
+    fig = go.Figure()
+
+    if evolucion_activos is not None and not evolucion_activos.empty:
+        for i, ticker in enumerate(evolucion_activos.columns):
+            serie = _convertir(evolucion_activos[ticker].dropna(), modo)
+            fig.add_trace(
+                go.Scatter(
+                    x=serie.index,
+                    y=serie,
+                    mode="lines",
+                    name=ticker,
+                    line={"color": PALETA_ACTIVOS[i % len(PALETA_ACTIVOS)], "width": 1.2},
+                    opacity=0.8,
+                    hovertemplate=f"{ticker} {fmt_hover}<extra></extra>",
+                )
+            )
+
+    if valor_benchmark is not None and not valor_benchmark.empty:
+        serie = _convertir(valor_benchmark, modo)
+        fig.add_trace(
+            go.Scatter(
+                x=serie.index,
+                y=serie,
+                mode="lines",
+                name=nombre_benchmark,
+                line={"color": COLOR_CONTEXTO, "width": 2, "dash": "dot"},
+                hovertemplate=f"{nombre_benchmark} {fmt_hover}<extra></extra>",
+            )
+        )
+
+    serie = _convertir(valor_portafolio, modo)
+    fig.add_trace(
+        go.Scatter(
+            x=serie.index,
+            y=serie,
+            mode="lines",
+            name="Tu portafolio",
+            line={"color": COLOR_PORTAFOLIO_USUARIO, "width": 3},
+            hovertemplate=f"Tu portafolio {fmt_hover}<extra></extra>",
+        )
+    )
+
+    referencia = 0 if en_porcentaje else 100
+    fig.add_hline(y=referencia, line={"color": COLOR_CONTEXTO, "width": 1, "dash": "dash"})
+    fig.update_layout(
+        title=(
+            "Variación acumulada desde que armaste tu portafolio"
+            if en_porcentaje
+            else "Valor desde que armaste tu portafolio (parte de 100)"
+        ),
+        xaxis_title=None,
+        yaxis_title="Variación acumulada (%)" if en_porcentaje else "Valor (base 100)",
+        yaxis_ticksuffix="%" if en_porcentaje else "",
+        height=460,
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02},
+        hovermode="x unified",
+    )
+    return fig
+
+
 def figura_valor_vs_benchmark(
     valor_portafolio: pd.Series,
     valor_benchmark: pd.Series | None,
     nombre_benchmark: str,
 ) -> go.Figure:
-    """Curva de valor (base 100) del portafolio desde `fecha_base`, frente al
-    benchmark si hay datos. "Emphasis": el portafolio del usuario lleva el
-    único color vivo; el benchmark es contexto en gris.
-    """
+    """Curva de valor (base 100) del portafolio frente al benchmark."""
+    return figura_comportamiento(valor_portafolio, valor_benchmark, nombre_benchmark)
+
+
+def figura_deriva(inicial: pd.Series, actual: pd.Series) -> go.Figure:
+    """Barras horizontales comparando el peso al armar el portafolio con el peso de hoy,
+    ordenadas de mayor a menor peso inicial. Solo activos con peso > 0."""
+    orden = inicial[inicial > 0.0005].sort_values(ascending=True).index  # abajo→arriba
     fig = go.Figure()
-
-    if valor_benchmark is not None and not valor_benchmark.empty:
-        fig.add_trace(
-            go.Scatter(
-                x=valor_benchmark.index,
-                y=valor_benchmark,
-                mode="lines",
-                name=nombre_benchmark,
-                line={"color": COLOR_CONTEXTO, "width": 2},
-                hovertemplate="%{x|%Y-%m-%d}: %{y:.1f}<extra></extra>",
-            )
-        )
-
     fig.add_trace(
-        go.Scatter(
-            x=valor_portafolio.index,
-            y=valor_portafolio,
-            mode="lines",
-            name="Tu portafolio",
-            line={"color": COLOR_PORTAFOLIO_USUARIO, "width": 2.5},
-            hovertemplate="%{x|%Y-%m-%d}: %{y:.1f}<extra></extra>",
+        go.Bar(
+            y=list(orden),
+            x=[float(inicial[t]) for t in orden],
+            orientation="h",
+            name="Al armar el portafolio",
+            marker={"color": COLOR_CONTEXTO},
+            text=[f"{inicial[t]:.1%}" for t in orden],
+            textposition="outside",
+            hovertemplate="%{y} al armar: %{x:.1%}<extra></extra>",
         )
     )
-
+    fig.add_trace(
+        go.Bar(
+            y=list(orden),
+            x=[float(actual.get(t, 0.0)) for t in orden],
+            orientation="h",
+            name="Hoy",
+            marker={"color": COLOR_PORTAFOLIO_USUARIO},
+            text=[f"{actual.get(t, 0.0):.1%}" for t in orden],
+            textposition="outside",
+            hovertemplate="%{y} hoy: %{x:.1%}<extra></extra>",
+        )
+    )
     fig.update_layout(
-        title="Valor desde que armaste tu portafolio (base 100)",
-        xaxis_title=None,
-        yaxis_title="Valor (base 100)",
-        height=380,
-        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02},
+        barmode="group",
+        title="Peso de cada activo: al armar vs. hoy",
+        xaxis_tickformat=".0%",
+        xaxis_range=[0, max(float(inicial.max()), float(actual.max())) * 1.2],
+        height=120 + 90 * len(orden),
+        margin={"l": 10, "r": 10, "t": 90, "b": 10},
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.0, "traceorder": "reversed"},
     )
     return fig
