@@ -1,0 +1,220 @@
+{
+ "fecha_calculo": "2026-03-17",
+ "tau": 3.7,
+ "betas": [
+  0.12790448628048,
+  -0.0313297355745254,
+  0.0436569038355564
+ ],
+ "nota": "Betas guardados en el Excel (valores iniciales, NO óptimos). 2 papeles con cupón enlazado a 0 en el Excel (excel_roto=true). El cupón del TFIT 2046-07-25 en el Excel (13.5) difiere del informe del 2-oct (11.5): probable errata.",
+ "papeles": [
+  {
+   "vencimiento": "2026-06-02",
+   "cupon": 0.0,
+   "precio_sucio": 97.79,
+   "precio_estimado_excel": 98.0348305407576,
+   "precio_estimado_correcto": 98.0348305408,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2026-08-25",
+   "cupon": 0.0,
+   "precio_sucio": 94.992,
+   "precio_estimado_excel": 95.85328599928783,
+   "precio_estimado_correcto": 95.8532859993,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2026-09-22",
+   "cupon": 0.0,
+   "precio_sucio": 94.031,
+   "precio_estimado_excel": 95.11954862596424,
+   "precio_estimado_correcto": 95.119548626,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2026-10-20",
+   "cupon": 0.0,
+   "precio_sucio": 93.089,
+   "precio_estimado_excel": 94.38328372080585,
+   "precio_estimado_correcto": 94.3832837208,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2026-11-17",
+   "cupon": 0.0,
+   "precio_sucio": 92.24,
+   "precio_estimado_excel": 93.64491426922002,
+   "precio_estimado_correcto": 93.6449142692,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2026-12-15",
+   "cupon": 0.0,
+   "precio_sucio": 91.405,
+   "precio_estimado_excel": 92.9048457445894,
+   "precio_estimado_correcto": 92.9048457446,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2027-01-26",
+   "cupon": 0.0,
+   "precio_sucio": 89.932,
+   "precio_estimado_excel": 91.7924023450881,
+   "precio_estimado_correcto": 91.7924023451,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2027-02-23",
+   "cupon": 0.0,
+   "precio_sucio": 89.109,
+   "precio_estimado_excel": 91.04974940055443,
+   "precio_estimado_correcto": 91.0497494006,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2026-08-26",
+   "cupon": 7.5,
+   "precio_sucio": 102.182,
+   "precio_estimado_excel": 103.01416424912601,
+   "precio_estimado_correcto": 103.0141642491,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2027-11-03",
+   "cupon": 5.75,
+   "precio_sucio": 90.986,
+   "precio_estimado_excel": 84.35801139350268,
+   "precio_estimado_correcto": 94.6144213868,
+   "excel_roto": true
+  },
+  {
+   "vencimiento": "2028-04-28",
+   "cupon": 6.0,
+   "precio_sucio": 91.462,
+   "precio_estimado_excel": 95.84807134569678,
+   "precio_estimado_correcto": 95.8480713457,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2029-08-22",
+   "cupon": 11.0,
+   "precio_sucio": 98.471,
+   "precio_estimado_excel": 103.99985931959431,
+   "precio_estimado_correcto": 103.9998593196,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2030-02-27",
+   "cupon": 12.5,
+   "precio_sucio": 95.836,
+   "precio_estimado_excel": 102.30870968193618,
+   "precio_estimado_correcto": 102.3087096819,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2030-09-18",
+   "cupon": 7.75,
+   "precio_sucio": 84.006,
+   "precio_estimado_excel": 59.47505576896859,
+   "precio_estimado_correcto": 89.2209179251,
+   "excel_roto": true
+  },
+  {
+   "vencimiento": "2031-03-26",
+   "cupon": 7.0,
+   "precio_sucio": 82.323,
+   "precio_estimado_excel": 87.97702455317545,
+   "precio_estimado_correcto": 87.9770245532,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2031-03-26",
+   "cupon": 7.0,
+   "precio_sucio": 82.916,
+   "precio_estimado_excel": 87.97702455317545,
+   "precio_estimado_correcto": 87.9770245532,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2032-06-30",
+   "cupon": 7.0,
+   "precio_sucio": 77.561,
+   "precio_estimado_excel": 82.06333936153447,
+   "precio_estimado_correcto": 82.0633393615,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2033-02-09",
+   "cupon": 13.25,
+   "precio_sucio": 99.179,
+   "precio_estimado_excel": 104.84708665489902,
+   "precio_estimado_correcto": 104.8470866549,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2034-10-18",
+   "cupon": 7.25,
+   "precio_sucio": 72.946,
+   "precio_estimado_excel": 75.51753701645433,
+   "precio_estimado_correcto": 75.5175370165,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2035-01-24",
+   "cupon": 11.75,
+   "precio_sucio": 92.053,
+   "precio_estimado_excel": 97.17575532051087,
+   "precio_estimado_correcto": 97.1757553205,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2036-07-09",
+   "cupon": 6.25,
+   "precio_sucio": 66.657,
+   "precio_estimado_excel": 68.0238904914281,
+   "precio_estimado_correcto": 68.0238904914,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2040-11-28",
+   "cupon": 12.75,
+   "precio_sucio": 99.19,
+   "precio_estimado_excel": 103.76500229125965,
+   "precio_estimado_correcto": 103.7650022913,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2042-05-28",
+   "cupon": 9.25,
+   "precio_sucio": 80.998,
+   "precio_estimado_excel": 83.70106049642185,
+   "precio_estimado_correcto": 83.7010604964,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2046-07-25",
+   "cupon": 13.5,
+   "precio_sucio": 94.406,
+   "precio_estimado_excel": 113.88099998329695,
+   "precio_estimado_correcto": 113.8809999833,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2050-10-26",
+   "cupon": 7.25,
+   "precio_sucio": 60.725,
+   "precio_estimado_excel": 61.695683385409644,
+   "precio_estimado_correcto": 61.6956833854,
+   "excel_roto": false
+  },
+  {
+   "vencimiento": "2058-03-13",
+   "cupon": 12.0,
+   "precio_sucio": 89.863,
+   "precio_estimado_excel": 94.26323848495187,
+   "precio_estimado_correcto": 94.263238485,
+   "excel_roto": false
+  }
+ ]
+}

@@ -76,3 +76,17 @@ Para tener ≥ 3 días de pipeline corriendo antes de E11, **activar el workflow
 2. Motor financiero: E03, E04, E05.
 3. App: E07, E08, E09, E10.
 4. Reglas, múltiplos, encuestas a voluntarios y reporte: E06, E12.
+
+## Taller 2 (entrega jueves 19-nov)
+Planeación completa en `docs/taller-2/` (empezar por `docs/taller-2/README.md`: trazabilidad contra el enunciado, orden y fechas).
+
+| ID | Entregable | Depende de |
+|---|---|---|
+| E13 | Parser del informe diario de TES (PDF → filas validadas) | E00 |
+| E14 | Migración TES, descarga de irc.gov.co, carga y workflow | E01, E13, E16 |
+| E15 | Motor Nelson-Siegel (precio, calibración, curva) | E00 |
+| E16 | TIR teórica vs. observada, duración, convexidad, DV01 ($1.000 M = 10⁹ COP), señales | E15 |
+| E17 | Sección pública de TES sin login | E14, E16, E07 |
+| E18 | Excel y reporte del 2-oct | E16 |
+
+Ruta crítica: **E15 → E16 → E18**, sin base de datos (usa la tabla del enunciado). Puede avanzar en paralelo con E11/E12.
