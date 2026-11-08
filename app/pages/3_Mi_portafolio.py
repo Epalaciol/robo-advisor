@@ -146,7 +146,7 @@ with tab_composicion:
     st.markdown(
         "**Qué es esto.** Al armar el portafolio se compró cada ETF con un peso fijo. "
         "Desde entonces *no se rebalanceó* (nadie vendió ni compró): cada activo sube o "
-        "baja por su cuenta, así que su peso cambia. A ese cambio le llamamos **deriva**: "
+        "baja por su cuenta, así que su peso cambia: "
         "el activo que rinde mejor pesa más, el que rinde peor pesa menos."
     )
     st.caption(
@@ -165,7 +165,7 @@ with tab_composicion:
     col1.plotly_chart(
         figura_composicion(inicial, "Al armar el portafolio"), use_container_width=True
     )
-    col2.plotly_chart(figura_composicion(actual, "Hoy (con deriva)"), use_container_width=True)
+    col2.plotly_chart(figura_composicion(actual, "Hoy (peso actual)"), use_container_width=True)
     retorno_activo = resumen.evolucion_activos.iloc[-1] / 100 - 1
     tabla = pd.DataFrame(
         {
@@ -174,12 +174,12 @@ with tab_composicion:
             "Retorno del activo desde la fecha base": retorno_activo,
         }
     ).loc[activos_con_peso]
-    tabla["Cambio de peso (deriva)"] = tabla["Peso hoy"] - tabla["Peso al armar"]
+    tabla["Cambio de peso"] = tabla["Peso hoy"] - tabla["Peso al armar"]
     tabla = tabla[
         [
             "Peso al armar",
             "Peso hoy",
-            "Cambio de peso (deriva)",
+            "Cambio de peso",
             "Retorno del activo desde la fecha base",
         ]
     ]
@@ -188,7 +188,7 @@ with tab_composicion:
             {
                 "Peso al armar": "{:.1%}",
                 "Peso hoy": "{:.1%}",
-                "Cambio de peso (deriva)": "{:+.1%}",
+                "Cambio de peso": "{:+.1%}",
                 "Retorno del activo desde la fecha base": "{:+.1%}",
             }
         )

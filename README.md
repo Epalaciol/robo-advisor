@@ -32,7 +32,7 @@ También puede **crear su propia cuenta** en la pestaña "Crear cuenta" (solo pi
    - el **portafolio completo**: cuánto va a riesgo (**y\***) y cuánto al activo libre de riesgo, según su A (línea CAL, sin apalancamiento),
    - gráficos de la frontera, la CAL y su curva de indiferencia, además de betas y duration.
    El portafolio se guarda **una sola vez**.
-4. **Seguimiento.** En cada ingreso se muestra cómo ha rendido el portafolio con los precios nuevos frente al benchmark (ACWI), la deriva de pesos y **recomendaciones con reglas fijas** (sin inteligencia artificial): desvío del óptimo, volatilidad fuera de perfil, activos rezagados, señales de múltiplos y datos desactualizados.
+4. **Seguimiento.** En cada ingreso se muestra cómo ha rendido el portafolio con los precios nuevos frente al benchmark (ACWI), el cambio de peso de cada activo y **recomendaciones con reglas fijas** (sin inteligencia artificial): desvío del óptimo, volatilidad fuera de perfil, activos rezagados, señales de múltiplos y datos desactualizados.
 
 > Para ver el seguimiento con movimiento recomendamos dejar pasar algunos días de precios; el pipeline diario trae los datos nuevos cada tarde.
 
