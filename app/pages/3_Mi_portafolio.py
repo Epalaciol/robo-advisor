@@ -258,8 +258,21 @@ with tab_comportamiento:
     col2.metric("σ esperada (constitución)", f"{resumen.sigma_esperado:.1%}")
 
     if seg.contribucion is not None:
-        st.markdown("**Contribución al valor por activo** (puntos, base 100)")
-        st.dataframe(seg.contribucion.rename("contribución").to_frame().style.format("{:.2f}"))
+        st.markdown("**¿Qué activo explica el resultado?** Contribución de cada activo")
+        st.caption(
+            "El portafolio parte de 100. Cada fila dice cuántos puntos sumó o restó ese "
+            "activo (su peso inicial × su retorno); la suma de las filas es el cambio total "
+            "del portafolio. Ejemplo: −5,5 significa que ese activo restó 5,5 puntos de los 100."
+        )
+        con_peso = [
+            t for t, w in resumen.pesos_iniciales.sort_values(ascending=False).items() if w > 0.0005
+        ]
+        puntos = (seg.contribucion * 100).reindex(con_peso)
+        if float(resumen.portafolio.get("peso_rf", 0)) > 0.0005:
+            puntos["Tasa libre de riesgo"] = float(seg.contribucion.get("RF", 0.0)) * 100
+        tabla_contribucion = puntos.rename("Puntos aportados").to_frame()
+        tabla_contribucion.loc["Total del portafolio"] = float(puntos.sum())
+        st.dataframe(tabla_contribucion.style.format("{:+.2f}"))
 
 with tab_recomendaciones:
     st.caption(AVISO_ACADEMICO)
