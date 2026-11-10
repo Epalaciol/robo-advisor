@@ -37,6 +37,10 @@ hr {{ border: none; height: 2px;
   justify-content:center; font-weight:700; color:#fff;
   background: linear-gradient(135deg, #e8761e, #8a5cf5); }}
 [data-testid="stSidebar"] {{ border-right: 1px solid #2a2530; }}
+@media (max-width: 768px) {{
+  .mft-barra {{ flex-wrap: wrap; gap: 0.6rem; }}
+  .mft-usuario {{ text-align: left; }}
+}}
 </style>
 """
 

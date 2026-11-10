@@ -407,16 +407,12 @@ def figura_comportamiento(
     referencia = 0 if en_porcentaje else 100
     fig.add_hline(y=referencia, line={"color": COLOR_CONTEXTO, "width": 1, "dash": "dash"})
     fig.update_layout(
-        title=(
-            "Variación acumulada desde que armaste tu portafolio"
-            if en_porcentaje
-            else "Valor desde que armaste tu portafolio (parte de 100)"
-        ),
         xaxis_title=None,
         yaxis_title="Variación acumulada (%)" if en_porcentaje else "Valor (base 100)",
         yaxis_ticksuffix="%" if en_porcentaje else "",
         height=460,
-        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02},
+        margin={"l": 10, "r": 10, "t": 40, "b": 10},
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.0},
         hovermode="x unified",
     )
     return fig

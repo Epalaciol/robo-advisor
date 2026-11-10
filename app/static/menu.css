@@ -22,3 +22,8 @@ section[data-testid="stSidebar"][data-collapsed="true"] [data-testid="stSidebarN
 section[data-testid="stSidebar"][data-collapsed="true"] [data-testid="stSidebarNavLink"]::before {
   margin-right: 0;
 }
+
+/* Celular: el riel de íconos taparía el contenido; se oculta y queda el botón » para abrir el menú. */
+@media (max-width: 768px) {
+  section[data-testid="stSidebar"][data-collapsed="true"] { display: none !important; }
+}

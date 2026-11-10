@@ -221,6 +221,11 @@ with tab_comportamiento:
         help="Líneas finas: cómo le fue a cada ETF por separado. "
         "Explican por qué el portafolio subió o bajó.",
     )
+    st.markdown(
+        "**Variación acumulada desde que armaste tu portafolio**"
+        if modo == MODO_PORCENTAJE
+        else "**Valor desde que armaste tu portafolio** (parte de 100)"
+    )
     activos_con_peso = [t for t, w in resumen.pesos_iniciales.items() if w > 0.0005]
     st.plotly_chart(
         figura_comportamiento(
