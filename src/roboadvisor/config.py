@@ -39,6 +39,7 @@ class ParametrosFinancieros:
     n_max_activos: int = 11
     umbral_desvio: float = 0.05
     min_peso_alerta: float = 0.05
+    peso_min_guardado: float = 0.0005  # activos por debajo de esto no se guardan (≈ 0 %)
     tol_vol: float = 0.25
     dias_stale: int = 5
     tilt_multiplos: float = 0.025

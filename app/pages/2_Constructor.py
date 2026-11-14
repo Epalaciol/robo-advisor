@@ -532,6 +532,17 @@ if resultado:
         st.write(f"Fecha de corte de los datos (fecha_base): {resultado['fecha_base']}")
 
     st.subheader("3. Registro del portafolio")
+    guardados = [t for t, w in port_tangente.w.items() if w > PARAMS.peso_min_guardado]
+    descartados = [t for t in port_tangente.w.index if t not in guardados]
+    st.write(
+        f"Se guardarán los **{len(guardados)} activos con peso**: {', '.join(sorted(guardados))}."
+        + (
+            f" Quedan fuera {', '.join(sorted(descartados))} (el optimizador les asignó 0 %); "
+            "el universo que elegiste se conserva como referencia."
+            if descartados
+            else ""
+        )
+    )
     confirmar = st.checkbox(
         "Entiendo que el portafolio se registra una única vez y no podrá modificarse."
     )

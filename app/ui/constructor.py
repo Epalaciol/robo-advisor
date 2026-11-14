@@ -21,13 +21,16 @@ def armar_registro_portafolio(
     params: ParametrosFinancieros,
     fecha_base: str,
 ) -> dict:
-    """Payload para `portafolios.insert(...)`: tickers ordenados, pesos que
-    suman 1 (±redondeo), `y_star` en `[0, 1]`.
+    """Payload para `portafolios.insert(...)`: solo los activos que quedaron con peso
+    (`> params.peso_min_guardado`), ordenados y con pesos que suman 1 (±redondeo),
+    `y_star` en `[0, 1]`. El universo elegido (con los de 0 %) queda en `parametros`.
     """
-    tickers_ordenados = sorted(port_riesgo.w.index)
-    pesos_riesgo = {t: round(float(port_riesgo.w[t]), 6) for t in tickers_ordenados}
+    universo = sorted(port_riesgo.w.index)
+    tickers_ordenados = [t for t in universo if port_riesgo.w[t] > params.peso_min_guardado]
+    total_riesgo = float(port_riesgo.w[tickers_ordenados].sum())
+    pesos_riesgo = {t: round(float(port_riesgo.w[t]) / total_riesgo, 6) for t in tickers_ordenados}
     pesos_completo = {
-        t: round(float(port_completo.pesos_completo[t]), 6) for t in tickers_ordenados
+        t: round(float(port_completo.y) * pesos_riesgo[t], 6) for t in tickers_ordenados
     }
 
     return {
@@ -52,6 +55,7 @@ def armar_registro_portafolio(
         "parametros": {
             "ventana_dias": params.ventana_dias,
             "min_dias": params.min_dias,
+            "universo": universo,
             "w_min": params.w_min,
             "w_max": params.w_max,
             "rf": est.rf,

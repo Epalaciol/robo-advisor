@@ -66,3 +66,32 @@ def test_armar_registro_portafolio_tipos_y_sumas():
     assert isinstance(payload["metricas"], dict)
     assert isinstance(payload["parametros"], dict)
     assert payload["parametros"]["w_max"] == PARAMS.w_max
+
+
+def test_armar_registro_solo_guarda_activos_con_peso_y_anota_el_universo():
+    est = _estimacion()
+    w = pd.Series({"B": 0.6, "A": 0.4, "C": 0.0})  # C quedó en 0 %
+    retorno = float(w @ est.mu)
+    sigma_p = float((w.to_numpy() @ est.sigma.to_numpy() @ w.to_numpy()) ** 0.5)
+    port_riesgo = Portafolio(
+        w=w, retorno=retorno, sigma=sigma_p, sharpe=(retorno - est.rf) / sigma_p
+    )
+    port_completo = componer(port_riesgo, est.rf, a=4)
+
+    payload = armar_registro_portafolio(
+        user_id="u",
+        encuesta_id="e",
+        a_usado=4,
+        perfil_usado="moderado",
+        est=est,
+        port_riesgo=port_riesgo,
+        port_completo=port_completo,
+        params=PARAMS,
+        fecha_base="2024-12-31",
+    )
+
+    assert payload["tickers"] == ["A", "B"]
+    assert set(payload["pesos_riesgo"]) == {"A", "B"}
+    assert abs(sum(payload["pesos_riesgo"].values()) - 1.0) < 1e-6
+    assert abs(sum(payload["pesos_completo"].values()) - payload["y_star"]) < 1e-5
+    assert payload["parametros"]["universo"] == ["A", "B", "C"]
