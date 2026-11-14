@@ -47,6 +47,23 @@ class RepositorioMercado:
         # Siempre todas las columnas pedidas (p. ej. desde un domingo solo hay cripto).
         return pivote.reindex(columns=tickers)
 
+    def primera_fecha_por_ticker(self, tickers: list[str]) -> dict[str, pd.Timestamp]:
+        """Primera fecha con precio de cada ticker (define cuánta historia tiene)."""
+        salida: dict[str, pd.Timestamp] = {}
+        for ticker in tickers:
+            fila = (
+                self._cliente.table("precios")
+                .select("fecha")
+                .eq("ticker", ticker)
+                .order("fecha")
+                .limit(1)
+                .execute()
+                .data
+            )
+            if fila:
+                salida[ticker] = pd.Timestamp(fila[0]["fecha"])
+        return salida
+
     def rf_ultima(self) -> float:
         """Tasa libre de riesgo anual (decimal) de la fecha más reciente."""
         fila = (

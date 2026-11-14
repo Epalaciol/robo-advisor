@@ -26,7 +26,7 @@ from roboadvisor.core.markowitz import (  # noqa: E402
     w_min_efectivo,
 )
 from roboadvisor.core.portafolio_completo import componer, escenarios_por_a  # noqa: E402
-from roboadvisor.core.retornos import estimar, retornos_diarios  # noqa: E402
+from roboadvisor.core.retornos import estimar, retornos_diarios, ventana_comun  # noqa: E402
 from roboadvisor.core.riesgo import beta_portafolio, betas, duration_portafolio  # noqa: E402
 from roboadvisor.data.repositorio_mercado import RepositorioMercado  # noqa: E402
 from roboadvisor.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
@@ -150,14 +150,30 @@ def _calcular(
     }
 
 
-def _etiqueta_activo(a: dict) -> str:
+@st.cache_data(show_spinner=False, ttl=3600)
+def _primeras_fechas(_repo_mercado: RepositorioMercado, tickers: tuple[str, ...]) -> dict:
+    return _repo_mercado.primera_fecha_por_ticker(list(tickers))
+
+
+def _etiqueta_activo(a: dict, primera: pd.Timestamp | None, ultima: pd.Timestamp | None) -> str:
     extra = f", duration {a['duration']}" if a.get("duration") else ""
-    return f"{a['ticker']} — {a['nombre']} ({a['clase']}, {a['moneda']}{extra})"
+    base = f"{a['ticker']} — {a['nombre']} ({a['clase']}, {a['moneda']}{extra})"
+    if primera is not None and ultima is not None:
+        # ETF joven: se avisa en el propio selector cuánta historia tiene
+        _, _, dias = ventana_comun({a["ticker"]: primera}, ultima)
+        if dias < PARAMS.ventana_dias:
+            base += f" · datos desde {primera:%Y-%m}"
+    return base
 
 
 catalogo = repo_mercado.listar_catalogo()
 catalogo_por_ticker = {a["ticker"]: a for a in catalogo}
-etiquetas_por_ticker = {a["ticker"]: _etiqueta_activo(a) for a in catalogo}
+_ultima_dato = repo_mercado.ultima_fecha_precios()
+_ultima_ts = pd.Timestamp(_ultima_dato) if _ultima_dato else None
+primeras_fechas = _primeras_fechas(repo_mercado, tuple(sorted(catalogo_por_ticker)))
+etiquetas_por_ticker = {
+    a["ticker"]: _etiqueta_activo(a, primeras_fechas.get(a["ticker"]), _ultima_ts) for a in catalogo
+}
 tickers_por_etiqueta = {v: k for k, v in etiquetas_por_ticker.items()}
 
 st.subheader("1. Universo de inversión (3 a 11 activos)")
@@ -177,6 +193,28 @@ tickers_elegidos = [tickers_por_etiqueta[e] for e in seleccion_etiquetas]
 st.caption(
     f"{len(tickers_elegidos)}/{PARAMS.n_max_activos} activos (mínimo {PARAMS.n_min_activos})"
 )
+
+ventana_ok = True
+if tickers_elegidos and _ultima_ts is not None:
+    elegidas = {t: primeras_fechas[t] for t in tickers_elegidos if t in primeras_fechas}
+    if elegidas:
+        inicio_comun, limitante, dias_comunes = ventana_comun(elegidas, _ultima_ts)
+        if dias_comunes < PARAMS.min_dias:
+            ventana_ok = False
+            st.error(
+                f"**Historia común insuficiente:** {limitante} tiene datos desde "
+                f"{inicio_comun:%Y-%m-%d}, así que solo habría ≈{dias_comunes} días en común "
+                f"(mínimo {PARAMS.min_dias}). Quita {limitante} o elige activos con más historia."
+            )
+        elif dias_comunes < PARAMS.ventana_dias:
+            st.warning(
+                f"**Ojo con {limitante}:** solo tiene datos desde {inicio_comun:%Y-%m-%d}. "
+                "La estimación usa el periodo que tienen en común **todos** los activos "
+                f"elegidos: ≈{dias_comunes} días (≈{dias_comunes / 252:.1f} años) en lugar de "
+                f"{PARAMS.ventana_dias} (≈{PARAMS.ventana_dias / 252:.0f} años). Eso acorta la "
+                "historia de los demás activos y hace el resultado más sensible a lo que pasó "
+                "en ese tramo reciente."
+            )
 
 # Límites dinámicos según el número de activos n: el mínimo por activo no puede
 # superar 1/n y el máximo no puede ser menor que 1/n (si no, no suman 100 %).
@@ -225,7 +263,9 @@ st.caption(
     f"{tope_min_pct}% y el máximo de {piso_max_pct}% a 100%."
 )
 
-puede_calcular = PARAMS.n_min_activos <= len(tickers_elegidos) <= PARAMS.n_max_activos
+puede_calcular = (
+    PARAMS.n_min_activos <= len(tickers_elegidos) <= PARAMS.n_max_activos and ventana_ok
+)
 if st.button("Optimizar portafolio", disabled=not puede_calcular, type="primary"):
     ultima_fecha = repo_mercado.ultima_fecha_precios()
     rf = repo_mercado.rf_ultima()
@@ -294,7 +334,7 @@ if resultado:
             )
 
         if resultado["ventana_acortada"]:
-            st.info(
+            st.warning(
                 f"**Ventana más corta de lo habitual:** se estimó con {est.n_obs} días "
                 f"(el estándar es {PARAMS.ventana_dias}) porque "
                 f"**{resultado['ticker_limitante']}** solo tiene datos desde "

@@ -10,6 +10,7 @@ remuestrear.
 
 from dataclasses import dataclass
 
+import numpy as np
 import pandas as pd
 
 DIAS_ANIO = 252
@@ -25,6 +26,21 @@ class Estimacion:
     rf: float
     n_obs: int
     fecha_fin: pd.Timestamp
+
+
+def ventana_comun(
+    primeras_fechas: dict[str, pd.Timestamp], ultima_fecha: pd.Timestamp
+) -> tuple[pd.Timestamp, str, int]:
+    """Periodo común de los activos: lo fija el de historia más corta.
+
+    Devuelve `(inicio, ticker_limitante, dias_habiles_aprox)`, donde `inicio` es la
+    primera fecha más tardía entre los activos y los días hábiles se cuentan hasta
+    `ultima_fecha` (sin descontar festivos: es una estimación previa a optimizar).
+    """
+    limitante = max(primeras_fechas, key=lambda t: primeras_fechas[t])
+    inicio = pd.Timestamp(primeras_fechas[limitante])
+    dias = int(np.busday_count(inicio.date(), pd.Timestamp(ultima_fecha).date()))
+    return inicio, limitante, dias
 
 
 def retornos_diarios(precios: pd.DataFrame) -> pd.DataFrame:
@@ -60,9 +76,7 @@ def estimar(
     tickers = list(precios.columns)
     mu = DIAS_ANIO * retornos.mean()
     # Covarianza muestral (ddof=1), igual que `daily_returns.cov() * 252` de los scripts del curso.
-    sigma = pd.DataFrame(
-        DIAS_ANIO * retornos.cov().to_numpy(), index=tickers, columns=tickers
-    )
+    sigma = pd.DataFrame(DIAS_ANIO * retornos.cov().to_numpy(), index=tickers, columns=tickers)
 
     return Estimacion(
         tickers=tickers,

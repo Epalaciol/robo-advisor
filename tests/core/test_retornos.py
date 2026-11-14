@@ -41,3 +41,16 @@ def test_sigma_es_covarianza_muestral_anualizada(panel_precios_sintetico):
     esperado = 252 * retornos.cov().to_numpy()
     assert est.sigma.to_numpy() == pytest.approx(esperado)
     assert est.mu.to_numpy() == pytest.approx(252 * retornos.mean().to_numpy())
+
+
+def test_ventana_comun_la_fija_el_activo_mas_joven():
+    from roboadvisor.core.retornos import ventana_comun
+
+    primeras = {
+        "VIEJO": pd.Timestamp("2020-11-02"),
+        "JOVEN": pd.Timestamp("2024-01-11"),
+    }
+    inicio, limitante, dias = ventana_comun(primeras, pd.Timestamp("2026-11-13"))
+    assert limitante == "JOVEN"
+    assert inicio == pd.Timestamp("2024-01-11")
+    assert 730 < dias < 750  # ≈ 2,8 años de días hábiles (sin descontar festivos)
