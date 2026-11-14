@@ -56,3 +56,28 @@ def componer(port_riesgo: Portafolio, rf: float, a: float) -> PortafolioCompleto
         utilidad=u,
         apalancamiento_requerido=y_sin_recorte > 1,
     )
+
+
+def escenarios_por_a(port_riesgo: Portafolio, rf: float, valores_a: list[float]) -> pd.DataFrame:
+    """Cómo quedaría el mismo portafolio de riesgo con distintos `A`.
+
+    Una fila por `A`: `y*` sin recorte y recortado, % en libre de riesgo, retorno, σ,
+    utilidad y si se requeriría apalancamiento. Todos los puntos caen sobre la CAL.
+    """
+    filas = []
+    for a in valores_a:
+        c = componer(port_riesgo, rf, a)
+        y_sin_recorte, _ = y_star(port_riesgo.retorno, port_riesgo.sigma, rf, a)
+        filas.append(
+            {
+                "a": a,
+                "y_sin_recorte": y_sin_recorte,
+                "y": c.y,
+                "peso_rf": c.peso_rf,
+                "retorno": c.retorno,
+                "sigma": c.sigma,
+                "utilidad": c.utilidad,
+                "apalancamiento_requerido": c.apalancamiento_requerido,
+            }
+        )
+    return pd.DataFrame(filas)

@@ -1,8 +1,9 @@
 """Optimización de Markowitz: mínima varianza, tangente, frontera y CAL.
 
-Ver docs/03-motor-financiero.md §4. Restricciones: `Σw = 1`, `0 ≤ w_i ≤ w_max`
-(con `w_max` efectivo ajustado a `max(w_max, 1/n)` si el solicitado era
-inalcanzable). Solver: `scipy.optimize.minimize(method="SLSQP")`.
+Ver docs/03-motor-financiero.md §4. Restricciones: `Σw = 1`, `w_min ≤ w_i ≤ w_max`
+(con `w_max` efectivo ajustado a `max(w_max, 1/n)` y `w_min` efectivo a
+`min(w_min, 1/n)` si lo solicitado era inalcanzable; `w_min = 0` por defecto).
+Solver: `scipy.optimize.minimize(method="SLSQP")`.
 Tolerancia numérica documentada: `TOL = 1e-6` (holgura en pruebas de pesos
 y restricciones; `ftol`/`maxiter` del solver están fijados para resultados
 deterministas y sin warnings de SciPy no controlados).
@@ -49,6 +50,28 @@ def w_max_efectivo(w_max: float, n: int) -> tuple[float, str | None]:
     return w_max, None
 
 
+def w_min_efectivo(w_min: float, n: int) -> tuple[float, str | None]:
+    """`w_min` efectivo para `n` activos: `min(w_min, 1/n)` — si cada uno debe pesar
+    al menos `w_min`, hace falta `n·w_min ≤ 1`; un mínimo mayor es inalcanzable y se
+    baja a `1/n` (reparto igualitario)."""
+    if w_min < 0:
+        raise ValueError(f"w_min debe ser >= 0: {w_min}")
+    maximo = 1 / n
+    if w_min > maximo + TOL:
+        mensaje = (
+            f"Pediste un peso mínimo de {w_min:.0%}, pero con {n} activos elegidos el "
+            f"máximo posible es {maximo:.0%} (= 1/{n}): si cada uno pesara más, la suma "
+            f"superaría 100%. Se usó {maximo:.0%}."
+        )
+        return maximo, mensaje
+    return w_min, None
+
+
+def _notas(*notas: str | None) -> str | None:
+    unidas = "; ".join(n for n in notas if n)
+    return unidas or None
+
+
 def _metricas(
     w: np.ndarray, mu: np.ndarray, sigma: np.ndarray, rf: float
 ) -> tuple[float, float, float]:
@@ -64,11 +87,12 @@ def _resolver_min_varianza(
     w_max_eff: float,
     objetivo_retorno: float | None = None,
     x0: np.ndarray | None = None,
+    w_min_eff: float = 0.0,
 ) -> np.ndarray:
     n = len(mu)
     if x0 is None:
         x0 = np.full(n, 1 / n)
-    bounds = [(0.0, w_max_eff)] * n
+    bounds = [(w_min_eff, w_max_eff)] * n
     restricciones = [{"type": "eq", "fun": lambda w: np.sum(w) - 1.0}]
     if objetivo_retorno is not None:
         restricciones.append({"type": "eq", "fun": lambda w: w @ mu - objetivo_retorno})
@@ -83,7 +107,7 @@ def _resolver_min_varianza(
     )
     if not resultado.success:
         raise RuntimeError(f"Optimización de mínima varianza no convergió: {resultado.message}")
-    w = np.clip(resultado.x, 0, w_max_eff)
+    w = np.clip(resultado.x, w_min_eff, w_max_eff)
     return w / w.sum()
 
 
@@ -98,14 +122,16 @@ def _con_advertencia(port: Portafolio, aviso: str) -> Portafolio:
     )
 
 
-def min_varianza(est: Estimacion, w_max: float) -> Portafolio:
-    """Portafolio de mínima varianza global: `min wᵀΣw` s.t. `Σw=1`, `0≤w≤w_max`."""
+def min_varianza(est: Estimacion, w_max: float, w_min: float = 0.0) -> Portafolio:
+    """Portafolio de mínima varianza global: `min wᵀΣw` s.t. `Σw=1`, `w_min≤w≤w_max`."""
     mu = est.mu.to_numpy()
     sigma = est.sigma.to_numpy()
     n = len(mu)
-    w_max_eff, nota = w_max_efectivo(w_max, n)
+    w_max_eff, nota_max = w_max_efectivo(w_max, n)
+    w_min_eff, nota_min = w_min_efectivo(w_min, n)
+    nota = _notas(nota_max, nota_min)
 
-    w = _resolver_min_varianza(mu, sigma, w_max_eff)
+    w = _resolver_min_varianza(mu, sigma, w_max_eff, w_min_eff=w_min_eff)
     retorno, sigma_p, sharpe = _metricas(w, mu, sigma, est.rf)
 
     return Portafolio(
@@ -117,7 +143,7 @@ def min_varianza(est: Estimacion, w_max: float) -> Portafolio:
     )
 
 
-def tangente(est: Estimacion, w_max: float) -> Portafolio:
+def tangente(est: Estimacion, w_max: float, w_min: float = 0.0) -> Portafolio:
     """Portafolio tangente (óptimo de riesgo): `max (wᵀμ − rf) / √(wᵀΣw)`.
 
     Si ningún activo supera a `rf` (no hay Sharpe positivo alcanzable), se
@@ -126,14 +152,16 @@ def tangente(est: Estimacion, w_max: float) -> Portafolio:
     mu = est.mu.to_numpy()
     sigma = est.sigma.to_numpy()
     n = len(mu)
-    w_max_eff, nota = w_max_efectivo(w_max, n)
+    w_max_eff, nota_max = w_max_efectivo(w_max, n)
+    w_min_eff, nota_min = w_min_efectivo(w_min, n)
+    nota = _notas(nota_max, nota_min)
 
     if not (est.mu > est.rf).any():
         aviso = "Ningún activo supera a rf: se devuelve mínima varianza"
-        return _con_advertencia(min_varianza(est, w_max), aviso)
+        return _con_advertencia(min_varianza(est, w_max, w_min), aviso)
 
     x0 = np.full(n, 1 / n)
-    bounds = [(0.0, w_max_eff)] * n
+    bounds = [(w_min_eff, w_max_eff)] * n
     restricciones = [{"type": "eq", "fun": lambda w: np.sum(w) - 1.0}]
 
     def sharpe_negativo(w: np.ndarray) -> float:
@@ -151,13 +179,13 @@ def tangente(est: Estimacion, w_max: float) -> Portafolio:
     if not resultado.success:
         raise RuntimeError(f"Optimización del tangente no convergió: {resultado.message}")
 
-    w = np.clip(resultado.x, 0, w_max_eff)
+    w = np.clip(resultado.x, w_min_eff, w_max_eff)
     w = w / w.sum()
     retorno, sigma_p, sharpe = _metricas(w, mu, sigma, est.rf)
 
     if sharpe <= 0:
         aviso = "Sharpe del tangente <= 0: se devuelve mínima varianza"
-        return _con_advertencia(min_varianza(est, w_max), aviso)
+        return _con_advertencia(min_varianza(est, w_max, w_min), aviso)
 
     return Portafolio(
         w=pd.Series(w, index=est.tickers),
@@ -168,14 +196,14 @@ def tangente(est: Estimacion, w_max: float) -> Portafolio:
     )
 
 
-def _retorno_maximo_factible(mu: np.ndarray, w_max_eff: float) -> float:
-    """Máximo `wᵀμ` alcanzable con `Σw=1`, `0≤w≤w_max` (programa lineal)."""
+def _retorno_maximo_factible(mu: np.ndarray, w_max_eff: float, w_min_eff: float = 0.0) -> float:
+    """Máximo `wᵀμ` alcanzable con `Σw=1`, `w_min≤w≤w_max` (programa lineal)."""
     n = len(mu)
     resultado = linprog(
         c=-mu,
         A_eq=[np.ones(n)],
         b_eq=[1.0],
-        bounds=[(0.0, w_max_eff)] * n,
+        bounds=[(w_min_eff, w_max_eff)] * n,
         method="highs",
     )
     if not resultado.success:
@@ -183,14 +211,14 @@ def _retorno_maximo_factible(mu: np.ndarray, w_max_eff: float) -> float:
     return float(-resultado.fun)
 
 
-def _retorno_minimo_factible(mu: np.ndarray, w_max_eff: float) -> float:
-    """Mínimo `wᵀμ` alcanzable con `Σw=1`, `0≤w≤w_max` (programa lineal)."""
+def _retorno_minimo_factible(mu: np.ndarray, w_max_eff: float, w_min_eff: float = 0.0) -> float:
+    """Mínimo `wᵀμ` alcanzable con `Σw=1`, `w_min≤w≤w_max` (programa lineal)."""
     n = len(mu)
     resultado = linprog(
         c=mu,
         A_eq=[np.ones(n)],
         b_eq=[1.0],
-        bounds=[(0.0, w_max_eff)] * n,
+        bounds=[(w_min_eff, w_max_eff)] * n,
         method="highs",
     )
     if not resultado.success:
@@ -198,7 +226,7 @@ def _retorno_minimo_factible(mu: np.ndarray, w_max_eff: float) -> float:
     return float(resultado.fun)
 
 
-def frontera(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
+def frontera(est: Estimacion, w_max: float, n_puntos: int = 40, w_min: float = 0.0) -> pd.DataFrame:
     """Frontera eficiente: para una malla de `n_puntos` retornos objetivo entre
     el retorno de mínima varianza y el máximo alcanzable, `min wᵀΣw` s.t. `wᵀμ=target`.
 
@@ -209,17 +237,20 @@ def frontera(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
     sigma = est.sigma.to_numpy()
     n = len(mu)
     w_max_eff, _ = w_max_efectivo(w_max, n)
+    w_min_eff, _ = w_min_efectivo(w_min, n)
 
-    port_min_var = min_varianza(est, w_max)
+    port_min_var = min_varianza(est, w_max, w_min)
     retorno_min = port_min_var.retorno
-    retorno_max = _retorno_maximo_factible(mu, w_max_eff)
+    retorno_max = _retorno_maximo_factible(mu, w_max_eff, w_min_eff)
 
     objetivos = np.linspace(retorno_min, retorno_max, n_puntos)
     filas = []
     x0 = None  # arranque "caliente": el óptimo del punto anterior converge mejor que 1/n
     for objetivo in objetivos:
         try:
-            w = _resolver_min_varianza(mu, sigma, w_max_eff, objetivo_retorno=objetivo, x0=x0)
+            w = _resolver_min_varianza(
+                mu, sigma, w_max_eff, objetivo_retorno=objetivo, x0=x0, w_min_eff=w_min_eff
+            )
         except RuntimeError:
             continue  # ese punto puntual no convergió; se omite, el resto de la malla sigue
         x0 = w
@@ -237,7 +268,9 @@ def frontera(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
     return pd.DataFrame(filas)
 
 
-def rama_ineficiente(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.DataFrame:
+def rama_ineficiente(
+    est: Estimacion, w_max: float, n_puntos: int = 40, w_min: float = 0.0
+) -> pd.DataFrame:
     """Rama **no eficiente** de la frontera: mínima varianza para retornos
     objetivo por debajo del retorno de mínima varianza global, hasta el mínimo
     factible. Junto con `frontera()` (rama eficiente) completa la hipérbola
@@ -253,9 +286,10 @@ def rama_ineficiente(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.Da
     sigma = est.sigma.to_numpy()
     n = len(mu)
     w_max_eff, _ = w_max_efectivo(w_max, n)
+    w_min_eff, _ = w_min_efectivo(w_min, n)
 
-    retorno_tope = min_varianza(est, w_max).retorno
-    retorno_min = _retorno_minimo_factible(mu, w_max_eff)
+    retorno_tope = min_varianza(est, w_max, w_min).retorno
+    retorno_min = _retorno_minimo_factible(mu, w_max_eff, w_min_eff)
 
     if retorno_min >= retorno_tope - TOL:
         return pd.DataFrame(columns=["retorno", "sigma", "pesos"])
@@ -266,7 +300,9 @@ def rama_ineficiente(est: Estimacion, w_max: float, n_puntos: int = 40) -> pd.Da
     x0 = None
     for objetivo in objetivos:
         try:
-            w = _resolver_min_varianza(mu, sigma, w_max_eff, objetivo_retorno=objetivo, x0=x0)
+            w = _resolver_min_varianza(
+                mu, sigma, w_max_eff, objetivo_retorno=objetivo, x0=x0, w_min_eff=w_min_eff
+            )
         except RuntimeError:
             continue
         x0 = w
@@ -291,9 +327,9 @@ def cal(port_tangente: Portafolio, rf: float) -> tuple[float, float]:
 
 
 def portafolios_aleatorios(
-    est: Estimacion, w_max: float, n: int = 400, semilla: int = 7
+    est: Estimacion, w_max: float, n: int = 400, semilla: int = 7, w_min: float = 0.0
 ) -> pd.DataFrame:
-    """Nube de portafolios factibles aleatorios (`Σw=1`, `0≤w≤w_max`), casi
+    """Nube de portafolios factibles aleatorios (`Σw=1`, `w_min≤w≤w_max`), casi
     todos **no eficientes** (por debajo/dentro de la frontera). Es solo para
     graficar junto a `frontera()` y mostrar visualmente por qué la frontera es
     la frontera; no influye en ningún cálculo. Determinista (semilla fija).
@@ -302,13 +338,15 @@ def portafolios_aleatorios(
     sigma = est.sigma.to_numpy()
     n_activos = len(mu)
     w_max_eff, _ = w_max_efectivo(w_max, n_activos)
+    w_min_eff, _ = w_min_efectivo(w_min, n_activos)
 
     rng = np.random.default_rng(semilla)
     filas = []
     intentos = 0
     while len(filas) < n and intentos < n * 50:
         intentos += 1
-        w = rng.dirichlet(np.ones(n_activos))
+        # w_min en cada activo + el resto repartido al azar
+        w = w_min_eff + (1 - n_activos * w_min_eff) * rng.dirichlet(np.ones(n_activos))
         if (w > w_max_eff + TOL).any():
             continue
         retorno, sigma_p, _ = _metricas(w, mu, sigma, est.rf)

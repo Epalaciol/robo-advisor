@@ -207,3 +207,40 @@ def test_frontera_lanza_error_claro_si_todos_los_puntos_fallan(estimacion_sintet
 
     with pytest.raises(RuntimeError, match="ningún punto"):
         frontera(est, 0.40, n_puntos=5)
+
+
+def test_w_min_se_respeta_en_tangente_y_min_varianza(estimacion_sintetica):
+    w_min = 0.10
+    for port in (
+        tangente(estimacion_sintetica, 0.5, w_min),
+        min_varianza(estimacion_sintetica, 0.5, w_min),
+    ):
+        assert port.w.sum() == pytest.approx(1.0, abs=1e-6)
+        assert (port.w >= w_min - 1e-6).all()
+        assert (port.w <= 0.5 + 1e-6).all()
+
+
+def test_w_min_cero_no_cambia_el_resultado(estimacion_sintetica):
+    a = tangente(estimacion_sintetica, 0.4)
+    b = tangente(estimacion_sintetica, 0.4, w_min=0.0)
+    assert a.w.to_numpy() == pytest.approx(b.w.to_numpy(), abs=1e-9)
+
+
+def test_w_min_inalcanzable_se_baja_a_uno_sobre_n(estimacion_sintetica):
+    n = len(estimacion_sintetica.tickers)
+    port = tangente(estimacion_sintetica, 1.0, w_min=0.5)  # 5 activos: máximo posible 20 %
+    assert port.w.to_numpy() == pytest.approx(np.full(n, 1 / n), abs=1e-6)
+    assert port.advertencia is not None
+
+
+def test_w_min_restringe_sharpe_a_lo_sumo_igual(estimacion_sintetica):
+    libre = tangente(estimacion_sintetica, 0.5)
+    con_minimo = tangente(estimacion_sintetica, 0.5, w_min=0.10)
+    assert con_minimo.sharpe <= libre.sharpe + 1e-9
+
+
+def test_frontera_y_nube_respetan_w_min(estimacion_sintetica):
+    w_min = 0.05
+    f = frontera(estimacion_sintetica, 0.5, n_puntos=10, w_min=w_min)
+    assert all(min(p.values()) >= w_min - 1e-5 for p in f["pesos"])
+    assert not portafolios_aleatorios(estimacion_sintetica, 0.5, n=20, w_min=w_min).empty

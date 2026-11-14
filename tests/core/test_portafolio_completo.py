@@ -42,7 +42,18 @@ def test_componer_retorno_y_utilidad_consistentes():
     assert completo.peso_rf == pytest.approx(1 - completo.y)
     assert completo.retorno == pytest.approx(0.02 + completo.y * (port.retorno - 0.02))
     assert completo.sigma == pytest.approx(completo.y * port.sigma)
-    assert completo.utilidad == pytest.approx(
-        completo.retorno - 0.5 * a * completo.sigma**2
-    )
+    assert completo.utilidad == pytest.approx(completo.retorno - 0.5 * a * completo.sigma**2)
     assert completo.pesos_completo["A"] == pytest.approx(completo.y * 0.6)
+
+
+def test_escenarios_por_a_estan_sobre_la_cal_y_ordenados():
+    from roboadvisor.core.portafolio_completo import escenarios_por_a
+
+    port = _port_riesgo()
+    df = escenarios_por_a(port, rf=0.02, valores_a=[8, 6, 4, 3, 1])
+    assert list(df["a"]) == [8, 6, 4, 3, 1]
+    assert df["y"].is_monotonic_increasing
+    # todos sobre la CAL: E = rf + Sharpe * sigma
+    sharpe = (port.retorno - 0.02) / port.sigma
+    assert (df["retorno"] - (0.02 + sharpe * df["sigma"])).abs().max() < 1e-9
+    assert (df["peso_rf"] + df["y"] - 1).abs().max() < 1e-12
