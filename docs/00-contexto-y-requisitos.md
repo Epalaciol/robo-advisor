@@ -35,7 +35,7 @@ Registro → encuesta → guardar usuario y resultado → escoger activos y arma
 | Selección | El usuario elige **de 3 a 11 activos**; la app optimiza los pesos | El taller habla de "11 activos"; el equipo pidió que el usuario escoja |
 | Posiciones | Solo largas, sin apalancamiento: `0 ≤ y* ≤ 1` | A=1 podría dar y*>100% |
 | Tope por activo | `w_max = 40%` (config) | Markowitz con medias históricas concentra en 1–2 activos |
-| Retornos | Diarios simples sobre `adj_close`, ventana **1260 días hábiles (~5 años)**, mínimo 504 (~2 años) | Todos los activos son ETF con el mismo calendario; más observaciones por activo |
+| Retornos | Diarios simples sobre `adj_close`, ventana **1260 días hábiles (~5 años)**, mínimo 252 (~1 año) | Todos los activos son ETF con el mismo calendario; más observaciones por activo |
 | μ | Media histórica anualizada (×12) | Es lo que pide el taller; se documenta su fragilidad |
 | Σ | Covarianza anualizada (×12) con **Ledoit-Wolf** | Reduce ruido de estimación |
 | Tasa libre de riesgo | Letra del Tesoro 3 meses (`^IRX`) | Sin llave de API; coherente con activos en USD |

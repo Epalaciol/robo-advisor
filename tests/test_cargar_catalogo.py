@@ -3,7 +3,7 @@ from scripts.cargar_catalogo import cargar_filas
 
 def test_cargar_filas_normaliza_tipos():
     filas = cargar_filas()
-    assert len(filas) == 32
+    assert len(filas) == 35
 
     por_ticker = {f["ticker"]: f for f in filas}
 

@@ -27,14 +27,14 @@ core/
 
 ## 3. Estimación (`retornos.py`)
 1. Precios diarios `adj_close` de los tickers elegidos (todos ETF, mismo calendario); alinear por fecha común, `dropna`.
-2. Retornos diarios simples `r_t = P_t / P_{t−1} − 1`; ventana = últimos `ventana_dias` (1260); exigir ≥ `min_dias` (504) o error claro indicando el ticker con historia corta.
+2. Retornos diarios simples `r_t = P_t / P_{t−1} − 1`; ventana = últimos `ventana_dias` (1260); exigir ≥ `min_dias` (252) o error claro indicando el ticker con historia corta.
 3. `μ = 252 · media(r)` (anualizada, aritmética).
 4. `Σ = 252 · LedoitWolf().fit(r).covariance_`.
 5. `rf` = tasa anual de `tasa_libre_riesgo` en la última fecha disponible (decimal).
 Devuelve `Estimacion(tickers, mu, sigma, rf, n_obs, fecha_fin)`.
 
 ## 4. Markowitz (`markowitz.py`)
-Restricciones: `Σw = 1`, `0 ≤ w_i ≤ w_max` (con `w_max ≥ 1/n`; si no, se ajusta y se avisa). Solver: `scipy.optimize.minimize(method="SLSQP")`.
+Restricciones: `Σw = 1`, `w_min ≤ w_i ≤ w_max` (con `w_max ≥ 1/n` y `w_min ≤ 1/n`; si no, se ajustan y se avisa; `w_min = 0` por defecto). La UI ajusta los límites de los sliders al número de activos. Solver: `scipy.optimize.minimize(method="SLSQP")`.
 - **Mínima varianza global:** `min wᵀΣw`.
 - **Portafolio tangente (óptimo de riesgo):** `max (wᵀμ − rf) / √(wᵀΣw)`. Si ningún activo supera a `rf` (Sharpe ≤ 0), se devuelve el de mínima varianza y se marca `advertencia`.
 - **Frontera eficiente:** para una malla de retornos objetivo entre el retorno del mínima varianza y el máximo alcanzable con las restricciones, `min wᵀΣw` s.t. `wᵀμ = target`. ≥ 40 puntos. Debe ser monótona creciente en σ para la rama eficiente.

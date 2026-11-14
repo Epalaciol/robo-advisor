@@ -85,6 +85,10 @@ def _calcular(
 
     precios = _repo_mercado.precios([*tickers_lista, benchmark], desde)
     est = estimar(precios[tickers_lista], rf, ventana_dias, min_dias)
+    # ETF más joven: su primer dato fija el inicio de la ventana común de todo el portafolio
+    primeras = precios[tickers_lista].apply(lambda s: s.first_valid_index())
+    ticker_limitante = str(primeras.idxmax())
+    inicio_limitante = primeras.max()
 
     w_max_usado, _ = w_max_efectivo(w_max, len(tickers_lista))
     w_min_usado, _ = w_min_efectivo(w_min, len(tickers_lista))
@@ -133,6 +137,9 @@ def _calcular(
         "cal_intercepto": intercepto,
         "w_max_elegido": w_max,
         "w_max_usado": w_max_usado,
+        "ventana_acortada": est.n_obs < ventana_dias,
+        "ticker_limitante": ticker_limitante,
+        "inicio_limitante": pd.Timestamp(inicio_limitante).date().isoformat(),
         "w_min_elegido": w_min,
         "w_min_usado": w_min_usado,
         "betas": betas_series,
@@ -285,6 +292,14 @@ if resultado:
                 "del inversionista; no tiene unidad propia."
             )
 
+        if resultado["ventana_acortada"]:
+            st.info(
+                f"**Ventana más corta de lo habitual:** se estimó con {est.n_obs} días "
+                f"(el estándar es {PARAMS.ventana_dias}) porque "
+                f"**{resultado['ticker_limitante']}** solo tiene datos desde "
+                f"{resultado['inicio_limitante']} y la estimación usa "
+                "el periodo común de todos los activos elegidos."
+            )
         if port_completo.apalancamiento_requerido:
             st.warning(
                 "El perfil de riesgo implicaría una asignación superior al 100% en el "

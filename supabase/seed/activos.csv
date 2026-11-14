@@ -14,6 +14,9 @@ HYG,iShares iBoxx USD High Yield Corporate Bond ETF,renta_fija_hy,Estados Unidos
 BNDX,Vanguard Total International Bond ETF,renta_fija_global,Resto del mundo,USD,true,8.0,invertible,true,Duration aproximada; cubierto a USD
 EMB,iShares JP Morgan USD Emerging Markets Bond ETF,renta_fija_emergente,Mercados emergentes,USD,true,7.0,invertible,true,Duration aproximada; incluye deuda soberana colombiana en USD
 TES_COP,TES Colombia (curva local),renta_fija_colombia,Colombia,COP,true,5.0,invertible,false,Inactivo: se habilita con el Taller 2 (Nelson-Siegel); no tiene precio en Yahoo
+GXTESCOL.CL,Global X TES Colombia (BVC; en COP convertido a USD),renta_fija_colombia,Colombia,COP,true,4.0,invertible,true,Cotiza en COP sin cobertura: el pipeline lo convierte a USD con COP=X. Duration 4.0 = modificada ponderada del índice según el emisor (VERIFICAR; no es dato del fondo). Historia desde may-2025 (~1.5 años): acorta la ventana común
+COLO,Global X MSCI Colombia ETF,acciones_colombia_latam,Colombia,USD,false,,invertible,true,Acciones colombianas (ETF; antes GXG)
+IBIT,iShares Bitcoin Trust ETF,cripto,Global,USD,false,,invertible,true,ETF de bitcoin spot (desde ene-2024); alta volatilidad; historia corta acorta la ventana común
 VNQ,Vanguard Real Estate ETF,reit,Estados Unidos,USD,false,,invertible,true,
 VNQI,Vanguard Global ex-US Real Estate ETF,reit,Resto del mundo,USD,false,,invertible,true,
 GLD,SPDR Gold Shares,materias_primas,Global,USD,false,,invertible,true,

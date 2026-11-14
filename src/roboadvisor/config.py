@@ -26,7 +26,7 @@ class ParametrosFinancieros:
     """Parámetros fijos del motor financiero (sin valores mágicos en el código)."""
 
     ventana_dias: int = 1260  # ≈ 5 años de retornos diarios (252 días/año)
-    min_dias: int = 504  # ≈ 2 años
+    min_dias: int = 252  # ≈ 1 año; permite ETF jóvenes (IBIT, GXTESCOL)
     w_min: float = 0.0  # peso mínimo por activo elegido (0 = sin mínimo)
     w_max: float = 0.40
     n_min_activos: int = 3

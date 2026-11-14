@@ -140,3 +140,17 @@ def test_dry_run_no_escribe_en_el_repositorio(activos_dos_tickers):
 
     assert repo.precios.empty
     assert repo.corridas == []
+
+
+def test_activo_en_cop_se_guarda_convertido_a_usd():
+    fechas = pd.bdate_range("2024-05-01", "2024-06-07")
+    yahoo = FakeYahoo({"X.CL": _panel("X.CL", fechas, precio_inicial=40000.0)})
+    yahoo.descargar_fx = lambda par, desde: pd.Series(4000.0, index=fechas)
+    repo = RepositorioMemoria(
+        [{"ticker": "X.CL", "es_renta_fija": True, "activo": True, "moneda": "COP"}]
+    )
+
+    reporte = ejecutar(yahoo, repo, PARAMS, fecha_corrida=HOY, historico_anios=1)
+
+    assert reporte.estado == "ok"
+    assert (repo.precios["adj_close"] == pytest.approx(10.0)).all()

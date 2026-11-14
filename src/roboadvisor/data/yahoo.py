@@ -84,6 +84,14 @@ def _extraer_cierres(bruto: pd.DataFrame) -> pd.Series:
     return cierres.dropna()
 
 
+def descargar_fx(par: str, desde: pd.Timestamp) -> pd.Series:
+    """Tipo de cambio diario (`Close`) de un par de Yahoo, p. ej. `COP=X` (pesos por USD)."""
+    bruto = _con_reintentos(yf.download, par, start=desde.date(), auto_adjust=False, progress=False)
+    cierres = _extraer_cierres(bruto)
+    cierres.index = pd.to_datetime(cierres.index).normalize()
+    return cierres
+
+
 def descargar_rf(desde: pd.Timestamp) -> pd.DataFrame:
     """Tasa libre de riesgo anual (`^IRX` / 100) desde `desde`."""
     bruto = _con_reintentos(

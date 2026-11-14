@@ -14,6 +14,7 @@ import pandas as pd
 from roboadvisor.config import ParametrosFinancieros
 from roboadvisor.data import yahoo as yahoo_real
 from roboadvisor.data.repositorio import repositorio_servicio
+from roboadvisor.pipeline.monedas import PARES_FX, convertir_a_usd
 from roboadvisor.pipeline.validators import validar_precios
 
 HISTORICO_ANIOS = 6
@@ -70,6 +71,19 @@ def ejecutar(
             continue
 
         df_ticker = df_ticker[df_ticker["ticker"] == ticker] if not df_ticker.empty else df_ticker
+        moneda = catalogo.get(ticker, {}).get("moneda") or "USD"
+        if moneda != "USD" and not df_ticker.empty:
+            # Moneda base USD: se convierte con el tipo de cambio antes de validar y guardar.
+            try:
+                fx = yahoo.descargar_fx(PARES_FX[moneda], desde_ticker - pd.Timedelta(days=10))
+                df_ticker = convertir_a_usd(df_ticker, fx)
+            except Exception as error:  # noqa: BLE001 - un ticker fallido no rompe los demás
+                detalle[ticker] = {
+                    "estado": "error",
+                    "errores": [f"FX {moneda}: {error}"],
+                    "advertencias": [],
+                }
+                continue
         es_renta_fija = bool(catalogo.get(ticker, {}).get("es_renta_fija", False))
         reporte = validar_precios(df_ticker, es_renta_fija, fecha_corrida, params.dias_stale)
 
