@@ -3,7 +3,7 @@
 ## 1. Vista general
 
 ```
-                 Yahoo Finance (yfinance)        ^IRX (tasa libre de riesgo)
+                 Yahoo Finance (yfinance)        ^TNX (T-note 10 años, rf) 
                           │                               │
                           ▼                               ▼
         ┌──────────────────────────────────────────────────────────┐

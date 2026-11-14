@@ -11,7 +11,6 @@ remuestrear.
 from dataclasses import dataclass
 
 import pandas as pd
-from sklearn.covariance import LedoitWolf
 
 DIAS_ANIO = 252
 
@@ -43,7 +42,7 @@ def estimar(
     ventana_dias: int,
     min_dias: int,
 ) -> Estimacion:
-    """Estima μ (anualizada ×252) y Σ (anualizada ×252, Ledoit-Wolf) sobre los
+    """Estima μ (anualizada ×252) y Σ (covarianza muestral anualizada ×252) sobre los
     últimos `ventana_dias` retornos diarios, exigiendo `>= min_dias`
     observaciones *por ticker* (antes de alinear a fecha común).
 
@@ -60,8 +59,10 @@ def estimar(
 
     tickers = list(precios.columns)
     mu = DIAS_ANIO * retornos.mean()
-    sigma_valores = DIAS_ANIO * LedoitWolf().fit(retornos.to_numpy()).covariance_
-    sigma = pd.DataFrame(sigma_valores, index=tickers, columns=tickers)
+    # Covarianza muestral (ddof=1), igual que `daily_returns.cov() * 252` de los scripts del curso.
+    sigma = pd.DataFrame(
+        DIAS_ANIO * retornos.cov().to_numpy(), index=tickers, columns=tickers
+    )
 
     return Estimacion(
         tickers=tickers,

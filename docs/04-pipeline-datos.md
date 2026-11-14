@@ -27,7 +27,7 @@ data/
 2. Para cada ticker, `ultima_fecha` en `precios`; pedir a Yahoo desde `ultima_fecha − 5 días` (solapamiento para corregir ajustes) o, si no hay datos, `historico_anios` (6) atrás.
 3. Validar (abajo). Los tickers inválidos **no** se cargan y quedan en el reporte; los demás sí (estado `parcial`).
 4. `upsert` por lotes (p. ej. 500 filas) con `on_conflict=(ticker,fecha)`.
-5. Descargar `^IRX` → `tasa_libre_riesgo` (`tasa_anual = cierre/100`).
+5. Descargar `^TNX` (T-note de EE.UU. a 10 años) → `tasa_libre_riesgo` (`tasa_anual = cierre/100`).
 6. Insertar fila en `pipeline_runs` con estado, conteos y detalle por ticker.
 7. Código de salida ≠ 0 si el estado es `error` (que el workflow falle y avise por correo de GitHub). `parcial` sale 0 pero deja el detalle visible.
 

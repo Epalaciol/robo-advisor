@@ -214,7 +214,7 @@ def figura_frontera(
             x=[0, sigma_max_visible],
             y=[cal_intercepto, cal_intercepto + cal_pendiente * sigma_max_visible],
             mode="lines",
-            name="CAL (con el activo libre de riesgo)",
+            name="CAL (con el activo libre de riesgo: T-note 10 años)",
             line={"color": COLOR_CAL, "dash": "dot", "width": 2},
             hovertemplate="σ=%{x:.1%}, retorno=%{y:.1%}<extra></extra>",
         )

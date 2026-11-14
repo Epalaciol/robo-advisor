@@ -13,7 +13,7 @@ from ui.constructor import armar_registro_portafolio  # noqa: E402
 from ui.estilos import configurar_pagina, pie_de_pagina  # noqa: E402
 from ui.graficos import figura_composicion, figura_frontera  # noqa: E402
 
-from roboadvisor.config import ParametrosFinancieros  # noqa: E402
+from roboadvisor.config import RF_NOMBRE, ParametrosFinancieros  # noqa: E402
 from roboadvisor.core.cuestionario import PERFILES  # noqa: E402
 from roboadvisor.core.markowitz import (  # noqa: E402
     cal,
@@ -269,7 +269,8 @@ if resultado:
             f"### Síntesis de la asignación\n"
             f"Por cada \\$100 de capital, **\\${port_completo.y * 100:,.0f}** se asignan al "
             f"portafolio de riesgo óptimo y **\\${port_completo.peso_rf * 100:,.0f}** al activo "
-            f"libre de riesgo. El retorno esperado anualizado es de "
+            f"libre de riesgo (rinde la tasa del {RF_NOMBRE}, {est.rf:.2%}). "
+            f"El retorno esperado anualizado es de "
             f"**{port_completo.retorno:.1%}**, con una volatilidad anualizada de "
             f"**{port_completo.sigma:.1%}**."
         )
@@ -366,7 +367,8 @@ if resultado:
             "muestra una serie y doble clic la aísla; arrastra para acercar y doble "
             "clic en el gráfico restablece la vista. La línea "
             "punteada clara es la **CAL** (combinación del portafolio tangente con el "
-            "activo libre de riesgo). La curva punteada naranja es la **curva de "
+            f"activo libre de riesgo: {RF_NOMBRE}, {est.rf:.2%}). La curva punteada "
+            "naranja es la **curva de "
             "indiferencia** del inversionista: **toca la CAL en un solo punto (es "
             "tangente)**, que es la mejor mezcla para su A. El **diamante naranja** es "
             "tu portafolio completo. Si ese punto de tangencia quedara más allá del "
@@ -477,8 +479,8 @@ if resultado:
             f"Ventana de estimación: {PARAMS.ventana_dias} días hábiles (mínimo {PARAMS.min_dias})"
         )
         st.write(f"Días efectivamente utilizados: {est.n_obs}")
-        st.write(f"Tasa libre de riesgo: {est.rf:.2%}")
-        st.write("Estimador de covarianza: Ledoit-Wolf (shrinkage)")
+        st.write(f"Tasa libre de riesgo: {est.rf:.2%} ({RF_NOMBRE}, `^TNX`)")
+        st.write("Estimador de covarianza: muestral, retornos diarios × 252 (como en clase)")
         if abs(resultado["w_max_usado"] - resultado["w_max_elegido"]) > 1e-9:
             st.write(
                 f"w_max solicitado: {resultado['w_max_elegido']:.0%} · "

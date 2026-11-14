@@ -58,7 +58,7 @@ def test_ticker_sin_columnas_se_omite():
 def test_extraer_cierres_multiindice_un_solo_ticker():
     # yfinance >= reciente devuelve MultiIndex (campo, ticker) incluso para un ticker
     fechas = pd.date_range("2024-01-02", periods=3, freq="D")
-    columnas = pd.MultiIndex.from_product([["Close", "Open"], ["^IRX"]])
+    columnas = pd.MultiIndex.from_product([["Close", "Open"], ["^TNX"]])
     bruto = pd.DataFrame([[4.0, 4.1], [4.2, 4.1], [4.1, 4.2]], index=fechas, columns=columnas)
 
     cierres = _extraer_cierres(bruto)

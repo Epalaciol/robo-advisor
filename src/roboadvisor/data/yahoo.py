@@ -9,6 +9,8 @@ import time
 import pandas as pd
 import yfinance as yf
 
+from roboadvisor.config import RF_TICKER
+
 REINTENTOS = 3
 ESPERA_BASE_SEG = 2.0
 
@@ -93,9 +95,9 @@ def descargar_fx(par: str, desde: pd.Timestamp) -> pd.Series:
 
 
 def descargar_rf(desde: pd.Timestamp) -> pd.DataFrame:
-    """Tasa libre de riesgo anual (`^IRX` / 100) desde `desde`."""
+    """Tasa libre de riesgo anual (T-note a 10 años, `^TNX` / 100) desde `desde`."""
     bruto = _con_reintentos(
-        yf.download, "^IRX", start=desde.date(), auto_adjust=False, progress=False
+        yf.download, RF_TICKER, start=desde.date(), auto_adjust=False, progress=False
     )
     cierres = _extraer_cierres(bruto)
     return pd.DataFrame(

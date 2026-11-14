@@ -47,7 +47,7 @@ def main() -> None:
     if tickers_sin_datos:
         print(f"Sin datos de Yahoo para: {tickers_sin_datos}")
 
-    print("Descargando tasa libre de riesgo (^IRX)...")
+    print("Descargando tasa libre de riesgo (T-note 10 años, ^TNX)...")
     rf = yahoo.descargar_rf(pd.Timestamp.today().normalize() - pd.DateOffset(years=1))
     ruta_rf = DATA_LOCAL / "rf.csv"
     rf.to_csv(ruta_rf, index=False)

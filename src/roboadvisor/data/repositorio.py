@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 
 import pandas as pd
 
+from roboadvisor.config import RF_FUENTE
 from roboadvisor.data.cliente import cliente_servicio
 from roboadvisor.data.paginacion import leer_todo
 from supabase import Client
@@ -63,7 +64,11 @@ class Repositorio:
         if df.empty:
             return 0
         filas = [
-            {"fecha": pd.Timestamp(fecha).date().isoformat(), "tasa_anual": float(tasa)}
+            {
+                "fecha": pd.Timestamp(fecha).date().isoformat(),
+                "tasa_anual": float(tasa),
+                "fuente": RF_FUENTE,
+            }
             for fecha, tasa in zip(df["fecha"], df["tasa_anual"], strict=True)
         ]
         self._cliente.table("tasa_libre_riesgo").upsert(filas, on_conflict="fecha").execute()

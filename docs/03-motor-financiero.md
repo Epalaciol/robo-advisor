@@ -29,8 +29,8 @@ core/
 1. Precios diarios `adj_close` de los tickers elegidos (todos ETF, mismo calendario); alinear por fecha común, `dropna`.
 2. Retornos diarios simples `r_t = P_t / P_{t−1} − 1`; ventana = últimos `ventana_dias` (1260); exigir ≥ `min_dias` (252) o error claro indicando el ticker con historia corta.
 3. `μ = 252 · media(r)` (anualizada, aritmética).
-4. `Σ = 252 · LedoitWolf().fit(r).covariance_`.
-5. `rf` = tasa anual de `tasa_libre_riesgo` en la última fecha disponible (decimal).
+4. `Σ = 252 · cov(r)` (covarianza muestral, `ddof=1`, como `daily_returns.cov() * 252` del curso).
+5. `rf` = rendimiento anual del **T-note a 10 años** (`^TNX`) de `tasa_libre_riesgo` en la última fecha disponible (decimal).
 Devuelve `Estimacion(tickers, mu, sigma, rf, n_obs, fecha_fin)`.
 
 ## 4. Markowitz (`markowitz.py`)

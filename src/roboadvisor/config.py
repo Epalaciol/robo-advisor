@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     SUPABASE_DB_URL: str | None = None
 
 
+# Tasa libre de riesgo del proyecto: rendimiento del T-note de EE.UU. a 10 años (Yahoo `^TNX`).
+RF_TICKER = "^TNX"
+RF_NOMBRE = "T-note de EE.UU. a 10 años"
+RF_FUENTE = f"yahoo:{RF_TICKER}"
+
+
 @dataclass(frozen=True)
 class ParametrosFinancieros:
     """Parámetros fijos del motor financiero (sin valores mágicos en el código)."""

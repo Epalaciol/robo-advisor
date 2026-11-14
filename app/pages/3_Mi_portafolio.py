@@ -16,7 +16,7 @@ from ui.graficos import (  # noqa: E402
     figura_composicion,
 )
 
-from roboadvisor.config import ParametrosFinancieros  # noqa: E402
+from roboadvisor.config import RF_NOMBRE, ParametrosFinancieros  # noqa: E402
 from roboadvisor.data.cliente import modo_mock_activo  # noqa: E402
 from roboadvisor.data.repositorio_mercado import RepositorioMercado  # noqa: E402
 from roboadvisor.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
@@ -267,14 +267,17 @@ with tab_comportamiento:
         st.caption(
             "El portafolio parte de 100. Cada fila dice cuántos puntos sumó o restó ese "
             "activo (su peso inicial × su retorno); la suma de las filas es el cambio total "
-            "del portafolio. Ejemplo: −5,5 significa que ese activo restó 5,5 puntos de los 100."
+            "del portafolio. Ejemplo: −5,5 significa que ese activo restó 5,5 puntos de los 100. "
+            f"La parte libre de riesgo, si la hay, rinde la tasa del {RF_NOMBRE}."
         )
         con_peso = [
             t for t, w in resumen.pesos_iniciales.sort_values(ascending=False).items() if w > 0.0005
         ]
         puntos = (seg.contribucion * 100).reindex(con_peso)
         if float(resumen.portafolio.get("peso_rf", 0)) > 0.0005:
-            puntos["Tasa libre de riesgo"] = float(seg.contribucion.get("RF", 0.0)) * 100
+            puntos["Tasa libre de riesgo (T-note 10 años)"] = (
+                float(seg.contribucion.get("RF", 0.0)) * 100
+            )
         tabla_contribucion = puntos.rename("Puntos aportados").to_frame()
         tabla_contribucion.loc["Total del portafolio"] = float(puntos.sum())
         st.dataframe(tabla_contribucion.style.format("{:+.2f}"))

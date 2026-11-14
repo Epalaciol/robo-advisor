@@ -18,7 +18,7 @@ Fuente ejecutable: `supabase/migrations/0001_init.sql`. Catálogo inicial: `supa
 |---|---|---|
 | `perfiles` | 1 por usuario | `alias`, `edad_rango`, `factores` (jsonb: ocupación, ingresos en rango, dependientes, experiencia…), `consentimiento_at` |
 | `encuestas` | 1 por usuario (`unique(user_id)`) | `respuestas` (jsonb `{q1:"a", q2a:"b", …}`), `puntaje` 9–27, `perfil`, `a` ∈ {8,6,4,3,1}, `version_cuestionario` |
-| `portafolios` | 1 por usuario (`unique(user_id)`) | `encuesta_id`, `a_usado`, `perfil_usado`, `tickers[]` (3–11), `pesos_riesgo`, `y_star`, `peso_rf`, `pesos_completo`, `metricas`, `parametros` (ventana, rf, shrinkage, w_max), `fecha_base` |
+| `portafolios` | 1 por usuario (`unique(user_id)`) | `encuesta_id`, `a_usado`, `perfil_usado`, `tickers[]` (3–11), `pesos_riesgo`, `y_star`, `peso_rf`, `pesos_completo`, `metricas`, `parametros` (ventana, rf del T-note a 10 años, w_min, w_max, universo elegido), `fecha_base` |
 
 Los snapshots `a_usado`/`perfil_usado`/`parametros` hacen que el portafolio sea reproducible aunque cambien configuración o catálogo.
 

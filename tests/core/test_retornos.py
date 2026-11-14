@@ -33,3 +33,11 @@ def test_estimar_error_con_historia_corta():
 
     with pytest.raises(ValueError, match="CORTO"):
         estimar(precios, rf=0.02, ventana_dias=1260, min_dias=504)
+
+
+def test_sigma_es_covarianza_muestral_anualizada(panel_precios_sintetico):
+    est = estimar(panel_precios_sintetico, rf=0.02, ventana_dias=1260, min_dias=252)
+    retornos = panel_precios_sintetico.pct_change().dropna().tail(1260)
+    esperado = 252 * retornos.cov().to_numpy()
+    assert est.sigma.to_numpy() == pytest.approx(esperado)
+    assert est.mu.to_numpy() == pytest.approx(252 * retornos.mean().to_numpy())
