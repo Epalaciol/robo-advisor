@@ -14,6 +14,7 @@ from ui.estilos import configurar_pagina, pie_de_pagina  # noqa: E402
 from ui.graficos import figura_composicion, figura_frontera  # noqa: E402
 
 from roboadvisor.config import ParametrosFinancieros  # noqa: E402
+from roboadvisor.core.cuestionario import PERFILES  # noqa: E402
 from roboadvisor.core.markowitz import (  # noqa: E402
     cal,
     frontera,
@@ -22,8 +23,9 @@ from roboadvisor.core.markowitz import (  # noqa: E402
     rama_ineficiente,
     tangente,
     w_max_efectivo,
+    w_min_efectivo,
 )
-from roboadvisor.core.portafolio_completo import componer  # noqa: E402
+from roboadvisor.core.portafolio_completo import componer, escenarios_por_a  # noqa: E402
 from roboadvisor.core.retornos import estimar, retornos_diarios  # noqa: E402
 from roboadvisor.core.riesgo import beta_portafolio, betas, duration_portafolio  # noqa: E402
 from roboadvisor.data.repositorio_mercado import RepositorioMercado  # noqa: E402
@@ -73,6 +75,7 @@ def _calcular(
     ultima_fecha: str | None,
     rf: float,
     w_max: float,
+    w_min: float,
     ventana_dias: int,
     min_dias: int,
     benchmark: str,
@@ -84,12 +87,13 @@ def _calcular(
     est = estimar(precios[tickers_lista], rf, ventana_dias, min_dias)
 
     w_max_usado, _ = w_max_efectivo(w_max, len(tickers_lista))
+    w_min_usado, _ = w_min_efectivo(w_min, len(tickers_lista))
 
-    port_min_var = min_varianza(est, w_max)
-    port_tangente = tangente(est, w_max)
-    front = frontera(est, w_max)
-    rama_no_eficiente = rama_ineficiente(est, w_max)
-    nube = portafolios_aleatorios(est, w_max)
+    port_min_var = min_varianza(est, w_max, w_min)
+    port_tangente = tangente(est, w_max, w_min)
+    front = frontera(est, w_max, w_min=w_min)
+    rama_no_eficiente = rama_ineficiente(est, w_max, w_min=w_min)
+    nube = portafolios_aleatorios(est, w_max, w_min=w_min)
     pendiente, intercepto = cal(port_tangente, est.rf)
 
     retornos = retornos_diarios(precios).tail(est.n_obs)
@@ -129,6 +133,8 @@ def _calcular(
         "cal_intercepto": intercepto,
         "w_max_elegido": w_max,
         "w_max_usado": w_max_usado,
+        "w_min_elegido": w_min,
+        "w_min_usado": w_min_usado,
         "betas": betas_series,
         "duration": durations_series,
         "beta_portafolio": beta_port,
@@ -157,6 +163,7 @@ seleccion_etiquetas = st.multiselect(
     "Universo de activos (por clase)",
     options=sorted(etiquetas_por_ticker.values()),
     max_selections=PARAMS.n_max_activos,
+    select_all=False,  # "Select all" chocaría con el máximo de activos
     key="constructor_seleccion",
 )
 tickers_elegidos = [tickers_por_etiqueta[e] for e in seleccion_etiquetas]
@@ -164,21 +171,52 @@ st.caption(
     f"{len(tickers_elegidos)}/{PARAMS.n_max_activos} activos (mínimo {PARAMS.n_min_activos})"
 )
 
-w_max_pct = st.slider(
-    "Peso máximo por activo (w_max)",
-    min_value=10,
-    max_value=100,
-    value=int(PARAMS.w_max * 100),
-    step=5,
+# Límites dinámicos según el número de activos n: el mínimo por activo no puede
+# superar 1/n y el máximo no puede ser menor que 1/n (si no, no suman 100 %).
+n_ref = max(len(tickers_elegidos), PARAMS.n_min_activos)
+tope_min_pct = 100 // n_ref  # piso de 1/n
+piso_max_pct = -(-100 // n_ref)  # techo de 1/n
+st.session_state["constructor_w_min"] = min(
+    max(st.session_state.get("constructor_w_min", int(PARAMS.w_min * 100)), 0), tope_min_pct
+)
+st.session_state["constructor_w_max"] = min(
+    max(st.session_state.get("constructor_w_max", int(PARAMS.w_max * 100)), piso_max_pct), 100
+)
+
+col_min, col_max = st.columns(2)
+w_min_pct = col_min.slider(
+    "Peso mínimo por activo (w_min)",
+    min_value=0,
+    max_value=max(tope_min_pct, 1),
+    step=1,
     format="%d%%",
+    key="constructor_w_min",
     help=(
-        "Restricción de concentración máxima por activo en la optimización de Markowitz. "
-        "Un tope menor impone mayor diversificación; 100% elimina la restricción y el "
-        "optimizador puede concentrarse en pocos activos si eso maximiza el Sharpe. "
+        "Cada activo elegido tendrá al menos este peso en el portafolio de riesgo: obliga a "
+        "incluirlos a todos. 0% deja que el optimizador descarte activos. "
+        f"Con {n_ref} activos el máximo posible es {tope_min_pct}% (= 1/{n_ref})."
+    ),
+)
+w_max_pct = col_max.slider(
+    "Peso máximo por activo (w_max)",
+    min_value=piso_max_pct,
+    max_value=100,
+    step=1,
+    format="%d%%",
+    key="constructor_w_max",
+    help=(
+        "Concentración máxima por activo en la optimización de Markowitz. Un tope menor "
+        "impone mayor diversificación; 100% elimina la restricción. "
+        f"Con {n_ref} activos el mínimo posible es {piso_max_pct}% (= 1/{n_ref}). "
         f"Valor de referencia: {PARAMS.w_max:.0%}."
     ),
 )
+w_min_usuario = w_min_pct / 100
 w_max_usuario = w_max_pct / 100
+st.caption(
+    f"Los límites se ajustan solos al número de activos ({n_ref}): el mínimo va de 0% a "
+    f"{tope_min_pct}% y el máximo de {piso_max_pct}% a 100%."
+)
 
 puede_calcular = PARAMS.n_min_activos <= len(tickers_elegidos) <= PARAMS.n_max_activos
 if st.button("Optimizar portafolio", disabled=not puede_calcular, type="primary"):
@@ -192,6 +230,7 @@ if st.button("Optimizar portafolio", disabled=not puede_calcular, type="primary"
             ultima_fecha,
             rf,
             w_max_usuario,
+            w_min_usuario,
             PARAMS.ventana_dias,
             PARAMS.min_dias,
             PARAMS.benchmark,
@@ -313,10 +352,20 @@ if resultado:
             "clic en el gráfico restablece la vista. La línea "
             "punteada clara es la **CAL** (combinación del portafolio tangente con el "
             "activo libre de riesgo). La curva punteada naranja es la **curva de "
-            "indiferencia** del inversionista, tangente a la CAL en el portafolio "
-            "completo óptimo para su A. El **diamante naranja** es ese portafolio: "
-            "hacia la derecha, mayor volatilidad; hacia arriba, mayor retorno esperado."
+            "indiferencia** del inversionista: **toca la CAL en un solo punto (es "
+            "tangente)**, que es la mejor mezcla para su A. El **diamante naranja** es "
+            "tu portafolio completo. Si ese punto de tangencia quedara más allá del "
+            "100% en riesgo (necesitaría endeudarse), se marca con un diamante vacío y "
+            "tu portafolio se queda en 100%. Los puntos de colores sobre la CAL muestran "
+            "dónde quedaría **el mismo portafolio de riesgo con otros A**."
         )
+        ver_curvas_a = st.checkbox(
+            "Mostrar también la curva de utilidad de cada A",
+            value=False,
+            help="Una curva por perfil (8, 6, 4, 3, 1); cada una es tangente a la CAL.",
+        )
+        valores_a = [p[4] for p in PERFILES]
+        escenarios = escenarios_por_a(port_tangente, est.rf, valores_a)
         st.plotly_chart(
             figura_frontera(
                 resultado["frontera"],
@@ -330,9 +379,54 @@ if resultado:
                 nube_no_eficientes=resultado["nube"],
                 rama_ineficiente=resultado["rama_ineficiente"],
                 a_usuario=a_usuario,
+                escenarios=escenarios,
+                curvas_por_a=ver_curvas_a,
             ),
             use_container_width=True,
             config={"displaylogo": False, "scrollZoom": False},
+        )
+
+        st.markdown("**El mismo portafolio de riesgo, con distintos A**")
+        st.caption(
+            "Todos los perfiles comparten el mismo portafolio tangente y se diferencian en "
+            "cuánto se mezcla con el activo libre de riesgo (`y*`). Todos caen sobre la CAL: "
+            "más A (más aversión), más libre de riesgo y menos volatilidad."
+        )
+        nombre_perfil = {p[4]: p[3] for p in PERFILES}
+        vista = pd.DataFrame(
+            {
+                "Perfil": [nombre_perfil[a] for a in escenarios["a"]],
+                "A": escenarios["a"],
+                "En riesgo (y*)": escenarios["y"],
+                "En libre de riesgo": escenarios["peso_rf"],
+                "y* sin tope": escenarios["y_sin_recorte"],
+                "Retorno esperado": escenarios["retorno"],
+                "Volatilidad": escenarios["sigma"],
+                "Utilidad": escenarios["utilidad"],
+            }
+        ).set_index("Perfil")
+
+        def _resaltar_usuario(fila):
+            es_usuario = fila["A"] == a_usuario
+            return ["font-weight: 700" if es_usuario else ""] * len(fila)
+
+        st.dataframe(
+            vista.style.apply(_resaltar_usuario, axis=1).format(
+                {
+                    "A": "{:g}",
+                    "En riesgo (y*)": "{:.1%}",
+                    "En libre de riesgo": "{:.1%}",
+                    "y* sin tope": "{:.0%}",
+                    "Retorno esperado": "{:.1%}",
+                    "Volatilidad": "{:.1%}",
+                    "Utilidad": "{:.4f}",
+                }
+            )
+        )
+        st.caption(
+            "**y\\* sin tope** mayor a 100% significa que ese perfil querría endeudarse para "
+            "invertir más en el portafolio de riesgo; como no se permite apalancamiento, se "
+            "queda en 100% (columna *En riesgo*). Tu fila está en negrita."
         )
 
     with tab_riesgo:
@@ -365,8 +459,7 @@ if resultado:
 
     with tab_supuestos:
         st.write(
-            f"Ventana de estimación: {PARAMS.ventana_dias} días hábiles "
-            f"(mínimo {PARAMS.min_dias})"
+            f"Ventana de estimación: {PARAMS.ventana_dias} días hábiles (mínimo {PARAMS.min_dias})"
         )
         st.write(f"Días efectivamente utilizados: {est.n_obs}")
         st.write(f"Tasa libre de riesgo: {est.rf:.2%}")
@@ -386,7 +479,9 @@ if resultado:
         "Entiendo que el portafolio se registra una única vez y no podrá modificarse."
     )
     if st.button("Confirmar y registrar", type="primary", disabled=not confirmar):
-        params_usados = replace(PARAMS, w_max=resultado["w_max_usado"])
+        params_usados = replace(
+            PARAMS, w_max=resultado["w_max_usado"], w_min=resultado["w_min_usado"]
+        )
         payload = armar_registro_portafolio(
             user_id=st.session_state["user_id"],
             encuesta_id=encuesta["id"],

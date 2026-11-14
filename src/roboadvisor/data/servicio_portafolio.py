@@ -74,6 +74,7 @@ def construir_resumen(
     tickers = list(portafolio["tickers"])
     fecha_base = pd.Timestamp(portafolio["fecha_base"])
     w_max_usado = float(portafolio["parametros"]["w_max"])
+    w_min_usado = float(portafolio["parametros"].get("w_min", 0.0))  # portafolios previos: 0
     benchmark = params.benchmark
 
     catalogo = {a["ticker"]: a for a in repo_mercado.listar_catalogo()}
@@ -110,7 +111,7 @@ def construir_resumen(
     tangente_hoy: Portafolio | None = None
     try:
         est_hoy = estimar(precios_historia[tickers], rf_hoy, params.ventana_dias, params.min_dias)
-        tangente_hoy = tangente(est_hoy, w_max_usado)
+        tangente_hoy = tangente(est_hoy, w_max_usado, w_min_usado)
     except ValueError:
         tangente_hoy = None  # historia insuficiente hoy (raro, pero posible con catálogo corto)
 

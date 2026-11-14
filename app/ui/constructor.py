@@ -52,6 +52,7 @@ def armar_registro_portafolio(
         "parametros": {
             "ventana_dias": params.ventana_dias,
             "min_dias": params.min_dias,
+            "w_min": params.w_min,
             "w_max": params.w_max,
             "rf": est.rf,
             "n_obs_usadas": est.n_obs,

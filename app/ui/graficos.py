@@ -71,6 +71,8 @@ def figura_frontera(
     nube_no_eficientes: pd.DataFrame | None = None,
     rama_ineficiente: pd.DataFrame | None = None,
     a_usuario: float | None = None,
+    escenarios: pd.DataFrame | None = None,
+    curvas_por_a: bool = False,
 ) -> go.Figure:
     """Frontera eficiente, activos individuales, mínima varianza, tangente, CAL
     y (opcional) el punto del portafolio completo del usuario, la nube de
@@ -78,8 +80,12 @@ def figura_frontera(
     `core.markowitz.portafolios_aleatorios`), la rama no eficiente
     (`rama_ineficiente`, de `core.markowitz.rama_ineficiente`) que junto con
     `frontera_df` completa la forma de "bala" (hipérbola) de Markowitz, y la
-    curva de indiferencia del usuario (`a_usuario`) tangente a la CAL en su
-    portafolio completo.
+    curva de indiferencia del usuario (`a_usuario`), **tangente a la CAL** en el
+    punto óptimo `y*` sin recortar (si `y* > 1` ese punto requeriría apalancamiento
+    y se marca aparte: el portafolio del usuario queda en `y = 1`). `escenarios`
+    (de `core.portafolio_completo.escenarios_por_a`) dibuja sobre la CAL dónde
+    quedaría el mismo portafolio con otros `A`; `curvas_por_a` agrega la curva
+    de indiferencia de cada uno.
 
     "Emphasis": todo lo anterior es contexto en gris; el tangente y el
     portafolio del usuario llevan los únicos dos colores vivos — son la
@@ -168,12 +174,23 @@ def figura_frontera(
     # extendía 1.2x más allá del dato más lejano y ese punto, lejísimos,
     # quedaba igual incluido en el gráfico: al hacer zoom-out o "reset axes"
     # Plotly reencuadraba para mostrarlo entero y la vista útil se arruinaba.
+    # Si el óptimo sin tope (apalancado) queda cerca, se encuadra para ver la tangencia.
+    extra_sigma: list[float] = []
+    extra_retorno: list[float] = []
+    if a_usuario is not None:
+        y_raw0 = max(
+            (port_tangente.retorno - cal_intercepto) / (a_usuario * port_tangente.sigma**2), 0.0
+        )
+        if 1 < y_raw0 <= 2:
+            extra_sigma = [y_raw0 * port_tangente.sigma]
+            extra_retorno = [cal_intercepto + y_raw0 * (port_tangente.retorno - cal_intercepto)]
     sigmas_reales = np.concatenate(
         [
             frontera_df["sigma"].to_numpy(),
             sigma_activos,
             [port_min_var.sigma, port_tangente.sigma],
             [punto_usuario[0]] if punto_usuario is not None else [],
+            extra_sigma,
         ]
     )
     retornos_reales = np.concatenate(
@@ -182,6 +199,7 @@ def figura_frontera(
             mu.to_numpy(),
             [port_min_var.retorno, port_tangente.retorno],
             [punto_usuario[1]] if punto_usuario is not None else [],
+            extra_retorno,
         ]
     )
     # Escala inicial predeterminada: encuadra activos, frontera, tangente y tu
@@ -202,26 +220,111 @@ def figura_frontera(
         )
     )
 
-    if punto_usuario is not None and a_usuario is not None:
-        # Curva de indiferencia U = er - 0.5*A*σ² que pasa por el portafolio
-        # completo del usuario, despejada como er(σ) = U + 0.5*A*σ². Si y* es
-        # interior (0<y*<1) es tangente a la CAL justo en ese punto — es la
-        # definición de "el mejor punto sobre la CAL dado tu A". Se recorta al
-        # mismo rango de ejes que el resto (ver nota sobre sigma_max_visible):
-        # crece cuadrático en σ y un rango no recortado la dispararía fuera
-        # de la vista útil.
-        u_usuario = _utilidad(punto_usuario[1], punto_usuario[0], a_usuario)
+    rf = cal_intercepto
+    prima = port_tangente.retorno - rf
+
+    def _optimo_sin_tope(a: float) -> tuple[float, float, float]:
+        """Punto de la CAL donde la curva de indiferencia de `a` es tangente:
+        `y_raw = (E_p − rf)/(A·σ_p²)`, sin recortar; devuelve (y_raw, σ, E)."""
+        y_raw = max(prima / (a * port_tangente.sigma**2), 0.0)
+        return y_raw, y_raw * port_tangente.sigma, rf + y_raw * prima
+
+    def _curva(a: float, nombre: str, color: str, ancho: float, dash: str, mostrar_ley: bool):
+        # er(σ) = U* + ½·A·σ², con U* la utilidad en el punto tangente a la CAL
+        _, sig_opt, er_opt = _optimo_sin_tope(a)
+        u_opt = _utilidad(er_opt, sig_opt, a)
         sigmas_curva = np.linspace(0, sigma_max_visible, 100)
         fig.add_trace(
             go.Scatter(
                 x=sigmas_curva,
-                y=u_usuario + 0.5 * a_usuario * sigmas_curva**2,
+                y=u_opt + 0.5 * a * sigmas_curva**2,
                 mode="lines",
-                name="Tu curva de utilidad (tangente a la CAL)",
-                line={"color": COLOR_PORTAFOLIO_USUARIO, "dash": "dash", "width": 1.5},
-                hovertemplate="σ=%{x:.1%}, retorno=%{y:.1%}<extra></extra>",
+                name=nombre,
+                showlegend=mostrar_ley,
+                line={"color": color, "dash": dash, "width": ancho},
+                hovertemplate=f"{nombre}: σ=%{{x:.1%}}, retorno=%{{y:.1%}}<extra></extra>",
             )
         )
+
+    if curvas_por_a and escenarios is not None and not escenarios.empty:
+        for k, fila in escenarios.reset_index(drop=True).iterrows():
+            _curva(
+                float(fila["a"]),
+                f"Curva A={fila['a']:g}",
+                PALETA_CATEGORICA[k % len(PALETA_CATEGORICA)],
+                1.2,
+                "dot",
+                False,
+            )
+
+    if a_usuario is not None:
+        _curva(
+            a_usuario,
+            "Tu curva de utilidad (tangente a la CAL)",
+            COLOR_PORTAFOLIO_USUARIO,
+            1.8,
+            "dash",
+            True,
+        )
+        y_raw, sig_opt, er_opt = _optimo_sin_tope(a_usuario)
+        if y_raw > 1 + 1e-9 and sig_opt <= sigma_max_visible:
+            fig.add_trace(
+                go.Scatter(
+                    x=[sig_opt],
+                    y=[er_opt],
+                    mode="markers",
+                    name="Óptimo sin tope (requeriría apalancamiento)",
+                    marker={
+                        "color": COLOR_PORTAFOLIO_USUARIO,
+                        "size": 16,
+                        "symbol": "diamond-open",
+                        "line": {"width": 2},
+                    },
+                    hovertemplate=(
+                        f"Óptimo sin tope: {y_raw:.0%} en riesgo, "
+                        "σ=%{x:.1%}, retorno=%{y:.1%}<extra></extra>"
+                    ),
+                )
+            )
+
+    if escenarios is not None and not escenarios.empty:
+        tope = escenarios[escenarios["y"] >= 1 - 1e-9]
+        libres = escenarios[escenarios["y"] < 1 - 1e-9]
+        for k, (_, fila) in enumerate(libres.iterrows()):
+            fig.add_trace(
+                go.Scatter(
+                    x=[fila["sigma"]],
+                    y=[fila["retorno"]],
+                    mode="markers",
+                    name=f"A={fila['a']:g} · {fila['y']:.0%} en riesgo",
+                    marker={
+                        "color": PALETA_CATEGORICA[(k + 4) % len(PALETA_CATEGORICA)],
+                        "size": 11,
+                        "line": {"color": "#1a1a19", "width": 1},
+                    },
+                    hovertemplate=(
+                        f"A={fila['a']:g}: {fila['y']:.0%} en riesgo, "
+                        "σ=%{x:.1%}, retorno=%{y:.1%}<extra></extra>"
+                    ),
+                )
+            )
+        if not tope.empty:
+            etiqueta = ", ".join(f"{a:g}" for a in tope["a"])
+            fig.add_trace(
+                go.Scatter(
+                    x=[port_tangente.sigma],
+                    y=[port_tangente.retorno],
+                    mode="markers",
+                    name=f"A={etiqueta} · 100% en riesgo (tope)",
+                    marker={
+                        "color": COLOR_CAL,
+                        "size": 22,
+                        "symbol": "circle-open",
+                        "line": {"width": 2},
+                    },
+                    hoverinfo="skip",
+                )
+            )
 
     fig.add_trace(
         go.Scatter(
