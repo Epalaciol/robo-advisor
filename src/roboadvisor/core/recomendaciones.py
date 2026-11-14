@@ -146,8 +146,9 @@ def _r4_multiplos(ctx: ContextoRecomendacion) -> list[Recomendacion]:
                 ticker=senal.ticker,
                 titulo=f"Señal de múltiplos: {senal.ticker} está {senal.senal}",
                 detalle=(
-                    f"El P/E de {senal.ticker} ({senal.pe:.1f}) está {senal.senal} frente a "
-                    f"sus comparables (z={senal.z:.2f}). Se sugiere {verbo} ligeramente."
+                    f"El P/E de {senal.ticker} ({senal.pe:.1f}) está {senal.senal} frente a su "
+                    f"propio histórico (mediana {senal.mediana_historica:.1f}, z={senal.z:.2f}). "
+                    f"Se sugiere {verbo} ligeramente."
                 ),
                 datos={"pe": senal.pe, "z": senal.z, "tilt_sugerido": senal.tilt_sugerido},
             )

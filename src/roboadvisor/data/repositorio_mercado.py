@@ -76,6 +76,24 @@ class RepositorioMercado:
         )
         return float(fila[0]["tasa_anual"]) if fila else 0.0
 
+    def fundamentales_historial(self, tickers: list[str]) -> pd.DataFrame:
+        """Todas las fotos de P/E de `tickers`: `DataFrame[ticker, fecha, pe]`."""
+        filas = leer_todo(
+            lambda: (
+                self._cliente.table("fundamentales")
+                .select("ticker, fecha, pe")
+                .in_("ticker", tickers)
+                .order("ticker")
+                .order("fecha")
+            )
+        )
+        if not filas:
+            return pd.DataFrame(columns=["ticker", "fecha", "pe"])
+        df = pd.DataFrame(filas)
+        df["fecha"] = pd.to_datetime(df["fecha"])
+        df["pe"] = pd.to_numeric(df["pe"])
+        return df
+
     def fundamentales_ultimos(self, tickers: list[str]) -> pd.DataFrame:
         """Última fila de fundamentales por ticker."""
         filas = (

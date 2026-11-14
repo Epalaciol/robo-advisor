@@ -1,6 +1,8 @@
 """Análisis de múltiplos (P/E) para sugerir tilts de sobre/subponderación.
 
-Ver docs/03 §8. Las señales **ajustan una sugerencia**, no recalculan Markowitz.
+Ver docs/03 §8. Cada activo se compara **con su propio histórico de P/E** (no con otros
+activos): `cara` si hoy cotiza a un múltiplo alto frente a lo que ha sido normal para él,
+`barata` si bajo. Las señales **ajustan una sugerencia**, no recalculan Markowitz.
 """
 
 from dataclasses import dataclass
@@ -9,92 +11,88 @@ import pandas as pd
 
 from roboadvisor.config import ParametrosFinancieros
 
-DIAS_ANTIGUEDAD_MAX = 10  # fundamentales con más de 10 días de antigüedad se descartan
-MIN_PEERS = 4
+DIAS_ANTIGUEDAD_MAX = 10  # un P/E con más de 10 días de antigüedad no cuenta como "actual"
 UMBRAL_Z = 1.0
 CONSTANTE_MAD = 1.4826
 
 
 @dataclass(frozen=True)
 class SenalMultiplo:
-    """Señal de múltiplos de un ticker frente a sus peers del catálogo."""
+    """Señal de múltiplos de un ticker frente a su propio histórico de P/E."""
 
     ticker: str
     pe: float | None
-    mediana_peers: float | None
+    mediana_historica: float | None
     z: float | None
     senal: str  # "cara" | "barata" | "neutral" | "sin_dato"
     tilt_sugerido: float
     motivo: str | None = None
-
-
-def _peers_validos(fundamentales: pd.DataFrame, fecha_referencia: pd.Timestamp) -> pd.DataFrame:
-    if fundamentales.empty:
-        return fundamentales
-    antiguedad = (fecha_referencia - pd.to_datetime(fundamentales["fecha"])).dt.days
-    return fundamentales[(antiguedad <= DIAS_ANTIGUEDAD_MAX) & (fundamentales["pe"] > 0)]
+    n_obs: int = 0  # observaciones históricas propias usadas
 
 
 def senales_multiplos(
-    fundamentales: pd.DataFrame,
+    historial: pd.DataFrame,
     elegibles: list[str],
     params: ParametrosFinancieros,
     fecha_referencia: pd.Timestamp,
 ) -> list[SenalMultiplo]:
     """Señal de múltiplos (`cara`/`barata`/`neutral`/`sin_dato`) por ticker elegible.
 
-    `z = (PE_i − mediana(PE_peers)) / (1.4826·MAD(PE_peers))`, con peers = acciones
-    del catálogo con `pe > 0` y antigüedad `<= 10` días. `z > 1` → cara (sugiere
-    subponderar `tilt_multiplos`); `z < -1` → barata (sobreponderar). Si hay menos
-    de 4 peers con dato, o `MAD = 0`, no hay señal confiable.
+    `historial` trae `ticker, fecha, pe` (una fila por foto de P/E). Para cada ticker:
+    `z = (PE_hoy − mediana(PE_pasados)) / (1.4826·MAD(PE_pasados))`. `z > 1` → cara
+    (sugiere subponderar `tilt_multiplos`); `z < -1` → barata (sobreponderar). Sin señal
+    si no hay un P/E actual (≤ 10 días), si el histórico propio tiene menos de
+    `params.min_obs_pe` observaciones previas, o si `MAD = 0` (se marca neutral).
     """
-    validos = _peers_validos(fundamentales, fecha_referencia).set_index("ticker")
-    peers_pe = validos["pe"]
-
-    mediana = peers_pe.median() if len(peers_pe) else None
-    mad = (peers_pe - mediana).abs().median() if mediana is not None else None
+    historial = historial.copy()
+    if not historial.empty:
+        historial["fecha"] = pd.to_datetime(historial["fecha"])
+        historial = historial[historial["pe"] > 0]
 
     senales = []
     for ticker in elegibles:
-        if ticker not in validos.index:
+        serie = (
+            historial[historial["ticker"] == ticker].sort_values("fecha")
+            if not historial.empty
+            else historial
+        )
+        if serie.empty:
             senales.append(
-                SenalMultiplo(
-                    ticker=ticker,
-                    pe=None,
-                    mediana_peers=mediana,
-                    z=None,
-                    senal="sin_dato",
-                    tilt_sugerido=0.0,
-                    motivo="Sin dato de P/E vigente (≤10 días) o P/E no significativo",
-                )
+                SenalMultiplo(ticker, None, None, None, "sin_dato", 0.0, "Sin dato de P/E")
             )
             continue
 
-        if len(peers_pe) < MIN_PEERS:
+        actual = serie.iloc[-1]
+        pasados = serie.iloc[:-1]["pe"].astype(float)
+        pe_i = float(actual["pe"])
+        antiguedad = (fecha_referencia - actual["fecha"]).days
+
+        if antiguedad > DIAS_ANTIGUEDAD_MAX:
             senales.append(
                 SenalMultiplo(
-                    ticker=ticker,
-                    pe=float(peers_pe[ticker]),
-                    mediana_peers=mediana,
-                    z=None,
-                    senal="sin_dato",
-                    tilt_sugerido=0.0,
-                    motivo=f"Menos de {MIN_PEERS} peers con dato",
+                    ticker, None, None, None, "sin_dato", 0.0,
+                    f"Último P/E con {antiguedad} días de antigüedad (> {DIAS_ANTIGUEDAD_MAX})",
+                    len(pasados),
                 )
-            )
+            )  # fmt: skip
             continue
 
-        pe_i = float(peers_pe[ticker])
+        if len(pasados) < params.min_obs_pe:
+            senales.append(
+                SenalMultiplo(
+                    ticker, pe_i, None, None, "sin_dato", 0.0,
+                    f"Acumulando historia propia: {len(pasados)} de {params.min_obs_pe} "
+                    "observaciones previas necesarias",
+                    len(pasados),
+                )
+            )  # fmt: skip
+            continue
+
+        mediana = float(pasados.median())
+        mad = float((pasados - mediana).abs().median())
         if mad == 0:
             senales.append(
-                SenalMultiplo(
-                    ticker=ticker,
-                    pe=pe_i,
-                    mediana_peers=float(mediana),
-                    z=0.0,
-                    senal="neutral",
-                    tilt_sugerido=0.0,
-                )
+                SenalMultiplo(ticker, pe_i, mediana, 0.0, "neutral", 0.0, None, len(pasados))
             )
             continue
 
@@ -105,16 +103,8 @@ def senales_multiplos(
             senal, tilt = "barata", params.tilt_multiplos
         else:
             senal, tilt = "neutral", 0.0
-
         senales.append(
-            SenalMultiplo(
-                ticker=ticker,
-                pe=pe_i,
-                mediana_peers=float(mediana),
-                z=float(z),
-                senal=senal,
-                tilt_sugerido=tilt,
-            )
+            SenalMultiplo(ticker, pe_i, mediana, float(z), senal, tilt, None, len(pasados))
         )
 
     return senales

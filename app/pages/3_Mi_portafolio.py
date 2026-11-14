@@ -294,18 +294,26 @@ with tab_recomendaciones:
         st.divider()
 
     if resumen.senales_multiplos:
-        st.subheader("Valoración relativa (P/E)")
+        st.subheader("Valoración frente a su propio histórico (P/E)")
+        st.caption(
+            "Compara el P/E de hoy de cada activo de tu portafolio con lo que ha sido normal "
+            "para ese mismo activo: *barata* si hoy está bastante por debajo de su mediana "
+            "histórica, *cara* si bastante por encima. Se necesitan al menos "
+            f"{PARAMS.min_obs_pe} fotos previas de P/E; mientras se acumulan, no hay señal."
+        )
         filas = [
             {
-                "ticker": s.ticker,
-                "P/E": s.pe,
-                "mediana comparables": s.mediana_peers,
+                "Activo": s.ticker,
+                "P/E hoy": s.pe,
+                "Mediana histórica propia": s.mediana_historica,
                 "z": s.z,
-                "señal": s.senal,
+                "Señal": s.senal,
+                "Fotos previas": s.n_obs,
+                "Nota": s.motivo or "",
             }
             for s in resumen.senales_multiplos
         ]
-        st.dataframe(pd.DataFrame(filas))
+        st.dataframe(pd.DataFrame(filas).set_index("Activo"))
 
 with tab_referencia:
     st.caption(

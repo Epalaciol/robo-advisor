@@ -56,7 +56,7 @@ class RepoMercadoFalso:
     def rf_ultima(self):
         return self._rf
 
-    def fundamentales_ultimos(self, tickers):
+    def fundamentales_historial(self, tickers):
         return self._fundamentales
 
     def ultima_fecha_precios(self):

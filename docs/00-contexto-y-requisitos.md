@@ -11,7 +11,7 @@ Entregable formal: **PDF** autoexplicativo (el que más pesa) + Excel + código 
 | R1 | Cuestionario de 9 ítems, puntaje 9–27 → perfil y A (8, 6, 4, 3, 1) | `core/cuestionario.py`, página Encuesta | E03, E08 |
 | R2 | Utilidad `U = E(r) − ½·A·σ²` | `core/utilidad.py` | E03 |
 | R3 | Encuestar 5 voluntarios (uno por rango de edad 25-34 … 65-74) y recoger datos personales que expliquen la aversión | `perfiles.factores`, tabla de resultados, export | E08, E12 |
-| R4 | Universo de activos amplio: acciones Colombia/Latam, EE.UU., EAFE, TES, renta fija IG/HY/resto del mundo, REITs, cripto | catálogo `activos` (≈22) | E01, E02 |
+| R4 | Universo de activos amplio: acciones Colombia/Latam, EE.UU., EAFE, TES, renta fija IG/HY/resto del mundo, REITs, cripto | catálogo `activos` (hoy 34 activos activos; puede seguir creciendo) | E01, E02 |
 | R5 | Portafolio óptimo de riesgo (Markowitz) y portafolio completo según el perfil (`y*`) | `core/markowitz.py`, `core/portafolio_completo.py` | E04 |
 | R6 | Mostrar composición, σ, retorno histórico, Sharpe | página Constructor | E09 |
 | R7 | Frontera eficiente y CAL óptima | `core/markowitz.py` + gráfico | E04, E09 |

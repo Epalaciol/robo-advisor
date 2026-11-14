@@ -58,8 +58,8 @@ Entrada: `pesos_completo`, `fecha_base`, `rf_base`, precios diarios desde `fecha
 Compra-y-mantiene: cantidades iniciales `q_i = V0·w_i / P_i(base)` con `V0 = 100`; la parte libre de riesgo crece a `rf_base` diaria (`(1+rf)^(1/252)`). Salidas: serie de valor, retorno acumulado, retorno anualizado (solo si ≥ 1 año; si no, `None`), volatilidad realizada anualizada (√252), max drawdown, Sharpe realizado (solo si ≥ 60 observaciones), contribución por activo, pesos actuales (deriva). También el mismo cálculo para `ACWI` como referencia.
 
 ## 8. Múltiplos (`multiplos.py`)
-Aplica solo a activos de renta variable con `pe` disponible (último dato ≤ 10 días de antigüedad).
-`z = (PE_i − mediana(PE_peers)) / MAD_escalada(PE_peers)` con peers = acciones del catálogo con dato. `z > +1` → "cara" (sugerir subponderar `tilt_multiplos` = 2,5 pp); `z < −1` → "barata" (sobreponderar); si hay < 4 peers con dato, no hay señal y se informa. P/B se muestra como apoyo. Las señales **ajustan una sugerencia**, no recalculan Markowitz.
+Aplica solo a activos de renta variable **que están en el portafolio guardado**, con `pe` disponible (último dato ≤ 10 días de antigüedad).
+Cada activo se compara **con su propio histórico de P/E** (decisión del profesor), no con otros activos: `z = (PE_hoy − mediana(PE_pasados)) / (1,4826·MAD(PE_pasados))`. `z > +1` → "cara" (sugerir subponderar `tilt_multiplos` = 2,5 pp); `z < −1` → "barata" (sobreponderar). Se necesitan al menos `min_obs_pe` (12) fotos previas de P/E del mismo activo; mientras se acumulan, la señal es `sin_dato` y la app muestra cuántas lleva. Las fotos salen de la tabla `fundamentales` (una por viernes), por lo que la historia propia se construye con el tiempo (Yahoo no entrega P/E histórico de ETF). Las señales **ajustan una sugerencia**, no recalculan Markowitz.
 
 ## 9. Recomendaciones (`recomendaciones.py`) — reglas fijas
 Entrada: portafolio guardado, `Estimacion` recalculada hoy, tangente de hoy, seguimiento, señales de múltiplos, antigüedad de datos. Salida: lista de `Recomendacion(id, severidad, ticker|None, titulo, detalle, datos)`. Orden: `accion` > `aviso` > `info`.

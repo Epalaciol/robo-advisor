@@ -57,13 +57,13 @@ def test_r3_fuera_de_perfil_vol_24_vs_26_sobre_objetivo():
 
 def test_r4_multiplos():
     señal_neutral = SenalMultiplo(
-        ticker="A", pe=10.0, mediana_peers=10.0, z=0.0, senal="neutral", tilt_sugerido=0.0
+        ticker="A", pe=10.0, mediana_historica=10.0, z=0.0, senal="neutral", tilt_sugerido=0.0
     )
     ctx_no_activa = _contexto(senales_multiplos=[señal_neutral])
     assert all(r.id != "R4" for r in generar(ctx_no_activa))
 
     señal_cara = SenalMultiplo(
-        ticker="A", pe=20.0, mediana_peers=10.0, z=2.0, senal="cara", tilt_sugerido=-0.025
+        ticker="A", pe=20.0, mediana_historica=10.0, z=2.0, senal="cara", tilt_sugerido=-0.025
     )
     ctx_activa = _contexto(senales_multiplos=[señal_cara])
     assert any(r.id == "R4" for r in generar(ctx_activa))
@@ -95,7 +95,12 @@ def test_orden_accion_aviso_info():
         antiguedad_dias={"A": 10},  # R5 aviso
         senales_multiplos=[
             SenalMultiplo(
-                ticker="A", pe=20.0, mediana_peers=10.0, z=2.0, senal="cara", tilt_sugerido=-0.025
+                ticker="A",
+                pe=20.0,
+                mediana_historica=10.0,
+                z=2.0,
+                senal="cara",
+                tilt_sugerido=-0.025,
             )
         ],  # R4 info
     )

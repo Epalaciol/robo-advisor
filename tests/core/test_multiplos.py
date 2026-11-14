@@ -2,116 +2,81 @@ import pandas as pd
 import pytest
 
 from roboadvisor.config import ParametrosFinancieros
-from roboadvisor.core.multiplos import peso_ajustado, senales_multiplos
+from roboadvisor.core.multiplos import SenalMultiplo, peso_ajustado, senales_multiplos
 
 HOY = pd.Timestamp("2024-06-10")
+PARAMS = ParametrosFinancieros()
 
 
-def _fundamentales(filas: list[dict]) -> pd.DataFrame:
-    return pd.DataFrame(filas)
+def _historial(ticker: str, pes: list[float], termina: pd.Timestamp = HOY) -> pd.DataFrame:
+    """Una foto semanal por P/E, la última en `termina`."""
+    fechas = [termina - pd.Timedelta(weeks=len(pes) - 1 - i) for i in range(len(pes))]
+    return pd.DataFrame({"ticker": ticker, "fecha": fechas, "pe": pes})
 
 
-def test_senal_con_peers_conocidos_da_z_esperado():
-    # peers: 10, 12, 14, 16 -> mediana=13
-    # MAD: |10-13|,|12-13|,|14-13|,|16-13| = 3,1,1,3 -> mediana=2
-    fundamentales = _fundamentales(
-        [
-            {"ticker": "A", "pe": 10.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "B", "pe": 12.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "C", "pe": 14.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "D", "pe": 16.0, "pb": 1.0, "fecha": HOY},
-        ]
-    )
-    params = ParametrosFinancieros()
-    señales = senales_multiplos(fundamentales, ["D"], params, HOY)
-    señal_d = señales[0]
+def test_z_frente_al_propio_historico():
+    # pasados: 10..21 (12 fotos) -> mediana 15.5; MAD = mediana(|x - 15.5|) = 3.0; hoy = 25
+    pasados = [float(x) for x in range(10, 22)]
+    historial = _historial("A", [*pasados, 25.0])
+    s = senales_multiplos(historial, ["A"], PARAMS, HOY)[0]
+    z_esperado = (25.0 - 15.5) / (1.4826 * 3.0)
+    assert s.mediana_historica == pytest.approx(15.5)
+    assert s.z == pytest.approx(z_esperado)
+    assert s.senal == "cara"
+    assert s.tilt_sugerido == -PARAMS.tilt_multiplos
+    assert s.n_obs == 12
 
-    z_esperado = (16.0 - 13.0) / (1.4826 * 2.0)
-    assert señal_d.z == pytest.approx(z_esperado)
-    if z_esperado > 1:
-        esperado = "cara"
-    elif z_esperado < -1:
-        esperado = "barata"
-    else:
-        esperado = "neutral"
-    assert señal_d.senal == esperado
+
+def test_barata_cuando_esta_muy_por_debajo_de_su_historia():
+    historial = _historial("A", [*[float(x) for x in range(20, 32)], 8.0])
+    s = senales_multiplos(historial, ["A"], PARAMS, HOY)[0]
+    assert s.senal == "barata"
+    assert s.tilt_sugerido == PARAMS.tilt_multiplos
+
+
+def test_neutral_si_esta_dentro_de_lo_normal():
+    historial = _historial("A", [*[float(x) for x in range(10, 22)], 16.0])
+    s = senales_multiplos(historial, ["A"], PARAMS, HOY)[0]
+    assert s.senal == "neutral"
+
+
+def test_historia_insuficiente_da_sin_dato_y_explica_cuanto_falta():
+    historial = _historial("A", [10.0, 11.0, 12.0])  # 2 fotos previas
+    s = senales_multiplos(historial, ["A"], PARAMS, HOY)[0]
+    assert s.senal == "sin_dato"
+    assert s.pe == 12.0
+    assert s.n_obs == 2
+    assert f"2 de {PARAMS.min_obs_pe}" in s.motivo
+
+
+def test_pe_viejo_o_inexistente_da_sin_dato():
+    viejo = _historial("A", [float(x) for x in range(10, 24)], termina=HOY - pd.Timedelta(days=30))
+    vacio = pd.DataFrame(columns=["ticker", "fecha", "pe"])
+    assert senales_multiplos(viejo, ["A"], PARAMS, HOY)[0].senal == "sin_dato"
+    assert senales_multiplos(vacio, ["A"], PARAMS, HOY)[0].senal == "sin_dato"
 
 
 def test_mad_cero_da_neutral():
-    fundamentales = _fundamentales(
-        [
-            {"ticker": "A", "pe": 10.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "B", "pe": 10.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "C", "pe": 10.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "D", "pe": 10.0, "pb": 1.0, "fecha": HOY},
-        ]
-    )
-    params = ParametrosFinancieros()
-    señales = senales_multiplos(fundamentales, ["A"], params, HOY)
-    assert señales[0].senal == "neutral"
-    assert señales[0].z == 0.0
+    historial = _historial("A", [10.0] * 13)
+    s = senales_multiplos(historial, ["A"], PARAMS, HOY)[0]
+    assert s.senal == "neutral"
+    assert s.z == 0.0
 
 
-def test_menos_de_cuatro_peers_da_sin_dato():
-    fundamentales = _fundamentales(
-        [
-            {"ticker": "A", "pe": 10.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "B", "pe": 12.0, "pb": 1.0, "fecha": HOY},
-        ]
-    )
-    params = ParametrosFinancieros()
-    señales = senales_multiplos(fundamentales, ["A"], params, HOY)
-    assert señales[0].senal == "sin_dato"
-    assert señales[0].motivo is not None
+def test_pe_no_positivo_se_ignora():
+    historial = _historial("A", [-5.0, *[float(x) for x in range(10, 22)], 15.0])
+    s = senales_multiplos(historial, ["A"], PARAMS, HOY)[0]
+    assert s.n_obs == 12  # el negativo no cuenta
 
 
-def test_pe_negativo_da_sin_dato():
-    fundamentales = _fundamentales(
-        [
-            {"ticker": "A", "pe": -5.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "B", "pe": 12.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "C", "pe": 14.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "D", "pe": 16.0, "pb": 1.0, "fecha": HOY},
-        ]
-    )
-    params = ParametrosFinancieros()
-    señales = senales_multiplos(fundamentales, ["A"], params, HOY)
-    assert señales[0].senal == "sin_dato"
-
-
-def test_dato_viejo_se_descarta():
-    fundamentales = _fundamentales(
-        [
-            {"ticker": "A", "pe": 10.0, "pb": 1.0, "fecha": HOY - pd.Timedelta(days=15)},
-            {"ticker": "B", "pe": 12.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "C", "pe": 14.0, "pb": 1.0, "fecha": HOY},
-            {"ticker": "D", "pe": 16.0, "pb": 1.0, "fecha": HOY},
-        ]
-    )
-    params = ParametrosFinancieros()
-    señales = senales_multiplos(fundamentales, ["A"], params, HOY)
-    assert señales[0].senal == "sin_dato"
-
-
-def test_peso_ajustado_suma_lo_mismo_y_respeta_0_1():
-    from roboadvisor.core.multiplos import SenalMultiplo
-
-    pesos = pd.Series({"A": 0.3, "B": 0.3, "C": 0.4})
-    señales = [
-        SenalMultiplo(
-            ticker="A", pe=20.0, mediana_peers=10.0, z=2.0, senal="cara", tilt_sugerido=-0.025
-        ),
-        SenalMultiplo(
-            ticker="B", pe=5.0, mediana_peers=10.0, z=-2.0, senal="barata", tilt_sugerido=0.025
-        ),
-        SenalMultiplo(
-            ticker="C", pe=10.0, mediana_peers=10.0, z=0.0, senal="neutral", tilt_sugerido=0.0
-        ),
+def test_peso_ajustado_aplica_tilt_y_conserva_la_suma():
+    pesos = pd.Series({"A": 0.5, "B": 0.3, "C": 0.2})
+    senales = [
+        SenalMultiplo("A", 20.0, 10.0, 2.0, "cara", -0.025),
+        SenalMultiplo("B", 5.0, 10.0, -2.0, "barata", 0.025),
+        SenalMultiplo("C", 10.0, 10.0, 0.0, "neutral", 0.0),
     ]
-    ajustado = peso_ajustado(pesos, señales, tilt=0.025)
-
-    assert ajustado.sum() == pytest.approx(pesos.sum())
-    assert (ajustado >= 0.0).all()
-    assert (ajustado <= 1.0).all()
-    assert ajustado["A"] < pesos["A"]
-    assert ajustado["B"] > pesos["B"]
+    ajustado = peso_ajustado(pesos, senales, 0.025)
+    assert ajustado.sum() == pytest.approx(1.0)
+    assert ajustado["A"] < 0.5
+    assert ajustado["B"] > 0.3

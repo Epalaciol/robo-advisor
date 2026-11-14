@@ -125,7 +125,7 @@ def construir_resumen(
             antiguedad_dias[t] = int(np.busday_count(ultima.date(), hoy.date()))
 
     fundamentales = (
-        repo_mercado.fundamentales_ultimos(equity_tickers)
+        repo_mercado.fundamentales_historial(equity_tickers)
         if equity_tickers
         else pd.DataFrame(columns=["ticker", "fecha", "pe"])
     )
