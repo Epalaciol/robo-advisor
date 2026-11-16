@@ -40,3 +40,5 @@ class ParametrosTES:
     # V1: el total publicado puede diferir de la suma de filas por redondeo a millones de la
     # fuente; tolerancia = este factor × número de filas (en millones). Más que eso = error.
     tol_total_por_fila_mm: float = 0.5
+    # Cupón que se paga en la fecha del informe: entra en t = 0 si sucio − limpio ≈ cupón (± tol).
+    tol_cupon_hoy: float = 0.10

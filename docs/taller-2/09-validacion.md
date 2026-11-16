@@ -66,29 +66,35 @@ a `data_local/tes/` (cualquier nombre: la fecha se lee del contenido) y repetir 
 - **PDF sin texto (21-oct).** El informe es una imagen (la tabla no es extraíble). No es error del pipeline:
   el día queda en estado `sin_texto` ("día omitido"), C1 da AVISO (no FALLA) y los betas encadenan
   del 20-oct al 22-oct. Un PDF corrupto o con fecha distinta sigue siendo `error_lectura` (FALLA).
-- **AVISO de C6 el 3-nov y 4-nov (spot 1 año −65 pb y +50 pb): artefacto de los datos del 3-nov, no movimiento
-  de mercado.** Diagnóstico (betas encadenados, método por defecto):
+- **Cupón pagado en la fecha del informe (3-nov, `TFIT08031127`).** Ese día IRC deja el cupón dentro del
+  precio sucio (sucio 101,562 − limpio 95,875 = 5,687 ≈ cupón 5,75; el día siguiente el sucio ya es ex-cupón).
+  Con la regla "solo flujos estrictamente posteriores" la TIR observada salía 4,12 % (spread −769 pb) y
+  la calibración se desplazaba. Ahora `flujos(..., incluir_cupon_hoy=True)` incluye ese cupón en t = 0
+  (DF = 1) cuando `sucio − limpio ≈ cupón` (`ParametrosTES.tol_cupon_hoy = 0,10`; con 0,05 esta fila
+  real no pasaba: el corrido de IRC difiere en 0,063 por el rezago de precios del 3-nov). Si el precio es
+  ex-cupón (`sucio − limpio ≈ 0`) el flujo se excluye como antes. Decide `core.flujos.incluye_cupon_hoy`
+  (el core sigue puro: lo llama `analizar`/`validar`). Con t = 0 la TIR sale 10,37 % (vs 10,25 % publicada).
+  El spread de este papel frente a la curva (≈ −210 pb; −216 pb el 30-oct) es una característica del
+  papel, no un artefacto: cotiza a ~10,3 % siempre. La prueba dorada del Excel del profesor y la fase 1
+  no cambian (ningún papel del 2-oct ni del 17-mar tiene cupón en la fecha).
+- **3-nov: precios de TCO cortos desactualizados.** En los 8 TCO de menos de 250 días el plazo implícito en
+  el precio (ln(100/P)/ln(1+r)) excede en 4 días el plazo real (precios del 30-oct tras el festivo del
+  2-nov). Es un dato de la fuente; se deja como está y el efecto sobre la curva es ahora pequeño.
+- **Plazo implícito de +1 día en días normales.** En los demás días el plazo implícito de los TCO excede
+  en 1 día el real: IRC calcula los precios con liquidación T+1. Eso explica la diferencia entre la TIR del
+  precio y la tasa VAL publicada en los TCO cortos. Se mantiene la convención del Excel del profesor
+  (valoración = fecha del informe).
+- **Diagnóstico del AVISO de C6 (3-nov y 4-nov) y resultado tras la corrección.** Antes de incluir el cupón
+  en t = 0 el 3-nov daba SSE 61,6 / RMSE 1,457 y la spot a 1 año caía 65 pb. Las tasas publicadas cortas casi
+  no se movieron (`var_pb` entre −3 y +3 pb), así que no era mercado. Después:
 
   | Día | β0 | β1 | β2 | SSE | RMSE | spot 0,5a | 1a | 2a | 5a |
   |---|---|---|---|---|---|---|---|---|---|
   | 30-oct | 0,13853 | −0,01589 | 0,00063 | 12,6 | 0,660 | 12,370 | 12,468 | 12,637 | 12,999 |
-  | 3-nov | 0,13392 | −0,02137 | 0,02600 | **61,6** | **1,457** | 11,554 | 11,813 | 12,235 | 12,973 |
+  | 3-nov | 0,13842 | −0,01544 | −0,00162 | 11,1 | 0,620 | 12,388 | 12,471 | 12,619 | 12,949 |
   | 4-nov | 0,13698 | −0,01574 | −0,00045 | 8,6 | 0,545 | 12,223 | 12,313 | 12,473 | 12,821 |
   | 5-nov | 0,13702 | −0,01447 | −0,00382 | 9,0 | 0,547 | 12,325 | 12,391 | 12,512 | 12,798 |
 
-  - No entra ni sale ningún papel entre 30-oct y 4-nov (el 5-nov entra `TCO364021127`).
-  - Las tasas publicadas cortas casi no se movieron el 3-nov (`var_pb` entre −3 y +3 pb en los TCO; solo
-    `TCO364130727` +35). Un movimiento real de decenas de pb se vería ahí; no se ve.
-  - Los **precios** del 3-nov son inconsistentes con las tasas del mismo informe: en los 8 TCO de menos de
-    250 días, el plazo implícito (ln(100/P)/ln(1+r)) excede en 4 días el plazo real, frente a 1 día en los
-    demás días (30-oct, 4-nov, 5-nov). Eso infla la TIR observada de los TCO cortos (p. ej. `TCO364171126`
-    15,5 % observada vs 11,88 % publicada) y desplaza la calibración en el tramo corto.
-  - Además, el 3-nov es la fecha de cupón de `TFIT08031127` (vence 3-nov-2027) y IRC publica ese día el
-    precio sucio con el cupón corrido incluido (101,562), mientras que el motor solo cuenta flujos
-    estrictamente posteriores a la fecha: su TIR observada sale 4,12 % (spread −769 pb).
-  - Con `--ponderar-duracion` el salto **no desaparece, se desplaza**: spot 1a +9 pb y −11 pb (sin AVISO),
-    pero spot 5a 12,983 → 12,571 (−41 pb) → 12,761 (+19 pb), β2 = −0,051 y RMSE 1,658 (> 1,5). Se
-    presenta solo como sensibilidad; el método por defecto no cambia.
-  - Conclusión: el AVISO es esperable y se deja visible. Los días 3-nov y 4-nov deben leerse con cautela.
-    Posible mejora futura (no implementada): excluir de la calibración los papeles cuya fecha de cupón es
-    la de valoración.
+  C6 pasa sin saltos. Con `--ponderar-duracion` (antes de la corrección) el salto no desaparecía, se
+  desplazaba al tramo largo (spot 5a −41 pb, RMSE 1,658); se presenta solo como sensibilidad y el método
+  por defecto no cambia.

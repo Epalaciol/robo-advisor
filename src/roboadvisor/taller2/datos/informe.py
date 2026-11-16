@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..config import ParametrosTES
-from ..core.flujos import cupon_corrido, flujos
+from ..core.flujos import cupon_corrido_papel, flujos_papel
 from ..core.modelos import Papel
 from ..core.rendimientos import tir
 
@@ -480,12 +480,13 @@ def validar(
             )
         if e.startswith("TCO") and (f.cupon != 0 or abs(f.precio_sucio - f.precio_limpio) > 1e-9):
             h.append(Hallazgo("V2", "error", "TCO con cupón o con limpio ≠ sucio", e))
-        corrido = cupon_corrido(f.vencimiento, f.cupon, inf.fecha)
+        tol_hoy = ParametrosTES().tol_cupon_hoy
+        corrido = cupon_corrido_papel(f.a_papel(), inf.fecha, tol=tol_hoy)
         dif = f.precio_limpio + corrido - f.precio_sucio
         if abs(dif) > tol_cupon_corrido:
             h.append(Hallazgo("V5", "advertencia", f"Cupón corrido no cuadra por {dif:+.3f}", e))
         if f.origen_tasa == "SEN":
-            y = tir(f.precio_sucio, flujos(f.vencimiento, f.cupon, inf.fecha))
+            y = tir(f.precio_sucio, flujos_papel(f.a_papel(), inf.fecha, tol=tol_hoy))
             if abs(y - f.tasa_pub) * 1e4 > tol_sen_pb:
                 h.append(
                     Hallazgo(

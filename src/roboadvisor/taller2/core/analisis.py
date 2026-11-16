@@ -12,7 +12,7 @@ import pandas as pd
 
 from ..config import PB, ParametrosTES
 from .calibracion import calibrar
-from .flujos import cupon_corrido, flujos
+from .flujos import cupon_corrido_papel, flujos_papel
 from .modelos import Betas, Calibracion, Papel
 from .nelson_siegel import curva, descuento, precio, spot
 from .rendimientos import (
@@ -48,7 +48,7 @@ def analizar(
     betas_previos: Betas | None = None,
 ) -> ResultadoTES:
     params = params or ParametrosTES()
-    pares = [(p, flujos(p.vencimiento, p.cupon, fecha, params.dias_ano)) for p in papeles]
+    pares = [(p, flujos_papel(p, fecha, params.dias_ano, params.tol_cupon_hoy)) for p in papeles]
     arranques = tuple(params.arranques)
     if betas_previos is not None:  # como en el Excel: se parte de los betas del día anterior
         arranques = (betas_previos.como_tupla(), *arranques)
@@ -95,7 +95,7 @@ def analizar(
                     None
                     if p.precio_limpio is None
                     else p.precio_limpio
-                    + cupon_corrido(p.vencimiento, p.cupon, fecha, params.dias_ano)
+                    + cupon_corrido_papel(p, fecha, params.dias_ano, params.tol_cupon_hoy)
                     - p.precio_sucio
                 ),
             }
@@ -167,7 +167,7 @@ def sensibilidad_tau(
 ) -> pd.DataFrame:
     """SSE y betas para distintos τ (la joroba de β2 está en t ≈ 1,7934·τ años)."""
     params = params or ParametrosTES()
-    pares = [(p, flujos(p.vencimiento, p.cupon, fecha, params.dias_ano)) for p in papeles]
+    pares = [(p, flujos_papel(p, fecha, params.dias_ano, params.tol_cupon_hoy)) for p in papeles]
     filas = []
     for tau in taus:
         c = calibrar(pares, tau, params.arranques, params.ponderacion, params.usar_origen)

@@ -7,12 +7,20 @@ import numpy as np
 import pytest
 
 from roboadvisor.taller2.config import NOMINAL_DV01, ParametrosTES
-from roboadvisor.taller2.core.flujos import aniversario, cupon_corrido, flujos
-from roboadvisor.taller2.core.modelos import Betas, Flujos
+from roboadvisor.taller2.core.flujos import (
+    aniversario,
+    cupon_corrido,
+    cupon_corrido_papel,
+    flujos,
+    flujos_papel,
+    incluye_cupon_hoy,
+)
+from roboadvisor.taller2.core.modelos import Betas, Flujos, Papel
 from roboadvisor.taller2.core.nelson_siegel import curva, precio, spot
 from roboadvisor.taller2.core.rendimientos import (
     aproximacion_precio,
     convexidad,
+    duracion_macaulay,
     duracion_modificada,
     dv01,
     dv01_analitico,
@@ -152,3 +160,40 @@ def test_variantes_de_calibracion(informe_2oct):
     assert sen.calibracion.n == 18
     pond = analizar(informe_2oct.papeles(), F, replace(p, ponderacion="duracion", umbral=10.0))
     assert pond.conteo_senales() == {"Mantener": 15, "Comprar": 10, "Vender": 4}
+
+
+# --------------------------------------------------- cupón que se paga en la fecha del informe
+F3NOV = dt.date(2026, 11, 3)
+
+
+def _tfit_3nov(sucio=101.562):
+    """Fila real de TFIT08031127 del 3-nov-2026 (cupón 5,75 pagado ese día, sucio con cupón)."""
+    return Papel(
+        "TFIT08031127", dt.date(2027, 11, 3), 5.75, sucio, 95.875, 1.0, 0.10247, "VAL", 22_186_857
+    )
+
+
+def test_cupon_en_la_fecha_entra_en_t0_si_el_precio_lo_trae():
+    p = _tfit_3nov()
+    assert incluye_cupon_hoy(p, F3NOV)  # sucio − limpio = 5,687 ≈ cupón (tol. absorbe 0,06)
+    f = flujos_papel(p, F3NOV)
+    assert f.fechas == (F3NOV, dt.date(2027, 11, 3))
+    np.testing.assert_allclose(f.t, [0.0, 365 / 365])
+    np.testing.assert_allclose(f.montos, [5.75, 105.75])
+    assert cupon_corrido_papel(p, F3NOV) == 5.75
+    y = tir(p.precio_sucio, f)
+    assert 0.10 < y < 0.11 and abs(y - p.tasa_pub) * 1e4 < 30  # ≈ 10,4 %, no 4 %
+    assert 0.9 < duracion_macaulay(y, f) < 1.0  # el flujo en t = 0 pesa 0 años
+    assert np.isfinite(convexidad(y, f)) and dv01(y, f) > 0
+    b = Betas(0.137, -0.016, 0.0)  # DF(0) = 1: el cupón de t = 0 entra completo, sin dividir por 0
+    assert precio(f, b, 3.7) == pytest.approx(5.75 + 105.75 * (1 + spot(1.0, b, 3.7)) ** -1.0)
+
+
+def test_cupon_en_la_fecha_ex_cupon_se_excluye_como_antes():
+    p = Papel("TFIT08031127", dt.date(2027, 11, 3), 5.75, 95.9, 95.875, 1.0, 0.1025, "VAL")
+    assert not incluye_cupon_hoy(p, F3NOV)
+    assert flujos_papel(p, F3NOV).fechas == (dt.date(2027, 11, 3),)
+    assert cupon_corrido_papel(p, F3NOV) == 0.0
+    # un día sin cupón en la fecha: nada cambia
+    q = _tfit_3nov()
+    assert not incluye_cupon_hoy(q, dt.date(2026, 11, 4))
