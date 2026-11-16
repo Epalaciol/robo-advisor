@@ -18,13 +18,13 @@ Para una fecha y sus papeles: calibrar, calcular la TIR teórica y observada, la
 - `core/tes/analisis.py`: `analizar(papeles, fecha, params, betas_previos=None) -> ResultadoTES(calibracion, tabla: DataFrame)`. Columnas de la tabla: `nemotecnico, tipo, vencimiento, cupon, origen_tasa, precio_sucio, precio_estimado, tir_obs, tir_teo, tasa_pub, spread_pb, senal, dur_macaulay, dur_informe, dur_modificada, convexidad, dv01_cop, dv01_curva_cop`.
   `sensibilidad(papeles, fecha, params) -> DataFrame`: β y conteo de señales para {Excel, ponderada, solo SEN} × umbral {5, 10, 20}.
 - `config.ParametrosTES`: `nominal_dv01: int = 1_000_000_000  # $1.000 millones = 10**9 COP; NO 10**12`, `umbral_pb = 10`.
-- **CLI del taller** (en `pipeline/`, porque lee y escribe archivos) `python -m roboadvisor.pipeline.taller2 --csv tests/fixtures/tes_2026-10-02.csv` (o `--fecha AAAA-MM-DD` contra la base cuando exista E14):
+- **CLI del taller** (en `pipeline/`, porque lee y escribe archivos) `python -m roboadvisor.taller1.pipeline.taller2 --csv tests/fixtures/tes_2026-10-02.csv` (o `--fecha AAAA-MM-DD` contra la base cuando exista E14):
   imprime β, SSE, RMSE y la tabla, y escribe `exports/taller2_AAAA-MM-DD/{resultado.csv, sensibilidad.csv, curva.csv}` (`exports/` está en `.gitignore`). Es la evidencia de T1 ("betas para un día determinado").
 
 ## Fuera de alcance
 Escritura en Supabase (E14), UI (E17), Excel y PDF (E18).
 
-## Pruebas (`tests/core/tes/`)
+## Pruebas (`tests/taller1/core/tes/`)
 1. **TIR:** flujos construidos a mano con t = 1, 2, 3 y cupón c, precio 100 → TIR = c (tol 1e-10); TCO a 365 días con precio 90 → 11,111 %; ida y vuelta `tir(precio(y)) = y`.
 2. **Duración y convexidad de un TCO:** D = t; D* = t/(1+y); C = t(t+1)/(1+y)².
 3. **DV01:** numérico vs. analítico, diferencia relativa < 1e-3 en los 29 papeles del 2-oct.
@@ -36,8 +36,8 @@ Escritura en Supabase (E14), UI (E17), Excel y PDF (E18).
 
 ## Verificación local
 ```bash
-pytest tests/core/tes -q
-python -m roboadvisor.pipeline.taller2 --csv tests/fixtures/tes_2026-10-02.csv
+pytest tests/taller1/core/tes -q
+python -m roboadvisor.taller1.pipeline.taller2 --csv tests/fixtures/tes_2026-10-02.csv
 ```
 Revisar a mano 3 filas (un TCO, un TFIT corto, el TFIT 2058) contra `07` §5.
 

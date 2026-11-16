@@ -7,7 +7,7 @@
 ## Objetivo
 Núcleo puro que reproduce el modelo del profesor y lo calibra.
 
-## Alcance — `src/roboadvisor/core/tes/`
+## Alcance — `src/roboadvisor/taller1/core/tes/`
 - `modelos.py`: `Papel(nemotecnico, vencimiento, cupon, precio_sucio, origen_tasa, …)`, `Betas(b0, b1, b2)`, `Calibracion(betas, tau, sse, rmse, n, convergio, iteraciones, arranque_usado)`.
 - `flujos.py`: `flujos(vencimiento, cupon, fecha) -> tuple[np.ndarray t, np.ndarray monto]`.
   - Aniversarios hacia atrás desde el vencimiento (equivalente a `EDATE`; 29-feb → 28-feb), **solo fechas > fecha**; `t = días/365`.
@@ -26,7 +26,7 @@ Núcleo puro que reproduce el modelo del profesor y lo calibra.
 ## Fuera de alcance
 TIR, duración, DV01, señales (E16). Lectura de CSV o PDF (E13).
 
-## Pruebas (`tests/core/tes/`)
+## Pruebas (`tests/taller1/core/tes/`)
 1. **Dorada (Excel):** con β y τ de `modelo_excel_2026-03-17.json`, `precio` reproduce `precio_estimado_excel` en los 24 papeles sanos (tol 1e-8) y `precio_estimado_correcto` en los 2 con `excel_roto` (tol 1e-8).
 2. **Flujos:** bono que vence el 3-nov-2027 con cupón 5,75 al 2-oct-2026 → 2 flujos (3-nov-26: 5,75; 3-nov-27: 105,75), t = 32/365 y 397/365. Aniversario igual a la fecha → excluido. Vencimiento el 29-feb → aniversarios el 28-feb. TCO → 1 flujo.
 3. **Spot:** `spot(1e-12) == β0+β1`; `spot(1e6) ≈ β0` (tol 1e-6); vectorizado = escalar; sin `RuntimeWarning`.
@@ -37,10 +37,10 @@ TIR, duración, DV01, señales (E16). Lectura de CSV o PDF (E13).
 
 ## Verificación local
 ```bash
-pytest tests/core/tes -q
+pytest tests/taller1/core/tes -q
 python - <<'PY'
-from roboadvisor.pipeline.tes_parser import leer_csv          # si E13 aún no está: leer el CSV con pandas
-from roboadvisor.core.tes.calibracion import calibrar
+from roboadvisor.taller1.pipeline.tes_parser import leer_csv          # si E13 aún no está: leer el CSV con pandas
+from roboadvisor.taller1.core.tes.calibracion import calibrar
 inf = leer_csv("tests/fixtures/tes_2026-10-02.csv")
 print(calibrar(inf.papeles(), inf.fecha_informe))
 PY

@@ -3,6 +3,26 @@
 Entrega: **jueves 19-nov-2026**. Prof. Juan Carlos Botero. Enunciado: *TALLER 2 – Análisis de Renta Fija y Renta Variable*.
 Esta carpeta es la planeación del Taller 2 dentro del robo-advisor. Se ejecuta igual que el Taller 1: `/entregable E15`, etc. (el comando busca `docs/taller-2/entregables/E15-*.md`; ver §5).
 
+## Estado al 16-nov-2026: implementado
+
+| Requisito del enunciado | Dónde está | Evidencia |
+|---|---|---|
+| T1 · betas de un día determinado desde irc.gov.co | `taller2/datos/irc.py` (descarga), `taller2/datos/informe.py` (lector PDF/Excel/CSV + validaciones V1–V6), `taller2/pipeline/update_tes.py --fecha` | `tests/taller2/test_datos.py` |
+| T3 · curva cero cupón Nelson-Siegel (1–10.950 días) | `taller2/core/nelson_siegel.py`, `calibracion.py` (Solver: SSE de precios, τ = 3,7, varios arranques) | prueba dorada contra el Excel del profesor |
+| T4–T5 · TIR estimada vs. observada y decisión | `taller2/core/rendimientos.py`, `senales.py`, `analisis.py` (umbral 1σ como el grupo; también σ robusta o pb fijos) | igual al Excel y al `.py` del grupo |
+| T8–T9 · DV01 por $1.000 millones, duración y convexidad | `rendimientos.py` (`NOMINAL_DV01 = 10**9`) | prueba de escala DV01/(P·N·1pb) = D* |
+| T6 · basado en el Excel | `taller2/reportes/excel.py`: Excel con fórmulas vivas, XIRR y celda SSE para Solver | recalculado en LibreOffice = Python |
+| T7 · prueba con el 2-oct | `tests/taller2/fixtures/tes_2026-10-02.csv` + validación fase 1 | `09-validacion.md` |
+| App · sección pública | `app/pages/4_T2_Curva_TES.py`, tablas `t2_*` (`supabase/migrations/0003_taller2_tes.sql`) | AppTest en modo mock |
+
+**Validación en dos fases:** ver [`09-validacion.md`](09-validacion.md).
+**Referencias del grupo** (no se modifican): `referencias/Libro-taller2.xlsx`, `referencias/taller2_nelson_siegel.py`.
+Hallazgo en el Excel del grupo: la decisión (columna L) compara contra `$O$3`, que está vacía, en vez de `N3`
+(umbral 1σ = 23,48 pb); por eso no sale ningún "Mantener". Con `N3`: 0 Comprar / 6 Vender / 23 Mantener.
+
+Los entregables E13–E18 y `anexos/` de abajo son la planeación original; `anexos/0002_tes.sql` quedó
+reemplazado por `supabase/migrations/0003_taller2_tes.sql` (tablas con prefijo `t2_`).
+
 | Archivo | Qué es |
 |---|---|
 | `07-taller2-metodologia.md` | Convenciones del Excel del profesor, fórmulas, definiciones propias, hallazgos, preguntas abiertas |
@@ -77,4 +97,4 @@ E13 ── E14 (DB + pipeline)─┴── E17   ← extras de la app
 5. **`.gitignore`:** `docs/planificacion/` está ignorado. Decidir si `docs/taller-2/` se versiona (no contiene secretos ni datos personales; recomendado versionarlo).
 
 ## 5. Definition of Done
-La misma del Taller 1 (`docs/05-plan-entregables.md`): pruebas y `ruff` en verde, verificación local con resultado real, sin secretos en el diff, commit convencional con el ID (`feat(tes): E15 …`).
+La misma del Taller 1 (`docs/taller-1/05-plan-entregables.md`): pruebas y `ruff` en verde, verificación local con resultado real, sin secretos en el diff, commit convencional con el ID (`feat(tes): E15 …`).

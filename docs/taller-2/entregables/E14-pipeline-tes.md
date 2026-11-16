@@ -16,12 +16,12 @@ Cada día hábil, bajar los informes que falten, validarlos, guardarlos y calcul
 
 ## Alcance
 - `scripts/probar_irc.py`: GET del listado del año y de un PDF; imprime código HTTP, `content-type`, tamaño y si el PDF trae texto. No guarda nada.
-- `src/roboadvisor/pipeline/tes_scraper.py`:
+- `src/roboadvisor/taller1/pipeline/tes_scraper.py`:
   - `listar_informes(anio) -> list[(date, url)]`: parsea los títulos "Informe Diario TES DD de Mes de AAAA", con meses en español.
   - `descargar(url) -> bytes`: timeout 30 s, 3 reintentos con espera; ante 403/429 se detiene sin insistir.
   - Pruebas con HTML y PDF guardados (`responses` o `respx`), sin red.
-- `src/roboadvisor/data/repositorio_tes.py` (cliente `service_role`): `fechas_cargadas()`, `guardar_informe(informe, sha256, url, via, fuente)` (upsert de las tres tablas en una transacción vía RPC, o borrar y reinsertar la fecha), `cotizaciones(fecha)`, `fechas_sin_curva()`, `betas_previos(fecha)`, `guardar_resultado(fecha, ResultadoTES)` (`curvas_ns` + `tes_senales`).
-- `src/roboadvisor/pipeline/update_tes.py` (CLI):
+- `src/roboadvisor/taller1/data/repositorio_tes.py` (cliente `service_role`): `fechas_cargadas()`, `guardar_informe(informe, sha256, url, via, fuente)` (upsert de las tres tablas en una transacción vía RPC, o borrar y reinsertar la fecha), `cotizaciones(fecha)`, `fechas_sin_curva()`, `betas_previos(fecha)`, `guardar_resultado(fecha, ResultadoTES)` (`curvas_ns` + `tes_senales`).
+- `src/roboadvisor/taller1/pipeline/update_tes.py` (CLI):
   - `--fecha AAAA-MM-DD`: una fecha (la busca en el listado de su año).
   - `--desde AAAA-MM-DD`: todas las faltantes desde esa fecha.
   - `--pdf RUTA` / `--csv RUTA [--fecha]`: carga manual (`via='texto'|'ocr'|'csv'`).
@@ -44,10 +44,10 @@ UI (E17), Excel y PDF (E18).
 ## Verificación local
 ```bash
 python scripts/probar_irc.py
-python -m roboadvisor.pipeline.update_tes --csv tests/fixtures/tes_2026-10-02.csv --fecha 2026-10-02 --dry-run
-python -m roboadvisor.pipeline.update_tes --csv tests/fixtures/tes_2026-10-02.csv --fecha 2026-10-02
-python -m roboadvisor.pipeline.update_tes --fecha 2026-10-02        # desde IRC, si probar_irc dio OK
-python -m roboadvisor.pipeline.update_tes --solo-curvas
+python -m roboadvisor.taller1.pipeline.update_tes --csv tests/fixtures/tes_2026-10-02.csv --fecha 2026-10-02 --dry-run
+python -m roboadvisor.taller1.pipeline.update_tes --csv tests/fixtures/tes_2026-10-02.csv --fecha 2026-10-02
+python -m roboadvisor.taller1.pipeline.update_tes --fecha 2026-10-02        # desde IRC, si probar_irc dio OK
+python -m roboadvisor.taller1.pipeline.update_tes --solo-curvas
 ```
 En Supabase: `select count(*) from tes_cotizaciones where fecha='2026-10-02'` → 29; `curvas_ns` con β iguales a E16.
 

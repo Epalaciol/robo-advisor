@@ -1,6 +1,6 @@
 # Taller 2 · Pipeline de TES (informe diario → base de datos → curva)
 
-Complementa `docs/04-pipeline-datos.md` (precios de Yahoo). Objetivo: tener en Supabase la tabla "Tasa Fija en Pesos" de cada día hábil, más su curva y sus señales, para que la página pública (E17) solo lea.
+Complementa `docs/taller-1/04-pipeline-datos.md` (precios de Yahoo). Objetivo: tener en Supabase la tabla "Tasa Fija en Pesos" de cada día hábil, más su curva y sus señales, para que la página pública (E17) solo lea.
 
 ## 1. Lo verificado y lo que no
 - IRC publica **un PDF por día**, en una carpeta por año: 2026 en `https://www.irc.gov.co/440`; años anteriores en `https://www.irc.gov.co/deuda-publica/deuda-interna-gnc/informe-diario-tes/<AÑO>`. Cada enlace se titula **"Informe Diario TES DD de Mes de AAAA"**; el ID del archivo no sigue la fecha.

@@ -11,7 +11,7 @@ Convertir el PDF del Informe Diario TES en filas tipadas y validadas de la tabla
 Bajar con el navegador el informe del **2-oct-2026** desde `https://www.irc.gov.co/440` y guardarlo como `tests/fixtures/informe_tes_2026-10-02.pdf` (documento público, pocos KB). Copiar `docs/taller-2/anexos/fixtures/*` a `tests/fixtures/`. Si no se consigue el PDF, la prueba 2 queda marcada `skip` con el motivo, pero el resto del entregable sigue.
 
 ## Alcance
-- `src/roboadvisor/pipeline/tes_parser.py`:
+- `src/roboadvisor/taller1/pipeline/tes_parser.py`:
   - `parsear_pdf(ruta | bytes) -> InformeTES`: extrae el texto con `pdfplumber`. Si no hay texto, OCR con `pytesseract` (extra opcional `[ocr]`; si no está instalado, error claro).
   - `parsear_texto(texto: str, via: str) -> InformeTES`: **función pura**, la que se prueba. Toma solo la sección "Tasa Fija en Pesos" (ignora TES UVR y demás tablas).
   - `InformeTES`: `fecha_informe`, `filas: list[FilaTES]`, `total_nominal_mm`, `promedio_var_pb`, `via`.
@@ -19,13 +19,13 @@ Bajar con el navegador el informe del **2-oct-2026** desde `https://www.irc.gov.
   - Utilidades puras: `a_numero("5.351.599")`, `a_fecha("20-oct-26")` (meses en español, años de 2 dígitos → 20xx), `fecha_informe("viernes, 2 de octubre de 2026")`.
   - `validar(informe) -> list[Hallazgo]` con V1–V7 de `08` §3. `Hallazgo(codigo, nivel: "error"|"advertencia", fila, mensaje)`.
   - `leer_csv(ruta) -> InformeTES`: lee el formato de `tes_2026-10-02.csv` (`via='csv'`). Sirve para E14 y E16.
-  - CLI: `python -m roboadvisor.pipeline.tes_parser ARCHIVO.pdf` imprime tabla y hallazgos; `--csv salida.csv` escribe el formato del fixture.
+  - CLI: `python -m roboadvisor.taller1.pipeline.tes_parser ARCHIVO.pdf` imprime tabla y hallazgos; `--csv salida.csv` escribe el formato del fixture.
 - `core/tes/` **no** importa nada de este módulo. La TIR que necesita V6 se importa de `core/tes/rendimientos.py` si ya existe (E16). Si no existe, V6 queda pendiente con `TODO(E16)` y se activa en E16.
 
 ## Fuera de alcance
 Descarga, base de datos, calibración.
 
-## Pruebas (`tests/pipeline/test_tes_parser.py`)
+## Pruebas (`tests/taller1/pipeline/test_tes_parser.py`)
 1. Utilidades: `"5.351.599"→5351599`; `"99,430"→99.43`; `"-2,2"→-2.2`; `"12,144"` como tasa → 0.12144; `"20-oct-26"→2026-10-20`; `"9-feb-33"→2033-02-09`; `"ene"`, `"abr"`, `"ago"`, `"dic"`; texto vacío o raro → `ValueError`.
 2. PDF del 2-oct → 29 filas **idénticas** a `tes_2026-10-02.csv` (tasas con tolerancia 1e-9), Σ nominal 562.515.499, promedio 9,96, cero errores y una sola advertencia V5 (TFIT 2050).
 3. `leer_csv` del fixture = mismo `InformeTES` que la prueba 2.
@@ -34,8 +34,8 @@ Descarga, base de datos, calibración.
 
 ## Verificación local
 ```bash
-pytest tests/pipeline/test_tes_parser.py -q
-python -m roboadvisor.pipeline.tes_parser tests/fixtures/informe_tes_2026-10-02.pdf
+pytest tests/taller1/pipeline/test_tes_parser.py -q
+python -m roboadvisor.taller1.pipeline.tes_parser tests/fixtures/informe_tes_2026-10-02.pdf
 ```
 Anotar en el PR si el PDF trae texto o fue necesario OCR (decide la dependencia de `tesseract` en E14).
 
