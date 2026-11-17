@@ -49,7 +49,10 @@ pruebas finales en producción y reporte. Ver `docs/taller-1/05-plan-entregables
 | `src/roboadvisor/taller2/core/` | T2 · motor puro (flujos, Nelson-Siegel, calibración, TIR, duración, DV01, decisión) |
 | `src/roboadvisor/taller2/datos/` | T2 · lector del informe (PDF/Excel/CSV), descarga de IRC, repositorio `t2_*` |
 | `src/roboadvisor/taller2/pipeline/` | T2 · `update_tes` (diario / un día / un archivo) y `validacion` (fase 1 y 2) |
-| `src/roboadvisor/taller2/reportes/` | T2 · gráficas (Plotly) y Excel con fórmulas (listo para Solver) |
+| `src/roboadvisor/taller2/reportes/` | T2 · gráficas (Plotly), Excel con fórmulas (listo para Solver) e informe PDF |
+| `src/roboadvisor/taller1/reportes/` | T1 · caso de referencia, Excel e informe PDF |
+| `entregas/` | Lo que se entrega: PDF, Excel y README de cada taller (se regeneran con `python -m roboadvisor.taller1.reportes` y `python -m roboadvisor.taller2.reportes`; requieren `pip install -e ".[reportes]"` y `pandoc` + `xelatex`) |
+| `scripts/dev/` | Solo desarrollo: usuarios de prueba y simuladores (usan `service_role`; nunca contra producción) |
 | `app/` | App Streamlit: `Inicio.py`, `pages/` (`T1_*` con login, `4_T2_Curva_TES.py` pública), `ui/{comun,taller1,taller2}` |
 | `.streamlit/config.toml` | Tema de la app (colores de la marca) |
 | `tests/{taller1,taller2,comun}/` | `pytest -q` (unitarias) y `pytest -m integration -q` (requieren Supabase real) |
@@ -90,9 +93,9 @@ de RLS de `tests/taller1/db/test_rls.py`, que siguen corriendo solo contra un Su
 4. Cargar el catálogo: `python scripts/taller1/cargar_catalogo.py` (idempotente, usa `service_role`).
 5. Verificar la seguridad: `pytest -m integration -q` (crea y borra usuarios de prueba).
 6. (Opcional) Usuario fijo para no pasar por el registro cada vez:
-   `python scripts/taller1/crear_usuario_prueba.py` (mismo correo/clave que el modo mock;
+   `python scripts/dev/crear_usuario_prueba.py` (mismo correo/clave que el modo mock;
    `--borrar` para eliminarlo). Solo para desarrollo local.
-   Para probar cada perfil: `python scripts/taller1/usuarios_demo.py` crea en la base 6 usuarios fijos
+   Para probar cada perfil: `python scripts/dev/usuarios_demo.py` crea en la base 6 usuarios fijos
    `@local.test` (clave `Prueba1234!`): `prueba@` (sin encuesta), `demo.a8@`, `demo.a6@`,
    `demo.a4@`, `a3@` y `demo.a1@` (encuesta hecha, sin portafolio). `--reiniciar` los deja de
    cero (borra encuesta y portafolio) para volver a jugar; `--listar` muestra su estado;
@@ -124,4 +127,4 @@ Supabase: ejecutar una vez `supabase/migrations/0003_taller2_tes.sql`. En modo m
 Taller 2 muestra solo el 2-oct de la tabla del enunciado.
 
 ## Fechas
-Taller 1: **12-nov-2026** · Taller 2: **19-nov-2026**.
+Taller 1: **19-nov-2026** · Taller 2: **26-nov-2026**.

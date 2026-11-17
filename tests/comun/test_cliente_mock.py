@@ -22,9 +22,7 @@ def _estado_mock_limpio():
 
 def test_usuario_de_prueba_sembrado_y_puede_iniciar_sesion():
     cliente = crear_cliente_mock()
-    sesion = cliente.auth.sign_in_with_password(
-        {"email": CORREO_PRUEBA, "password": CLAVE_PRUEBA}
-    )
+    sesion = cliente.auth.sign_in_with_password({"email": CORREO_PRUEBA, "password": CLAVE_PRUEBA})
     assert sesion.user.id
     assert sesion.session.access_token
 

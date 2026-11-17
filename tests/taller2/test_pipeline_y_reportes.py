@@ -108,3 +108,19 @@ def test_pagina_publica_abre_sin_sesion_en_modo_mock(monkeypatch):
     assert not at.exception
     assert any("Taller 2" in t.value for t in at.title)
     assert len(at.dataframe[0].value) == 29
+
+
+def test_informe_markdown_del_taller2(informe_2oct, resultado_2oct, tmp_path):
+    import datetime as dt
+
+    from roboadvisor.taller2.core.analisis import sensibilidad
+    from roboadvisor.taller2.reportes.informe import construir_markdown
+
+    figs = {"curva": tmp_path / "curva.png", "spreads": tmp_path / "spreads.png"}
+    md = construir_markdown(
+        resultado_2oct,
+        sensibilidad(informe_2oct.papeles(), informe_2oct.fecha),
+        figs,
+        dt.date(2026, 11, 16),
+    )
+    assert "13,54 %" in md and "0 comprar · 6 vender · 23 mantener" in md

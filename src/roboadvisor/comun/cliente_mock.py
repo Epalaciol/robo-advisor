@@ -15,7 +15,7 @@ de seguridad.
 
 Los datos viven en memoria de **este proceso** mientras corre: se pierden al
 reiniciar el servidor de Streamlit y no los ve ningún script lanzado aparte
-(`scripts/taller1/cargar_catalogo.py`, `scripts/taller1/crear_usuario_prueba.py`, ...), que
+(`scripts/taller1/cargar_catalogo.py`, `scripts/dev/crear_usuario_prueba.py`, ...), que
 corren en su propio proceso. El catálogo y los precios se siembran
 automáticamente la primera vez que se usa el mock, desde
 `supabase/seed/activos.csv` y `data_local/taller1/precios.csv`/`rf.csv` (si existen:

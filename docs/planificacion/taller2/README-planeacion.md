@@ -1,7 +1,7 @@
 # Taller 2 · Renta fija: curva cero cupón Nelson-Siegel, TIR, señales y DV01
 
 Entrega: **jueves 19-nov-2026**. Prof. Juan Carlos Botero. Enunciado: *TALLER 2 – Análisis de Renta Fija y Renta Variable*.
-Esta carpeta es la planeación del Taller 2 dentro del robo-advisor. Se ejecuta igual que el Taller 1: `/entregable E15`, etc. (el comando busca `docs/taller-2/entregables/E15-*.md`; ver §5).
+Esta carpeta es la planeación del Taller 2 dentro del robo-advisor. Se ejecuta igual que el Taller 1: `/entregable E15`, etc. (el comando busca `docs/planificacion/taller2/E15-*.md`; ver §5).
 
 ## Estado al 16-nov-2026: implementado
 
@@ -87,13 +87,13 @@ E13 ── E14 (DB + pipeline)─┴── E17   ← extras de la app
 3. **`CLAUDE.md`** — agregar:
    ```markdown
    ## Taller 2 (entrega 19-nov)
-   - Planeación en `docs/taller-2/` (README = trazabilidad y orden). Entregables E13–E18 en `docs/taller-2/entregables/`.
+   - Planeación en `docs/taller-2/` (README = trazabilidad y orden). Entregables E13–E18 en `docs/planificacion/taller2/`.
    - Ruta crítica E15 → E16 → E18 sin base de datos (CSV del 2-oct). E13/E14/E17 son extras de la app.
    - `core/tes/` es puro, igual que `core/`.
    - DV01 siempre por $1.000 millones = 10⁹ COP (no 10¹²). Prueba: DV01/((P/100)·N·1e-4) = D_mod.
    - La página pública de TES es la única sin `requerir_sesion()`; solo cliente anon y tablas `tes_*`; debe funcionar con `MOCK_DATA=true`.
    ```
-4. **`.claude/commands/entregable.md`:** que busque también en `docs/taller-2/entregables/` (cambiar el paso 1 a `docs/**/entregables/$ARGUMENTS-*.md` o `docs/planificacion/` + `docs/taller-2/entregables/`).
+4. **`.claude/commands/entregable.md`:** que busque también en `docs/planificacion/taller2/` (cambiar el paso 1 a `docs/**/entregables/$ARGUMENTS-*.md` o `docs/planificacion/` + `docs/planificacion/taller2/`).
 5. **`.gitignore`:** `docs/planificacion/` está ignorado. Decidir si `docs/taller-2/` se versiona (no contiene secretos ni datos personales; recomendado versionarlo).
 
 ## 5. Definition of Done

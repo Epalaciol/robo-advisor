@@ -141,16 +141,20 @@ def test_usuario_no_puede_actualizar_ni_borrar_su_encuesta_ni_portafolio(usuario
     )
 
     # Sin policy de UPDATE/DELETE: RLS filtra a 0 filas, no se modifica nada.
-    assert cliente_a.table("encuestas").update({"puntaje": 27}).eq(
-        "id", encuesta["id"]
-    ).execute().data == []
-    assert cliente_a.table("encuestas").delete().eq("id", encuesta["id"]).execute().data == []
-    assert cliente_a.table("portafolios").update({"y_star": 1.0}).eq(
-        "id", portafolio["id"]
-    ).execute().data == []
     assert (
-        cliente_a.table("portafolios").delete().eq("id", portafolio["id"]).execute().data == []
+        cliente_a.table("encuestas").update({"puntaje": 27}).eq("id", encuesta["id"]).execute().data
+        == []
     )
+    assert cliente_a.table("encuestas").delete().eq("id", encuesta["id"]).execute().data == []
+    assert (
+        cliente_a.table("portafolios")
+        .update({"y_star": 1.0})
+        .eq("id", portafolio["id"])
+        .execute()
+        .data
+        == []
+    )
+    assert cliente_a.table("portafolios").delete().eq("id", portafolio["id"]).execute().data == []
 
     encuesta_actual = (
         cliente_a.table("encuestas").select("*").eq("id", encuesta["id"]).execute().data[0]

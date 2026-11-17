@@ -1,79 +1,73 @@
-# MFT Investments · Robo-advisor
+# MFT Investments · Robo-advisor y curva de TES
 
-**Talleres 1 y 2 de Inversiones — Maestría en Finanzas, EAFIT (2026-II)**
-*Quantitative Research & Asset Management*
+**Talleres 1 y 2 de Inversiones — Maestría en Finanzas, Universidad EAFIT (2026-II)**
+Profesor: Juan Carlos Botero Ramírez
 
-Una plataforma que ayuda a una persona a armar su portafolio de inversión según cuánto riesgo está dispuesta a asumir, usando el modelo media-varianza de Markowitz. **Es un ejercicio académico: no constituye asesoría de inversión.**
+Este repositorio reúne **los dos talleres** en una sola plataforma web: ayuda a una persona a armar su
+portafolio de inversión según cuánto riesgo está dispuesta a asumir (Taller 1) y calcula cada día la
+curva de tasas de los TES colombianos para decir qué papeles parecen caros o baratos (Taller 2).
+**Es un ejercicio académico: no constituye asesoría de inversión.**
 
 ---
 
-## Dónde probarla
+## 1. Pruébela (2 minutos, sin instalar nada)
 
 **🔗 Aplicación: <https://mft-investements.streamlit.app/>**
 
-Si la página dice que la app "se fue a dormir", pulse el botón para despertarla; tarda unos segundos.
+*Si dice que la app "se fue a dormir", pulse el botón para despertarla; tarda unos segundos.*
 
-### Usuarios de demostración
-| Para qué | Correo | Clave |
+| Quiere ver… | Qué hacer |
+|---|---|
+| **Taller 2** (curva de TES) | Abra la página **"T2 Curva TES"** en el menú de la izquierda. **No pide registro.** |
+| **Taller 1** (robo-advisor) | Cree su cuenta en la pestaña **"Crear cuenta"** (solo pide correo, un alias y un rango de edad; no pedimos cédula, teléfono ni nombre). Luego: encuesta → armar portafolio → ver su portafolio. |
+| Recorrido rápido del Taller 1 | Entre con el usuario de demostración `a3@local.test` / `Prueba1234!` (perfil ya definido). Con `prueba@local.test` / `Prueba1234!` empieza desde la encuesta. |
+
+## 2. Las entregas
+
+| | Taller 1 · Aversión al riesgo y Markowitz | Taller 2 · Curva cero cupón de TES |
 |---|---|---|
-| Recorrer **todo el flujo desde cero** (responder la encuesta) | `prueba@local.test` | `Prueba1234!` |
-| Saltar directo a **construir el portafolio** (perfil ya definido, A = 3) | `a3@local.test` | `Prueba1234!` |
+| **Entrega** | 19 de noviembre de 2026 | 26 de noviembre de 2026 |
+| **Empiece por** | [**`entregas/taller-1/`**](entregas/taller-1/README.md) | [**`entregas/taller-2/`**](entregas/taller-2/README.md) |
+| Informe (PDF) | [Taller1_Informe.pdf](entregas/taller-1/Taller1_Informe.pdf) | [Taller2_Informe.pdf](entregas/taller-2/Taller2_Informe.pdf) |
+| Excel | [Taller1.xlsx](entregas/taller-1/Taller1.xlsx) | [Taller2_2026-10-02.xlsx](entregas/taller-2/Taller2_2026-10-02.xlsx) |
+| Código | [`src/roboadvisor/taller1/`](src/roboadvisor/taller1/README.md) | [`src/roboadvisor/taller2/`](src/roboadvisor/taller2/README.md) |
 
-También puede **crear su propia cuenta** en la pestaña "Crear cuenta" (solo pide correo, un alias y un rango de edad; no se recolectan cédula, teléfono ni nombre completo).
+Cada carpeta de entrega tiene su propio README (también como PDF) pensado para adjuntarse a un correo:
+explica qué contiene cada archivo y en qué orden leerlo.
 
----
+## 3. Cómo está organizado el repositorio
 
-## Cómo interactuar (recorrido de 5 minutos)
+```
+entregas/            ← LO QUE SE ENTREGA: informes PDF, Excel y el README de cada taller
+  taller-1/
+  taller-2/
+app/                 ← La aplicación web (lo que ve el usuario)
+src/roboadvisor/     ← El código que hace los cálculos
+  taller1/           ←   Markowitz, aversión al riesgo, portafolios      (con README guía)
+  taller2/           ←   curva Nelson-Siegel, TIR, DV01, lector de IRC   (con README guía)
+  comun/             ←   conexión a la base de datos, compartido
+tests/               ← Pruebas automáticas que comprueban que los cálculos son correctos
+docs/                ← Documentos de apoyo: metodología, fórmulas, validación
+data_local/          ← Copia de los precios usados, para repetir los cálculos sin internet
+supabase/            ← Estructura de la base de datos
+.github/workflows/   ← Procesos automáticos que traen datos nuevos cada día
+```
 
-1. **Ingrese o cree una cuenta.** Arriba aparece quién tiene la sesión abierta.
-2. **Perfil de riesgo.** Nueve preguntas sobre cómo reacciona ante ganancias y pérdidas. Con el puntaje (9–27) la plataforma define su perfil y su coeficiente de aversión al riesgo **A** (8, 6, 4, 3 o 1). El perfil se mide una sola vez.
-3. **Construcción del portafolio.** Elija de 3 a 11 activos del catálogo (ETF de renta variable y renta fija, REIT, oro, bitcoin y ether) y, si quiere, un peso máximo por activo. La plataforma calcula:
-   - el **portafolio óptimo de riesgo** (frontera eficiente y portafolio tangente),
-   - el **portafolio completo**: cuánto va a riesgo (**y\***) y cuánto al activo libre de riesgo, según su A (línea CAL, sin apalancamiento),
-   - gráficos de la frontera, la CAL y su curva de indiferencia, además de betas y duration.
-   El portafolio se guarda **una sola vez**.
-4. **Seguimiento.** En cada ingreso se muestra cómo ha rendido el portafolio con los precios nuevos frente al benchmark (ACWI), el cambio de peso de cada activo y **recomendaciones con reglas fijas** (sin inteligencia artificial): desvío del óptimo, volatilidad fuera de perfil, activos rezagados, señales de múltiplos y datos desactualizados.
+## 4. Cómo se mantiene al día
 
-> Para ver el seguimiento con movimiento recomendamos dejar pasar algunos días de precios; el pipeline diario trae los datos nuevos cada tarde.
+Dos procesos automáticos (GitHub Actions) traen datos nuevos y los guardan en la base de datos
+(Supabase), de donde los lee la aplicación:
 
----
+- **Taller 1:** cada día hábil a las 5:00 pm (hora de Bogotá) se descargan los precios de los activos de
+  Yahoo Finance; en cada ingreso, el usuario ve cómo ha rendido su portafolio con los precios nuevos.
+- **Taller 2:** descarga el *Informe Diario de Deuda Pública* de [www.irc.gov.co](https://www.irc.gov.co/440),
+  lo valida, recalcula la curva y la publica en la página "T2 Curva TES".
 
-## Qué debe saber
+No es información en tiempo real: la actualización es **diaria**.
 
-- **Datos:** precios diarios de Yahoo Finance, actualizados de lunes a viernes a las 5:00 pm (hora de Bogotá). Base de datos y autenticación en Supabase.
-- **Moneda base:** USD. **Solo posiciones largas**, sin apalancamiento.
-- **Los tickers del catálogo** están pendientes de validación con el profesor.
-- **Privacidad:** cada usuario solo ve sus propios datos (seguridad a nivel de fila en la base de datos).
-- Las recomendaciones son **reglas fijas y explicables**; no hay IA en esta fase.
+## 5. Más información
 
----
-
-## Taller 2 · Curva cero cupón de TES (sección pública)
-
-En la misma aplicación, la página **"Taller 2 · Curva TES"** se abre **sin iniciar sesión** (enlace en la pantalla de inicio). Muestra, para cada Informe Diario de Deuda Pública de [www.irc.gov.co](https://www.irc.gov.co/440):
-
-- los **betas de Nelson-Siegel** del día (τ = 3,7) y la **curva cero cupón** de 1 a 30 años,
-- la **TIR observada** de cada TES tasa fija en pesos frente a la **TIR estimada con la curva**, y la decisión **comprar / vender / mantener** (umbral: 1 desviación estándar de las diferencias),
-- **duración, convexidad y DV01 por cada $1.000 millones** (10⁹ COP) de valor nominal,
-- la historia de la curva desde el 2-oct-2026 (día de prueba del enunciado).
-
-Un pipeline diario descarga los informes, los valida y calcula la curva. Para el día del enunciado:
-`python -m roboadvisor.taller2.pipeline.update_tes --fecha 2026-10-02 --sin-supabase`.
-Metodología y validación: [`docs/taller-2/`](docs/taller-2/README.md).
-
-## Dónde está el código de cada taller
-
-| | Taller 1 · Robo-advisor | Taller 2 · Curva TES | Común |
-|---|---|---|---|
-| Motor (puro, sin red) | `src/roboadvisor/taller1/core/` | `src/roboadvisor/taller2/core/` | — |
-| Datos y pipeline | `src/roboadvisor/taller1/data/`, `taller1/pipeline/` | `src/roboadvisor/taller2/datos/`, `taller2/pipeline/` | `src/roboadvisor/comun/` (Supabase, mock, config) |
-| App (Streamlit) | `app/pages/1_T1_…`, `2_T1_…`, `3_T1_…`, `app/ui/taller1/` | `app/pages/4_T2_Curva_TES.py`, `app/ui/taller2/` | `app/Inicio.py`, `app/ui/comun/` |
-| Base de datos (mismo proyecto Supabase) | `supabase/migrations/0001`, `0002_*` | `supabase/migrations/0003_taller2_tes.sql` (tablas `t2_*`) | — |
-| Pruebas | `tests/taller1/` | `tests/taller2/` | `tests/comun/` |
-| Documentos | `docs/taller-1/` | `docs/taller-2/` | — |
-| Automatización | `.github/workflows/pipeline.yml`, `pipeline-fundamentales.yml` | `.github/workflows/pipeline-taller2.yml` | `ci.yml` |
-
-## Para ver cómo está hecho
-La explicación técnica (tecnologías, carpetas, cómo levantar la aplicación en local, pruebas y despliegue) está en [**README_TECNICO.md**](README_TECNICO.md). Las especificaciones y fórmulas están en [`docs/taller-1/`](docs/taller-1/) y [`docs/taller-2/`](docs/taller-2/).
-
-**Fechas:** Taller 1 — 12 de noviembre de 2026 · Taller 2 — 19 de noviembre de 2026.
+- Cómo instalar y correr todo en un computador, pruebas y despliegue: [README_TECNICO.md](README_TECNICO.md).
+- Metodología, fórmulas y validación: [`docs/`](docs/README.md).
+- Privacidad: solo se guardan correo, alias, rango de edad y las respuestas de la encuesta; cada usuario
+  ve únicamente sus propios datos.
