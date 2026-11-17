@@ -4,6 +4,10 @@ name: Taller 2 · Pipeline TES (curva Nelson-Siegel)
 # valida, calibra la curva y carga las tablas t2_* en Supabase. IRC publica con días de retraso,
 # por eso se revisa una ventana y no solo "ayer". Idempotente.
 # Requiere los secretos SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY.
+#
+# Interruptor: las corridas programadas (schedule) solo ejecutan si la variable del repo
+# TES_AUTO vale 'true' (Settings → Secrets and variables → Actions → Variables). Sin la variable,
+# o con otro valor, el cron no hace nada. La corrida manual (workflow_dispatch) siempre funciona.
 on:
   schedule:
     - cron: "17 13 * * 1-5"  # ~8:17 am Bogotá
@@ -16,6 +20,7 @@ on:
 
 jobs:
   update-tes:
+    if: github.event_name != 'schedule' || vars.TES_AUTO == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
