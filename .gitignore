@@ -19,3 +19,6 @@ exports/
 CLAUDE.md
 .claude/
 docs/planificacion/
+
+# Taller 2: PDF descargados de IRC (caché local, se pueden volver a bajar)
+data_local/tes/

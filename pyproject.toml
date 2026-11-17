@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "roboadvisor"
 version = "0.0.1"
-description = "Proto robo-advisor académico (Taller 1, Inversiones EAFIT)"
+description = "Inversiones EAFIT: Taller 1 (robo-advisor Markowitz) y Taller 2 (curva TES Nelson-Siegel)"
 requires-python = ">=3.11"
 dependencies = [
     "numpy",
@@ -16,6 +16,9 @@ dependencies = [
     "supabase",
     "yfinance",
     "pydantic-settings",
+    "pdfplumber",
+    "openpyxl",
+    "httpx",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +45,8 @@ filterwarnings = [
 
 [tool.ruff]
 line-length = 100
+# Referencia entregada por el grupo (se conserva tal cual para compararla en la validación).
+extend-exclude = ["docs/taller-2/referencias"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]

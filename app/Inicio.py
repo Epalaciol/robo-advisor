@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import streamlit as st  # noqa: E402
-from ui.auth import (  # noqa: E402
+from ui.comun.auth import (  # noqa: E402
     RANGOS_EDAD,
     TEXTO_CONSENTIMIENTO,
     cerrar_sesion,
@@ -16,18 +16,18 @@ from ui.auth import (  # noqa: E402
     iniciar_sesion,
     registrar,
 )
-from ui.estado import estado_usuario, mostrar_barra_lateral  # noqa: E402
-from ui.estilos import barra_superior, configurar_pagina, logo_grande, pie_de_pagina  # noqa: E402
+from ui.comun.estado import estado_usuario, mostrar_barra_lateral  # noqa: E402
+from ui.comun.estilos import barra_superior, configurar_pagina, logo_grande, pie_de_pagina  # noqa: E402
 
-from roboadvisor.config import Settings  # noqa: E402
-from roboadvisor.data.cliente import modo_mock_activo  # noqa: E402
-from roboadvisor.data.cliente_mock import (  # noqa: E402
+from roboadvisor.comun.cliente import modo_mock_activo  # noqa: E402
+from roboadvisor.comun.cliente_mock import (  # noqa: E402
     CLAVE_A3,
     CLAVE_PRUEBA,
     CORREO_A3,
     CORREO_PRUEBA,
 )
-from roboadvisor.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
+from roboadvisor.comun.config import Settings  # noqa: E402
+from roboadvisor.taller1.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
 
 configurar_pagina("Robo-advisor")
 
@@ -58,6 +58,12 @@ def _pagina_login_registro() -> None:
             f"`{CORREO_A3}` · clave `{CLAVE_A3}`"
         )
 
+    st.page_link(
+        "pages/4_T2_Curva_TES.py",
+        label="Taller 2 · Curva cero cupón de TES (pública, sin iniciar sesión)",
+        icon="📈",
+    )
+    st.markdown("**Taller 1 · Robo-advisor** — inicia sesión o crea una cuenta:")
     tab_login, tab_registro = st.tabs(["Iniciar sesión", "Crear cuenta"])
 
     with tab_login:
@@ -101,9 +107,9 @@ def _pagina_login_registro() -> None:
 
 def _enrutar_segun_estado(estado: str) -> None:
     destinos = {
-        "sin_encuesta": "pages/1_Encuesta.py",
-        "sin_portafolio": "pages/2_Constructor.py",
-        "completo": "pages/3_Mi_portafolio.py",
+        "sin_encuesta": "pages/1_T1_Encuesta.py",
+        "sin_portafolio": "pages/2_T1_Constructor.py",
+        "completo": "pages/3_T1_Mi_portafolio.py",
     }
     st.success("Sesión iniciada.")
     if st.button("Continuar", type="primary"):
