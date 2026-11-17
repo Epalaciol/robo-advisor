@@ -28,11 +28,11 @@ from roboadvisor.taller1.core.markowitz import (  # noqa: E402
 from roboadvisor.taller1.core.portafolio_completo import componer, escenarios_por_a  # noqa: E402
 from roboadvisor.taller1.core.retornos import estimar, retornos_diarios, ventana_comun  # noqa: E402
 from roboadvisor.taller1.core.riesgo import beta_portafolio, betas, duration_portafolio  # noqa: E402
+from roboadvisor.taller1.core.seleccion import seleccion_referencia  # noqa: E402
 from roboadvisor.taller1.data.repositorio_mercado import RepositorioMercado  # noqa: E402
 from roboadvisor.taller1.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
 
 PARAMS = ParametrosFinancieros()
-EJEMPLO_DIVERSIFICADO = ["SPY", "EFA", "EMB", "LQD", "VNQ", "GLD"]
 
 configurar_pagina("Constructor")
 requerir_sesion()
@@ -177,10 +177,22 @@ etiquetas_por_ticker = {
 tickers_por_etiqueta = {v: k for k, v in etiquetas_por_ticker.items()}
 
 st.subheader("1. Universo de inversión (3 a 11 activos)")
-if st.button("Cargar selección diversificada de referencia"):
+etiqueta_perfil = {p[4]: p[3] for p in PERFILES}.get(int(a_usuario), perfil_usuario)
+if st.button(
+    f"Cargar selección de referencia para mi perfil ({etiqueta_perfil}, A = {a_usuario:g})"
+):
     st.session_state["constructor_seleccion"] = [
-        etiquetas_por_ticker[t] for t in EJEMPLO_DIVERSIFICADO if t in etiquetas_por_ticker
+        etiquetas_por_ticker[t]
+        for t in seleccion_referencia(a_usuario)
+        if t in etiquetas_por_ticker
     ]
+st.caption(
+    "Son 11 activos que cubren acciones (EE.UU., EAFE, emergentes, Colombia y Latam), renta fija "
+    "(TES, grado de inversión, alto rendimiento, global), REIT, oro y, en perfiles más "
+    "arriesgados, criptoactivos. **Se ajusta a tu A:** a menor A, la selección se inclina hacia "
+    "activos de mayor retorno esperado y mayor riesgo; a mayor A, hacia renta fija. Puedes "
+    "modificarla antes de optimizar."
+)
 
 seleccion_etiquetas = st.multiselect(
     "Universo de activos (por clase)",
