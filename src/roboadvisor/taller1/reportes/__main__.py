@@ -32,7 +32,7 @@ def main() -> None:
     caso = calcular_caso(precios, rf)
     selecciones = selecciones_por_perfil(precios, leer_catalogo(), rf, caso.params)
     ruta_vol = a.voluntarios or a.salida / "datos" / "voluntarios.csv"
-    voluntarios = pd.read_csv(ruta_vol, dtype=str) if ruta_vol.exists() else None
+    voluntarios = pd.read_csv(ruta_vol, dtype=str).fillna("") if ruta_vol.exists() else None
 
     a.salida.mkdir(parents=True, exist_ok=True)
     print("Excel:", generar_excel(caso, a.salida / "Taller1.xlsx", voluntarios, selecciones))

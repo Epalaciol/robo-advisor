@@ -31,6 +31,7 @@ MESES = [
     "noviembre",
     "diciembre",
 ]
+RANGOS_ENUNCIADO = ["25-34", "35-44", "45-54", "55-64", "65-74"]
 COLUMNAS_RESPUESTAS = ["q1", "q2a", "q2b", "q2c", "q3", "q4", "q5", "q6", "q7"]
 
 
@@ -40,6 +41,24 @@ def _pct(x: float, d: int = 1) -> str:
 
 def _md(df: pd.DataFrame) -> str:
     return df.to_markdown(index=False, disable_numparse=True)
+
+
+ETIQUETA_FACTOR = {
+    "ocupacion": "Ocupación",
+    "rango_ingresos": "Ingresos (COP/mes)",
+    "dependientes_economicos": "Dependientes",
+    "nivel_educativo": "Educación",
+    "experiencia_invirtiendo_anios": "Experiencia invirtiendo",
+    "horizonte_principal_inversion": "Horizonte",
+    "colchon_emergencia": "Colchón de emergencia",
+}
+
+
+def _factores_transpuestos(v: pd.DataFrame, factores: list[str]) -> str:
+    """Una fila por factor y una columna por voluntario (cabe en la página)."""
+    t = v.set_index("alias")[factores].replace("", "—").fillna("—").T
+    t.index = [ETIQUETA_FACTOR.get(f, f) for f in t.index]
+    return _md(t.reset_index(names="Factor"))
 
 
 def seccion_voluntarios(c: CasoReferencia, voluntarios: pd.DataFrame | None) -> str:
@@ -62,23 +81,48 @@ def seccion_voluntarios(c: CasoReferencia, voluntarios: pd.DataFrame | None) -> 
                 "Perfil": r["perfil"],
                 "A": r["a"],
                 "En riesgo (y*)": _pct(r["y"], 0),
-                "En libre de riesgo": _pct(r["peso_rf"], 0),
                 "E(Rc)": _pct(r["retorno"]),
                 "σc": _pct(r["sigma"]),
             }
         )
     tabla = _md(pd.DataFrame(filas))
+    columnas_fijas = ["alias", "rango_edad", *COLUMNAS_RESPUESTAS, "activos_elegidos", "y_guardado"]
     factores = [
         col
         for col in voluntarios.columns
-        if col not in ["alias", "rango_edad", *COLUMNAS_RESPUESTAS]
+        if col not in columnas_fijas
+        and voluntarios[col].fillna("").astype(str).str.strip().ne("").any()
     ]
     extra = ""
     if factores:
         extra = (
             "\n\n**Factores personales recolectados** (para entender qué moldea la aversión al "
-            "riesgo; con solo cinco personas son indicios, no conclusiones estadísticas):\n\n"
-            + _md(voluntarios[["alias", *factores]])
+            "riesgo; con tan pocas personas son indicios, no conclusiones estadísticas):\n\n"
+            + _factores_transpuestos(voluntarios, factores)
+        )
+    elegidos = (
+        voluntarios[["alias", "activos_elegidos", "y_guardado"]].fillna("")
+        if {"activos_elegidos", "y_guardado"} <= set(voluntarios.columns)
+        else None
+    )
+    if elegidos is not None and elegidos["activos_elegidos"].astype(str).str.strip().ne("").any():
+        elegidos = elegidos.rename(
+            columns={
+                "alias": "Voluntario",
+                "activos_elegidos": "Activos que eligió",
+                "y_guardado": "y* guardado",
+            }
+        )
+        extra += (
+            "\n\n**Portafolios que armaron en la aplicación** (los voluntarios sin fila aún no "
+            "han armado su portafolio):\n\n"
+            + _md(elegidos[elegidos["Activos que eligió"].astype(str).str.strip().ne("")])
+        )
+    faltan = [r for r in RANGOS_ENUNCIADO if r not in set(voluntarios["rango_edad"])]
+    if faltan:
+        extra += (
+            f"\n\n> **Pendiente:** el enunciado pide un voluntario por rango de edad; aún faltan los "
+            f"rangos {', '.join(faltan)}."
         )
     return tabla + extra
 

@@ -54,3 +54,22 @@ def test_selecciones_por_perfil_a_menor_a_mas_riesgo_y_retorno(caso):
     assert [x.a for x in sel] == [8, 6, 4, 3, 1]
     assert all(len(x.tickers) == 11 for x in sel)
     assert sel[-1].vol_media > sel[0].vol_media and sel[-1].ret_medio > sel[0].ret_medio
+
+
+def test_seccion_voluntarios_con_datos_avisa_rangos_faltantes(caso):
+    from roboadvisor.taller1.reportes.informe import seccion_voluntarios
+
+    v = pd.DataFrame(
+        [
+            {"alias": "V1", "rango_edad": "25-34", "q1": "b", "q2a": "b", "q2b": "c", "q2c": "c",
+             "q3": "c", "q4": "c", "q5": "a", "q6": "c", "q7": "c", "ocupacion": "Empleado/a",
+             "activos_elegidos": "SPY, EFA", "y_guardado": "1.0"},
+            {"alias": "V2", "rango_edad": "35-44", "q1": "a", "q2a": "b", "q2b": "b", "q2c": "a",
+             "q3": "a", "q4": "c", "q5": "c", "q6": "a", "q7": "b", "ocupacion": "",
+             "activos_elegidos": "", "y_guardado": ""},
+        ]
+    )  # fmt: skip
+    md = seccion_voluntarios(caso, v)
+    assert "V1" in md and "V2" in md and "Ocupación" in md
+    assert "45-54, 55-64, 65-74" in md  # el enunciado pide uno por rango
+    assert "Pendiente de completar" in seccion_voluntarios(caso, None)
