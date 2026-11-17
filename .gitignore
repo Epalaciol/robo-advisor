@@ -22,3 +22,6 @@ docs/planificacion/
 
 # Taller 2: PDF descargados de IRC (caché local, se pueden volver a bajar)
 data_local/tes/
+
+# Taller 1: respuestas reales de los voluntarios (datos personales; no se versionan)
+entregas/taller-1/datos/voluntarios.csv

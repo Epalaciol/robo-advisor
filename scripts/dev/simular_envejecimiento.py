@@ -3,7 +3,7 @@ de E10 sin esperar semanas de datos reales.
 
 Usa `service_role` (ignora RLS): **nunca** correr esto contra un proyecto de
 producción con usuarios reales, solo contra tu proyecto Supabase de desarrollo
-con un usuario de prueba (ver `scripts/taller1/crear_usuario_prueba.py`).
+con un usuario de prueba (ver `scripts/dev/crear_usuario_prueba.py`).
 
 En `MOCK_DATA=true` este script **no sirve para probar la app en vivo**: el
 mock vive en memoria del proceso de `streamlit run` y este script corre en un
@@ -12,7 +12,7 @@ proceso aparte, así que no comparten estado (ver docstring de
 mock" que trae la propia página "Mi portafolio" — corre en el mismo proceso.
 
 Uso:
-    python scripts/taller1/simular_envejecimiento.py --correo prueba@local.test --dias 60
+    python scripts/dev/simular_envejecimiento.py --correo prueba@local.test --dias 60
 """
 
 import argparse

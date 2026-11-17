@@ -8,11 +8,11 @@ Todos terminan en `@local.test` y comparten la clave `CLAVE`. El script solo toc
 correos: jamás modifica a usuarios reales.
 
 Uso (con `.env` apuntando al proyecto Supabase):
-    python scripts/taller1/usuarios_demo.py              # crea lo que falte
-    python scripts/taller1/usuarios_demo.py --reiniciar  # borra encuesta/portafolio: todos de cero
-    python scripts/taller1/usuarios_demo.py --listar     # muestra los usuarios y su estado
-    python scripts/taller1/usuarios_demo.py --cambiar demo.a4@local.test --a 1      # le pone A=1
-    python scripts/taller1/usuarios_demo.py --cambiar demo.a4@local.test --puntaje 19  # por puntaje
+    python scripts/dev/usuarios_demo.py              # crea lo que falte
+    python scripts/dev/usuarios_demo.py --reiniciar  # borra encuesta/portafolio: todos de cero
+    python scripts/dev/usuarios_demo.py --listar     # muestra los usuarios y su estado
+    python scripts/dev/usuarios_demo.py --cambiar demo.a4@local.test --a 1      # le pone A=1
+    python scripts/dev/usuarios_demo.py --cambiar demo.a4@local.test --puntaje 19  # por puntaje
 
 Usa `service_role` (ignora RLS): solo desde tu máquina, nunca en la app.
 """
@@ -116,7 +116,7 @@ def cambiar_perfil(correo: str, puntaje: int) -> None:
     user_id = _buscar_usuario(admin, correo)
     if user_id is None:
         raise SystemExit(
-            f"No existe {correo}. Corre primero: python scripts/taller1/usuarios_demo.py"
+            f"No existe {correo}. Corre primero: python scripts/dev/usuarios_demo.py"
         )
 
     respuestas = respuestas_para(puntaje)

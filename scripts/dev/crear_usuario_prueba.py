@@ -8,9 +8,9 @@ Usa `service_role` (ignora RLS): nunca correr esto contra un proyecto de
 producción real, solo contra tu proyecto Supabase de desarrollo.
 
 Uso:
-    python scripts/taller1/crear_usuario_prueba.py
-    python scripts/taller1/crear_usuario_prueba.py --correo otra@local.test --clave Otra1234!
-    python scripts/taller1/crear_usuario_prueba.py --borrar
+    python scripts/dev/crear_usuario_prueba.py
+    python scripts/dev/crear_usuario_prueba.py --correo otra@local.test --clave Otra1234!
+    python scripts/dev/crear_usuario_prueba.py --borrar
 """
 
 import argparse

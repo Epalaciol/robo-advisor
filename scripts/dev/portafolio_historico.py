@@ -8,7 +8,7 @@ A del usuario (CAL + y*). Reemplaza el portafolio que el usuario tuviera.
 Usa `service_role` (ignora RLS): solo desde tu máquina, solo con usuarios `@local.test`.
 
 Uso:
-    python scripts/taller1/portafolio_historico.py --correo demo.a4@local.test \
+    python scripts/dev/portafolio_historico.py --correo demo.a4@local.test \
         --tickers SMH,XBI,URA,KWEB,EWZ --meses 6
 """
 
@@ -51,7 +51,7 @@ def main() -> None:
 
     user_id = _buscar_usuario(admin, args.correo)
     if user_id is None:
-        raise SystemExit(f"No existe {args.correo}. Corre primero scripts/taller1/usuarios_demo.py")
+        raise SystemExit(f"No existe {args.correo}. Corre primero scripts/dev/usuarios_demo.py")
     encuesta = admin.table("encuestas").select("*").eq("user_id", user_id).execute().data
     if not encuesta:
         raise SystemExit("El usuario no tiene encuesta.")
