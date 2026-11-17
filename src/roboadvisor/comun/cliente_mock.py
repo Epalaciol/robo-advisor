@@ -142,10 +142,11 @@ _TALLER2_SEMBRADO = [False]
 
 
 def _sembrar_taller2() -> None:
-    """Taller 2: la tabla del enunciado (2-oct-2026) y los PDF de `data_local/tes/`, si hay.
+    """Taller 2: SOLO la tabla del enunciado (2-oct-2026), del fixture versionado.
 
     Se calcula con el mismo pipeline que en producción (`taller2.pipeline.procesar`) y se
     guarda en las tablas `t2_*` del mock, para que la página pública funcione sin Supabase.
+    No lee `data_local/tes/`: el modo mock es igual en cualquier máquina.
     """
     if _TALLER2_SEMBRADO[0]:
         return
@@ -153,16 +154,13 @@ def _sembrar_taller2() -> None:
     from roboadvisor.taller2.config import ParametrosTES
     from roboadvisor.taller2.datos.informe import leer_csv
     from roboadvisor.taller2.datos.repositorio import RepositorioTES
-    from roboadvisor.taller2.pipeline.procesar import DiaTES, leer_carpeta, procesar
+    from roboadvisor.taller2.pipeline.procesar import DiaTES, procesar
 
     csv_2oct = RAIZ_PROYECTO / "tests" / "taller2" / "fixtures" / "tes_2026-10-02.csv"
     dias = {}
     if csv_2oct.exists():
         inf = leer_csv(csv_2oct)
         dias[inf.fecha] = DiaTES(inf.fecha, "leido", inf, mensaje="enunciado")
-    for fecha, (inf, origen) in leer_carpeta().items():
-        if inf is not None:
-            dias[fecha] = DiaTES(fecha, "leido", inf, mensaje=origen)
     params = ParametrosTES()
     repo = RepositorioTES(ClienteMock(es_servicio=True))
     for d in procesar(list(dias.values()), params):

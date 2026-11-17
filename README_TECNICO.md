@@ -121,7 +121,7 @@ python -m roboadvisor.taller2.pipeline.validacion fase2 [--cargar]
 ```
 Opciones del modelo: `--umbral sigma|sigma_robusta|<pb>`, `--solo-sen`, `--ponderar-duracion`, `--tau`.
 Supabase: ejecutar una vez `supabase/migrations/0003_taller2_tes.sql`. En modo mock la página del
-Taller 2 muestra el 2-oct (tabla del enunciado) y los PDF que haya en `data_local/tes/`.
+Taller 2 muestra solo el 2-oct de la tabla del enunciado.
 
 ## Fechas
 Taller 1: **12-nov-2026** · Taller 2: **19-nov-2026**.

@@ -107,5 +107,4 @@ def test_pagina_publica_abre_sin_sesion_en_modo_mock(monkeypatch):
     at.run()
     assert not at.exception
     assert any("Taller 2" in t.value for t in at.title)
-    # 29 con solo el fixture del 2-oct (CI); 29–30 si hay PDF locales en data_local/tes/
-    assert len(at.dataframe[0].value) in (29, 30)
+    assert len(at.dataframe[0].value) == 29
