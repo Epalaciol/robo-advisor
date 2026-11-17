@@ -28,7 +28,10 @@ from roboadvisor.taller1.core.markowitz import (  # noqa: E402
 from roboadvisor.taller1.core.portafolio_completo import componer, escenarios_por_a  # noqa: E402
 from roboadvisor.taller1.core.retornos import estimar, retornos_diarios, ventana_comun  # noqa: E402
 from roboadvisor.taller1.core.riesgo import beta_portafolio, betas, duration_portafolio  # noqa: E402
-from roboadvisor.taller1.core.seleccion import seleccion_referencia  # noqa: E402
+from roboadvisor.taller1.core.seleccion import (  # noqa: E402
+    estadisticas_activos,
+    seleccion_referencia,
+)
 from roboadvisor.taller1.data.repositorio_mercado import RepositorioMercado  # noqa: E402
 from roboadvisor.taller1.data.repositorio_usuario import RepositorioUsuario  # noqa: E402
 
@@ -177,21 +180,40 @@ etiquetas_por_ticker = {
 tickers_por_etiqueta = {v: k for k, v in etiquetas_por_ticker.items()}
 
 st.subheader("1. Universo de inversión (3 a 11 activos)")
+
+
+@st.cache_data(show_spinner="Evaluando el catálogo...", ttl=3600)
+def _candidatos_seleccion(
+    _repo_mercado: RepositorioMercado, ultima_fecha: str | None
+) -> pd.DataFrame:
+    """Retorno y volatilidad históricos de cada activo del catálogo (para sugerir una selección)."""
+    desde = (pd.Timestamp.today() - pd.DateOffset(months=PARAMS.meses_historia)).date().isoformat()
+    precios = _repo_mercado.precios(list(catalogo_por_ticker), desde)
+    stats = estadisticas_activos(precios, PARAMS.ventana_dias)
+    stats["clase"] = [catalogo_por_ticker[t]["clase"] for t in stats.index]
+    stats["nombre"] = [catalogo_por_ticker[t]["nombre"] for t in stats.index]
+    return stats
+
+
 etiqueta_perfil = {p[4]: p[3] for p in PERFILES}.get(int(a_usuario), perfil_usuario)
 if st.button(
     f"Cargar selección de referencia para mi perfil ({etiqueta_perfil}, A = {a_usuario:g})"
 ):
-    st.session_state["constructor_seleccion"] = [
-        etiquetas_por_ticker[t]
-        for t in seleccion_referencia(a_usuario)
-        if t in etiquetas_por_ticker
-    ]
+    sugeridos = seleccion_referencia(
+        a_usuario, _candidatos_seleccion(repo_mercado, _ultima_dato), PARAMS
+    )
+    if sugeridos:
+        st.session_state["constructor_seleccion"] = [
+            etiquetas_por_ticker[t] for t in sugeridos if t in etiquetas_por_ticker
+        ]
+    else:
+        st.warning("No hay datos suficientes para sugerir una selección.")
 st.caption(
-    "Son 11 activos que cubren acciones (EE.UU., EAFE, emergentes, Colombia y Latam), renta fija "
-    "(TES, grado de inversión, alto rendimiento, global), REIT, oro y, en perfiles más "
-    "arriesgados, criptoactivos. **Se ajusta a tu A:** a menor A, la selección se inclina hacia "
-    "activos de mayor retorno esperado y mayor riesgo; a mayor A, hacia renta fija. Puedes "
-    "modificarla antes de optimizar."
+    "Son 11 activos elegidos **con reglas y con los datos de hoy**: se cubren las clases de "
+    "activo mejor puntuadas (acciones, renta fija, REIT, oro, cripto…) y los cupos restantes se "
+    "llenan por puntaje. **Depende de tu A:** a menor A se prioriza el retorno histórico (con más "
+    "riesgo); a mayor A, la baja volatilidad. No incluye ETF apalancados. Puedes modificarla "
+    "antes de optimizar."
 )
 
 seleccion_etiquetas = st.multiselect(

@@ -83,3 +83,21 @@ Todas las recomendaciones incluyen el texto fijo: *"Ejercicio académico; no con
 - `y*` con A=1…8 es monótona decreciente en A; recorte a [0,1] verificado.
 - Seguimiento: con precios constantes y rf=0 el valor no cambia; con un solo activo replica su retorno.
 - Cada regla de recomendación con un caso que la activa y uno que no.
+
+## 11. Selección de referencia por perfil (`core/seleccion.py`)
+
+El botón *"Cargar selección de referencia para mi perfil"* del Constructor sugiere 11 activos con
+**reglas, no con una lista fija**, así se adapta si cambia el comportamiento de los activos.
+A es continuo: se acota a `[a_min, a_max] = [1, 8]` (parámetros en `ParametrosFinancieros`).
+
+1. **Elegibles:** historia ≥ `min_dias` y que no sean ETF apalancados o inversos (se detectan por el
+   nombre: 2x, 3x, Ultra, Bull, Bear).
+2. **Puntaje:** `w·pct(μ) + (1−w)·pct(−σ)` con `w = (a_max − A)/(a_max − a_min)`; `pct` es el percentil
+   entre los elegibles. A baja → se prioriza el retorno histórico; A alta → la baja volatilidad.
+3. **Diversificación:** el mejor activo de cada una de las `sel_n_clases = 5` mejores clases y los
+   cupos restantes por puntaje, máximo `sel_max_por_clase = 3` por clase.
+
+Con datos reales (5 años) la volatilidad media de la selección baja de ≈ 27 % (A ≤ 3) a ≈ 12 % (A ≥ 6)
+y el retorno medio histórico de ≈ 17 % a ≈ 4–7 %. Es solo el universo de partida: Markowitz sigue igual
+(el portafolio tangente no depende de A; A solo define `y*`) y el usuario puede cambiar la selección.
+

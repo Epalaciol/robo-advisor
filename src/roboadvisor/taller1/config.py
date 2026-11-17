@@ -30,6 +30,12 @@ class ParametrosFinancieros:
     tilt_multiplos: float = 0.025
     min_obs_pe: int = 12  # fotos previas de P/E propio para dar señal (≈ 3 meses semanales)
     benchmark: str = "ACWI"
+    # Selección de referencia por perfil (core/seleccion.py)
+    a_min: float = 1.0  # A del perfil más arriesgado del cuestionario
+    a_max: float = 8.0  # A del perfil más conservador
+    n_seleccion: int = 11
+    sel_n_clases: int = 5  # clases de activo que se cubren primero (el mejor de cada una)
+    sel_max_por_clase: int = 3
 
     @property
     def meses_historia(self) -> int:
