@@ -18,6 +18,7 @@ from roboadvisor.taller1.core.portafolio_completo import (
 )
 from roboadvisor.taller1.core.retornos import Estimacion, estimar, retornos_diarios
 from roboadvisor.taller1.core.riesgo import beta_portafolio, betas, duration_portafolio
+from roboadvisor.taller1.core.seleccion import estadisticas_activos, seleccion_referencia
 
 # 11 ETF (el número que menciona el enunciado), uno o dos por cada clase de activo pedida.
 UNIVERSO_REFERENCIA: dict[str, str] = {
@@ -111,3 +112,58 @@ def portafolio_de_voluntario(caso: CasoReferencia, respuestas: dict[str, str]) -
 
 
 TABLA_PERFILES = [(a, b, etiqueta, A) for a, b, _clave, etiqueta, A in PERFILES]
+
+
+@dataclass(frozen=True)
+class SeleccionPerfil:
+    """La selección de 11 activos que sugiere la app para un A y su resultado con Markowitz."""
+
+    a: int
+    perfil: str
+    tickers: list[str]
+    vol_media: float  # volatilidad media anual de los 11 activos
+    ret_medio: float  # retorno medio histórico anual de los 11 activos
+    retorno: float | None = None  # portafolio de riesgo óptimo (tangente) de esa selección
+    sigma: float | None = None
+    sharpe: float | None = None
+    y: float | None = None
+    retorno_completo: float | None = None
+    n_obs: int | None = None  # retornos diarios en común usados (los activos jóvenes la acortan)
+
+
+def selecciones_por_perfil(
+    precios: pd.DataFrame, catalogo: list[dict], rf: float, params: ParametrosFinancieros
+) -> list[SeleccionPerfil]:
+    """Aplica la regla de `core/seleccion.py` a cada perfil del cuestionario (A = 8, 6, 4, 3, 1)."""
+    activos = {a["ticker"]: a for a in catalogo if a["activo"] and a["rol"] == "invertible"}
+    cols = [t for t in activos if t in precios.columns]
+    stats = estadisticas_activos(precios[cols], params.ventana_dias)
+    stats["clase"] = [activos[t]["clase"] for t in stats.index]
+    stats["nombre"] = [activos[t]["nombre"] for t in stats.index]
+    etiquetas = {a: e for _mn, _mx, _k, e, a in PERFILES}
+    salida = []
+    for a in VALORES_A:
+        tickers = seleccion_referencia(a, stats, params)
+        base = {
+            "a": a,
+            "perfil": etiquetas[a],
+            "tickers": tickers,
+            "vol_media": float(stats.loc[tickers, "sigma"].mean()),
+            "ret_medio": float(stats.loc[tickers, "mu"].mean()),
+        }
+        try:
+            est = estimar(precios[tickers], rf, params.ventana_dias, params.min_dias)
+            tang = tangente(est, params.w_max, params.w_min)
+            comp = componer(tang, rf, a)
+            base |= {
+                "retorno": tang.retorno,
+                "sigma": tang.sigma,
+                "sharpe": tang.sharpe,
+                "y": comp.y,
+                "retorno_completo": comp.retorno,
+                "n_obs": est.n_obs,
+            }
+        except ValueError:
+            pass  # historia insuficiente para optimizar esa selección
+        salida.append(SeleccionPerfil(**base))
+    return salida

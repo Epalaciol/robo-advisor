@@ -7,8 +7,9 @@ from pathlib import Path
 import pandas as pd
 
 from roboadvisor.comun.readme_pdf import readme_a_pdf
+from roboadvisor.taller1.data.semillas import leer_catalogo
 
-from .caso import calcular_caso
+from .caso import calcular_caso, selecciones_por_perfil
 from .excel import generar_excel
 from .informe import generar_pdf
 
@@ -29,12 +30,13 @@ def main() -> None:
     )
     rf = float(pd.read_csv(a.datos / "rf.csv")["tasa_anual"].iloc[-1])
     caso = calcular_caso(precios, rf)
+    selecciones = selecciones_por_perfil(precios, leer_catalogo(), rf, caso.params)
     ruta_vol = a.voluntarios or a.salida / "datos" / "voluntarios.csv"
     voluntarios = pd.read_csv(ruta_vol, dtype=str) if ruta_vol.exists() else None
 
     a.salida.mkdir(parents=True, exist_ok=True)
-    print("Excel:", generar_excel(caso, a.salida / "Taller1.xlsx", voluntarios))
-    print("PDF:  ", generar_pdf(caso, a.salida, voluntarios, dt.date.today()))
+    print("Excel:", generar_excel(caso, a.salida / "Taller1.xlsx", voluntarios, selecciones))
+    print("PDF:  ", generar_pdf(caso, a.salida, voluntarios, dt.date.today(), selecciones))
 
     if (a.salida / "README.md").exists():
         print(

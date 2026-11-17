@@ -44,3 +44,13 @@ def test_excel_y_markdown_se_generan(caso, tmp_path):
     figs = {k: tmp_path / f"{k}.png" for k in ("frontera", "pesos", "completo")}
     md = construir_markdown(caso, figs, None, dt.date(2026, 11, 16))
     assert "Paso 5" in md and "Pendiente de completar" in md
+
+
+def test_selecciones_por_perfil_a_menor_a_mas_riesgo_y_retorno(caso):
+    from roboadvisor.taller1.data.semillas import leer_catalogo
+    from roboadvisor.taller1.reportes.caso import selecciones_por_perfil
+
+    sel = selecciones_por_perfil(caso.precios, leer_catalogo(), caso.rf, caso.params)
+    assert [x.a for x in sel] == [8, 6, 4, 3, 1]
+    assert all(len(x.tickers) == 11 for x in sel)
+    assert sel[-1].vol_media > sel[0].vol_media and sel[-1].ret_medio > sel[0].ret_medio

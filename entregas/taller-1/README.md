@@ -34,6 +34,17 @@ responda el cuestionario, escoja entre 3 y 11 activos y vea su portafolio comple
 la CAL. En cada nuevo ingreso muestra cómo le ha ido con los precios del día y da recomendaciones con
 **reglas fijas** (sin inteligencia artificial). Para un recorrido rápido: `a3@local.test` / `Prueba1234!`.
 
+## Novedad: la app sugiere los 11 activos según su perfil
+
+En el paso de construcción, el botón **"Cargar selección de referencia para mi perfil"** propone 11 activos
+**con reglas y con los datos de hoy** (no con una lista fija, así se adapta si cambia el comportamiento de los
+activos): a **menor A** (menos aversión al riesgo) prioriza los activos de **mayor retorno histórico**
+(aceptando más riesgo); a **mayor A**, los de **menor volatilidad**. Siempre cubre varias clases de activo
+(acciones, renta fija, REIT, oro, cripto…), limita cuántos activos entran por clase y excluye los ETF
+apalancados. Es solo un punto de partida: el usuario puede cambiarla. El informe lo explica en el
+**Paso 1b** (con una tabla de qué sugiere para cada perfil y qué portafolio resulta) y la hoja
+**"Selección por perfil"** del Excel lo detalla.
+
 ## ¿Dónde está el código?
 
 [**`src/roboadvisor/taller1/`**](../../src/roboadvisor/taller1/README.md) — con una guía que explica cada
@@ -52,6 +63,7 @@ verifican los cálculos están en [`tests/taller1/`](../../tests/taller1/).
 pip install -e ".[reportes]"
 python -m roboadvisor.taller1.reportes
 ```
-(usa los precios guardados en `data_local/taller1/`, así que no necesita internet).
+(usa los precios guardados en `data_local/taller1/`, así que no necesita internet; esa instantánea se
+actualiza desde la base de datos con `python scripts/taller1/exportar_instantanea.py`).
 
 > Ejercicio académico; no es asesoría de inversión. Los retornos pasados no garantizan resultados futuros.
