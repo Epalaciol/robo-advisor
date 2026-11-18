@@ -12,7 +12,6 @@ from .caso import (
     TABLA_PERFILES,
     UNIVERSO_REFERENCIA,
     CasoReferencia,
-    SeleccionPerfil,
     portafolio_de_voluntario,
 )
 
@@ -127,68 +126,11 @@ def seccion_voluntarios(c: CasoReferencia, voluntarios: pd.DataFrame | None) -> 
     return tabla + extra
 
 
-def seccion_seleccion(selecciones: list[SeleccionPerfil] | None) -> str:
-    if not selecciones:
-        return ""
-    filas = []
-    for x in selecciones:
-        filas.append(
-            {
-                "A": x.a,
-                "Perfil": x.perfil,
-                "Vol. media": _pct(x.vol_media, 0),
-                "Retorno medio": _pct(x.ret_medio, 0),
-                "Los 11 activos sugeridos": ", ".join(x.tickers),
-            }
-        )
-    res = [
-        {
-            "A": x.a,
-            "E(Rp)": _pct(x.retorno),
-            "σp": _pct(x.sigma),
-            "Sharpe": f"{x.sharpe:.2f}".replace(".", ","),
-            "y*": _pct(x.y, 0),
-            "E(Rc)": _pct(x.retorno_completo),
-            "Días en común": x.n_obs,
-        }
-        for x in selecciones
-        if x.retorno is not None
-    ]
-    return f"""
-## Paso 1b · Qué 11 activos sugiere la aplicación según el perfil
-
-En la aplicación, el botón **"Cargar selección de referencia para mi perfil"** propone un universo de
-11 activos **con reglas, no con una lista fija** (así se adapta si cambia el comportamiento de los
-activos). A es continuo (se acota entre 1 y 8):
-
-1. Se descartan los activos con menos de un año de historia y los ETF apalancados o inversos.
-2. Cada activo recibe un puntaje $w\\cdot pct(\\text{{retorno}}) + (1-w)\\cdot pct(-\\text{{volatilidad}})$, con
-   $w=(8-A)/7$ y $pct$ = posición (percentil) del activo entre los elegibles. **A menor A** pesa más el
-   retorno histórico (se acepta más riesgo); **a mayor A** pesa más la baja volatilidad.
-3. Se toma el mejor activo de cada una de las 5 mejores clases (acciones, renta fija, REIT, oro,
-   cripto…) y los cupos restantes por puntaje, con máximo 3 por clase.
-
-Resultado con los datos de este informe:
-
-{_md(pd.DataFrame(filas))}
-
-Con Markowitz sobre cada selección (mismas restricciones: largos, máximo 40 % por activo):
-
-{_md(pd.DataFrame(res))}
-
-Las selecciones con IBIT o GXTESCOL.CL se estiman sobre menos días en común (esos ETF son jóvenes),
-por eso su Sharpe se ve alto: es una limitación de los datos, que la aplicación advierte al usuario.
-El portafolio de riesgo óptimo **no** depende de A (solo del universo y los datos); A define cuánto se
-invierte en él (y\\*). Esta selección es solo un punto de partida: el usuario la puede modificar.
-"""
-
-
 def construir_markdown(
     c: CasoReferencia,
     figuras: dict[str, Path],
     voluntarios: pd.DataFrame | None,
     fecha: dt.date,
-    selecciones: list[SeleccionPerfil] | None = None,
 ) -> str:
     w = c.tangente.w
     activos = w[w > 0.0005].sort_values(ascending=False)
@@ -282,7 +224,6 @@ COLO y bitcoin.) Fuente de precios: Yahoo Finance, precios diarios ajustados por
 {_md(universo)}
 
 Este universo de 11 ETF es el **caso de referencia** con el que se explican los pasos siguientes.
-{seccion_seleccion(selecciones)}
 ## Paso 2 · Retornos, riesgos y correlaciones
 
 Con los **{c.est.n_obs} retornos diarios** entre {ini:%d-%m-%Y} y {fin:%d-%m-%Y} (≈ 5 años) se calcula
@@ -365,7 +306,6 @@ def generar_pdf(
     carpeta: str | Path,
     voluntarios: pd.DataFrame | None,
     fecha: dt.date,
-    selecciones: list[SeleccionPerfil] | None = None,
 ) -> Path:
     carpeta = Path(carpeta)
     figs = carpeta / "figuras"
@@ -376,7 +316,7 @@ def generar_pdf(
         "completo": graficos.completo_por_perfil(c, figs / "completo.png"),
     }
     md = carpeta / "_informe.md"
-    md.write_text(construir_markdown(c, figuras, voluntarios, fecha, selecciones), encoding="utf-8")
+    md.write_text(construir_markdown(c, figuras, voluntarios, fecha), encoding="utf-8")
     salida = carpeta / "Taller1_Informe.pdf"
     subprocess.run(
         ["pandoc", md.name, "-o", salida.name, "--pdf-engine=xelatex", "--resource-path=figuras"],

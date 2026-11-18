@@ -34,16 +34,13 @@ responda el cuestionario, escoja entre 3 y 11 activos y vea su portafolio comple
 la CAL. En cada nuevo ingreso muestra cómo le ha ido con los precios del día y da recomendaciones con
 **reglas fijas** (sin inteligencia artificial). Para un recorrido rápido: `a3@local.test` / `Prueba1234!`.
 
-## Novedad: la app sugiere los 11 activos según su perfil
+## Cómo se ve `y*` en cada perfil
 
-En el paso de construcción, el botón **"Cargar selección de referencia para mi perfil"** propone 11 activos
-**con reglas y con los datos de hoy** (no con una lista fija, así se adapta si cambia el comportamiento de los
-activos): a **menor A** (menos aversión al riesgo) prioriza los activos de **mayor retorno histórico**
-(aceptando más riesgo); a **mayor A**, los de **menor volatilidad**. Siempre cubre varias clases de activo
-(acciones, renta fija, REIT, oro, cripto…), limita cuántos activos entran por clase y excluye los ETF
-apalancados. Es solo un punto de partida: el usuario puede cambiarla. El informe lo explica en el
-**Paso 1b** (con una tabla de qué sugiere para cada perfil y qué portafolio resulta) y la hoja
-**"Selección por perfil"** del Excel lo detalla.
+En el paso de construcción, el botón **"Cargar portafolio de referencia (11 ETF)"** carga los mismos 11 ETF
+para todos los perfiles (acciones, renta fija, REIT y oro). El portafolio de riesgo óptimo es el mismo;
+lo que cambia con A es cuánto se invierte en él (**y\***): con los datos de este informe, 57 % (A=8),
+76 % (A=6) y 100 % (A=4, 3, 1; el modelo no admite apalancamiento). El informe lo muestra en el Paso 5
+y la app en la tabla "y* por perfil" que aparece al optimizar. El usuario puede cambiar la selección.
 
 ## ¿Dónde está el código?
 

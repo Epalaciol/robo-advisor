@@ -11,6 +11,22 @@ RF_TICKER = "^TNX"
 RF_NOMBRE = "T-note de EE.UU. a 10 años"
 RF_FUENTE = f"yahoo:{RF_TICKER}"
 
+# Portafolio de referencia: 11 ETF (el número del enunciado), uno o dos por clase de activo. Es el
+# mismo para todos los perfiles, así se ve cómo cambia y* con A sin que cambie el universo.
+UNIVERSO_REFERENCIA: dict[str, str] = {
+    "SPY": "Acciones EE.UU. (S&P 500)",
+    "QQQ": "Acciones EE.UU. (Nasdaq 100)",
+    "EFA": "Acciones EAFE (desarrollados ex-EE.UU.)",
+    "EEM": "Acciones mercados emergentes",
+    "ILF": "Acciones Latinoamérica",
+    "LQD": "Renta fija grado de inversión EE.UU.",
+    "IEF": "Bonos del Tesoro EE.UU. 7-10 años",
+    "HYG": "Renta fija alto rendimiento (HY) EE.UU.",
+    "EMB": "Renta fija emergente en USD",
+    "VNQ": "REIT (finca raíz EE.UU.)",
+    "GLD": "Oro",
+}
+
 
 @dataclass(frozen=True)
 class ParametrosFinancieros:
@@ -30,12 +46,6 @@ class ParametrosFinancieros:
     tilt_multiplos: float = 0.025
     min_obs_pe: int = 12  # fotos previas de P/E propio para dar señal (≈ 3 meses semanales)
     benchmark: str = "ACWI"
-    # Selección de referencia por perfil (core/seleccion.py)
-    a_min: float = 1.0  # A del perfil más arriesgado del cuestionario
-    a_max: float = 8.0  # A del perfil más conservador
-    n_seleccion: int = 11
-    sel_n_clases: int = 5  # clases de activo que se cubren primero (el mejor de cada una)
-    sel_max_por_clase: int = 3
 
     @property
     def meses_historia(self) -> int:

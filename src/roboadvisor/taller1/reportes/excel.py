@@ -11,7 +11,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
-from .caso import DURATIONS, TABLA_PERFILES, CasoReferencia, SeleccionPerfil
+from .caso import DURATIONS, TABLA_PERFILES, CasoReferencia
 
 ENCABEZADO = PatternFill("solid", fgColor="1F4E79")
 
@@ -41,7 +41,6 @@ def generar_excel(
     c: CasoReferencia,
     ruta: str | Path,
     voluntarios: pd.DataFrame | None = None,
-    selecciones: list[SeleccionPerfil] | None = None,
 ) -> Path:
     ruta = Path(ruta)
     wb = Workbook()
@@ -183,47 +182,6 @@ def generar_excel(
     ws.cell(r0 + 7, 1, "Duration del portafolio (parte renta fija)")
     ws.cell(r0 + 7, 2, c.duration_port["duration_rf_normalizada"]).number_format = "0.00"
     _ancho(ws, 24)
-
-    if selecciones:
-        ws = wb.create_sheet("Selección por perfil")
-        ws["A1"] = (
-            "Regla: puntaje = w·pct(retorno) + (1−w)·pct(−volatilidad), w = (8−A)/7; "
-            "cobertura de 5 clases, máx. 3 por clase, sin ETF apalancados."
-        )
-        _tabla(
-            ws,
-            3,
-            [
-                "A",
-                "Perfil",
-                "Vol. media",
-                "Retorno medio",
-                "E(Rp) óptimo",
-                "σp",
-                "Sharpe",
-                "y*",
-                "Días en común",
-                "11 activos",
-            ],
-            [
-                [
-                    x.a,
-                    x.perfil,
-                    x.vol_media,
-                    x.ret_medio,
-                    x.retorno,
-                    x.sigma,
-                    x.sharpe,
-                    x.y,
-                    x.n_obs,
-                    ", ".join(x.tickers),
-                ]
-                for x in selecciones
-            ],
-            {k: pct for k in ("Vol. media", "Retorno medio", "E(Rp) óptimo", "σp", "y*")},
-        )
-        _ancho(ws, 16)
-        ws.column_dimensions["J"].width = 90
 
     ws = wb.create_sheet("Voluntarios")
     if voluntarios is None or voluntarios.empty:

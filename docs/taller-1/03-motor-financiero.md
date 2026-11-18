@@ -84,20 +84,14 @@ Todas las recomendaciones incluyen el texto fijo: *"Ejercicio académico; no con
 - Seguimiento: con precios constantes y rf=0 el valor no cambia; con un solo activo replica su retorno.
 - Cada regla de recomendación con un caso que la activa y uno que no.
 
-## 11. Selección de referencia por perfil (`core/seleccion.py`)
+## 11. Portafolio de referencia de 11 ETF
 
-El botón *"Cargar selección de referencia para mi perfil"* del Constructor sugiere 11 activos con
-**reglas, no con una lista fija**, así se adapta si cambia el comportamiento de los activos.
-A es continuo: se acota a `[a_min, a_max] = [1, 8]` (parámetros en `ParametrosFinancieros`).
+El botón *"Cargar portafolio de referencia (11 ETF)"* del Constructor carga **los mismos 11 ETF para todos
+los perfiles** (`UNIVERSO_REFERENCIA` en `config.py`): SPY, QQQ, EFA, EEM, ILF, LQD, IEF, HYG, EMB, VNQ y GLD.
+Así se ve cómo cambia `y*` con A sin que cambie el universo: el portafolio tangente depende solo del
+universo y de los datos; A solo define `y*` (tabla "y* por perfil" tras optimizar). Con datos reales
+(5 años) `y*` = 57 % (A=8), 76 % (A=6) y 100 % (A=4, 3, 1, con tope por no apalancar).
 
-1. **Elegibles:** historia ≥ `min_dias` y que no sean ETF apalancados o inversos (se detectan por el
-   nombre: 2x, 3x, Ultra, Bull, Bear).
-2. **Puntaje:** `w·pct(μ) + (1−w)·pct(−σ)` con `w = (a_max − A)/(a_max − a_min)`; `pct` es el percentil
-   entre los elegibles. A baja → se prioriza el retorno histórico; A alta → la baja volatilidad.
-3. **Diversificación:** el mejor activo de cada una de las `sel_n_clases = 5` mejores clases y los
-   cupos restantes por puntaje, máximo `sel_max_por_clase = 3` por clase.
-
-Con datos reales (5 años) la volatilidad media de la selección baja de ≈ 27 % (A ≤ 3) a ≈ 12 % (A ≥ 6)
-y el retorno medio histórico de ≈ 17 % a ≈ 4–7 %. Es solo el universo de partida: Markowitz sigue igual
-(el portafolio tangente no depende de A; A solo define `y*`) y el usuario puede cambiar la selección.
-
+*Decisión de diseño:* se probó una selección por reglas que dependía de A (retorno alto con A baja,
+volatilidad baja con A alta), pero la ventana común se acortaba con los ETF jóvenes (IBIT, GXTESCOL.CL),
+inflaba el Sharpe y daba `y*` = 100 % hasta a perfiles conservadores; por eso se retiró.

@@ -17,7 +17,6 @@ portafolio completo de cada persona. Cada archivo empieza con un texto que expli
 | [`portafolio_completo.py`](core/portafolio_completo.py) | y\* = (E(Rp) − rf)/(A·σp²): cuánto va a riesgo y cuánto al activo libre de riesgo |
 | [`riesgo.py`](core/riesgo.py) | Betas de las acciones y duration de los bonos |
 | [`multiplos.py`](core/multiplos.py) | Compara el P/E de hoy de cada acción con su propio histórico y sugiere subir o bajar su peso |
-| [`seleccion.py`](core/seleccion.py) | Sugiere 11 activos con reglas según tu A: a menor A, más retorno; a mayor A, menos volatilidad |
 | [`seguimiento.py`](core/seguimiento.py) | Cómo ha rendido el portafolio desde que se armó, frente al índice mundial (ACWI) |
 | [`recomendaciones.py`](core/recomendaciones.py) | Recomendaciones con reglas fijas (sin IA), siempre con el aviso "ejercicio académico" |
 
