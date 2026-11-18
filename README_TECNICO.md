@@ -52,7 +52,6 @@ pruebas finales en producción y reporte. Ver `docs/taller-1/05-plan-entregables
 | `src/roboadvisor/taller2/reportes/` | T2 · gráficas (Plotly), Excel con fórmulas (listo para Solver) e informe PDF |
 | `src/roboadvisor/taller1/reportes/` | T1 · caso de referencia, Excel e informe PDF |
 | `entregas/` | Lo que se entrega: PDF, Excel y README de cada taller (se regeneran con `python -m roboadvisor.taller1.reportes` y `python -m roboadvisor.taller2.reportes`; requieren `pip install -e ".[reportes]"` y `pandoc` + `xelatex`) |
-| `scripts/dev/` | Solo desarrollo: usuarios de prueba y simuladores (usan `service_role`; nunca contra producción) |
 | `app/` | App Streamlit: `Inicio.py`, `pages/` (`T1_*` con login, `4_T2_Curva_TES.py` pública), `ui/{comun,taller1,taller2}` |
 | `.streamlit/config.toml` | Tema de la app (colores de la marca) |
 | `tests/{taller1,taller2,comun}/` | `pytest -q` (unitarias) y `pytest -m integration -q` (requieren Supabase real) |
@@ -81,7 +80,7 @@ anotado el catálogo). Entra con `prueba@local.test` / `Prueba1234!`, o con `a3@
 
 Los datos viven solo en la memoria del proceso del servidor y **se pierden al reiniciarlo**;
 `data_local/` está en `.gitignore`, cada quien la descarga localmente. Los scripts sueltos
-(`cargar_catalogo.py`, `crear_usuario_prueba.py`) no ven los datos del mock porque corren en
+(`cargar_catalogo.py`) no ven los datos del mock porque corren en
 otro proceso — son para el flujo con Supabase real. **El modo mock no reemplaza** las pruebas
 de RLS de `tests/taller1/db/test_rls.py`, que siguen corriendo solo contra un Supabase real.
 
@@ -92,14 +91,7 @@ de RLS de `tests/taller1/db/test_rls.py`, que siguen corriendo solo contra un Su
 3. En el SQL Editor del proyecto, ejecutar en orden `supabase/migrations/0001_init.sql` y `0002_rangos_edad.sql` (una sola vez cada una).
 4. Cargar el catálogo: `python scripts/taller1/cargar_catalogo.py` (idempotente, usa `service_role`).
 5. Verificar la seguridad: `pytest -m integration -q` (crea y borra usuarios de prueba).
-6. (Opcional) Usuario fijo para no pasar por el registro cada vez:
-   `python scripts/dev/crear_usuario_prueba.py` (mismo correo/clave que el modo mock;
-   `--borrar` para eliminarlo). Solo para desarrollo local.
-   Para probar cada perfil: `python scripts/dev/usuarios_demo.py` crea en la base 6 usuarios fijos
-   `@local.test` (clave `Prueba1234!`): `prueba@` (sin encuesta), `demo.a8@`, `demo.a6@`,
-   `demo.a4@`, `a3@` y `demo.a1@` (encuesta hecha, sin portafolio). `--reiniciar` los deja de
-   cero (borra encuesta y portafolio) para volver a jugar; `--listar` muestra su estado;
-   `--cambiar CORREO --a 1` (o `--puntaje 19`) le cambia el perfil de riesgo a un usuario.
+
 7. Cargar precios reales: `python -m roboadvisor.taller1.pipeline.update_prices` (ver `docs/taller-1/04-pipeline-datos.md`).
 
 ## Desplegar en Streamlit Community Cloud

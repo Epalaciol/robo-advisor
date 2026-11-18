@@ -25,3 +25,5 @@ data_local/tes/
 
 # Taller 1: respuestas reales de los voluntarios (datos personales; no se versionan)
 entregas/taller-1/datos/voluntarios.csv
+scripts/dev/
+docs/planificacion/
