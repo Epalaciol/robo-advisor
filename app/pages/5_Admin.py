@@ -15,6 +15,7 @@ import streamlit as st  # noqa: E402
 from ui.comun.auth import cliente_sesion_actual, requerir_sesion  # noqa: E402
 from ui.comun.estilos import AVISO_ACADEMICO, configurar_pagina, pie_de_pagina  # noqa: E402
 from ui.taller1.graficos import MODO_BASE_100, figura_comportamiento, figura_composicion  # noqa: E402
+from ui.taller1.resultado import calcular_resultado, mostrar_resultado  # noqa: E402
 
 from roboadvisor.taller1.config import RF_NOMBRE, ParametrosFinancieros  # noqa: E402
 from roboadvisor.taller1.core.cuestionario import PREGUNTAS, puntuar  # noqa: E402
@@ -110,8 +111,8 @@ u = etiquetas[st.selectbox("Persona", list(etiquetas))]
 encuesta, portafolio = u["encuesta"], u["portafolio"]
 a = float(encuesta["a"])
 
-tab_encuesta, tab_calculo, tab_seguimiento = st.tabs(
-    ["Encuesta y A", "Portafolio y cálculos", "Seguimiento"]
+tab_encuesta, tab_calculo, tab_construccion, tab_seguimiento = st.tabs(
+    ["Encuesta y A", "Portafolio registrado y y*", "Construcción (lo que vio)", "Seguimiento"]
 )
 
 with tab_encuesta:
@@ -208,6 +209,47 @@ with tab_calculo:
             .style.format("{:.1%}"),
             use_container_width=True,
         )
+
+
+with tab_construccion:
+    if not portafolio:
+        st.info("Esta persona aún no tiene portafolio.")
+    else:
+        par = portafolio.get("parametros") or {}
+        universo = par.get("universo") or list(portafolio["tickers"])
+        st.caption(
+            "Reconstrucción con **los mismos datos y parámetros** con que esta persona armó su "
+            f"portafolio: {len(universo)} activos ({', '.join(sorted(universo))}), precios hasta "
+            f"{portafolio['fecha_base']}, pesos entre {par.get('w_min', 0):.0%} y "
+            f"{par.get('w_max', PARAMS.w_max):.0%} y tasa libre de riesgo "
+            f"{par.get('rf', 0):.2%}. Es la misma vista del Constructor."
+        )
+        catalogo_por_ticker = {x["ticker"]: x for x in repo_mercado.listar_catalogo()}
+        try:
+            res = calcular_resultado(
+                repo_mercado,
+                catalogo_por_ticker,
+                tuple(sorted(universo)),
+                portafolio["fecha_base"],
+                float(par.get("rf", repo_mercado.rf_ultima())),
+                float(par.get("w_max", PARAMS.w_max)),
+                float(par.get("w_min", 0.0)),
+                int(par.get("ventana_dias", PARAMS.ventana_dias)),
+                int(par.get("min_dias", PARAMS.min_dias)),
+                PARAMS.benchmark,
+                hasta=portafolio["fecha_base"],
+            )
+        except Exception:
+            st.error("No fue posible reconstruir la optimización de este portafolio.")
+        else:
+            guardado = pd.Series(portafolio["pesos_riesgo"], dtype=float)
+            dif = (res["port_tangente"].w.reindex(guardado.index).fillna(0) - guardado).abs().max()
+            if dif > 0.01:
+                st.caption(
+                    f"Nota: los pesos recalculados difieren hasta {dif:.1%} de los registrados "
+                    "(los precios históricos pueden haberse ajustado después)."
+                )
+            mostrar_resultado(res, a, PARAMS, clave=f"admin_{u['user_id']}")
 
 
 @st.cache_data(ttl=600, show_spinner="Calculando seguimiento...")
