@@ -20,7 +20,7 @@ from roboadvisor.taller1.core.retornos import Estimacion, estimar, retornos_diar
 from roboadvisor.taller1.core.riesgo import beta_portafolio, betas, duration_portafolio
 
 # Duration (años) de los ETF de renta fija, tomadas del catálogo `supabase/seed/activos.csv`.
-DURATIONS: dict[str, float] = {"LQD": 8.4, "IEF": 7.5, "HYG": 3.5, "EMB": 7.0}
+DURATIONS: dict[str, float] = {"LQD": 8.4, "HYG": 3.5, "EMB": 7.0}
 BENCHMARK = "ACWI"
 VALORES_A = [8, 6, 4, 3, 1]
 
@@ -99,7 +99,7 @@ def portafolio_de_voluntario(caso: CasoReferencia, respuestas: dict[str, str]) -
 TABLA_PERFILES = [(a, b, etiqueta, A) for a, b, _clave, etiqueta, A in PERFILES]
 
 
-ACCIONES_REFERENCIA = ["SPY", "QQQ", "EFA", "EEM", "ILF"]
+ACCIONES_REFERENCIA = ["QQQ", "SMH", "COLO", "ILF", "EFA", "EEM"]
 
 
 def escenarios_extendidos(c: CasoReferencia) -> pd.DataFrame:
@@ -170,7 +170,8 @@ def estadisticas_universo(c: CasoReferencia) -> pd.DataFrame:
     compuesto realmente obtenido en la ventana; caída máxima = peor pérdida desde un máximo.
     """
     tickers = list(c.est.tickers)
-    r = c.precios[tickers].dropna().pct_change().dropna().loc[c.ventana[0] : c.ventana[1]]
+    # mismos retornos que `estimar` (sin rellenar huecos), para que μ coincida con el de Markowitz
+    r = c.precios[tickers].sort_index().pct_change().dropna(how="any").tail(c.est.n_obs)
     r["Óptimo"] = (r[tickers] * c.tangente.w.reindex(tickers).fillna(0)).sum(axis=1)
     valor = (1 + r).cumprod()
     anos = len(r) / 252
@@ -211,3 +212,28 @@ def optimo_sin_apalancamiento(c: CasoReferencia) -> pd.DataFrame:
                  "utilidad": r.utilidad}
             )  # fmt: skip
     return pd.DataFrame(filas)
+
+
+APALANCADOS = {"TQQQ", "UPRO", "TNA", "TECL", "SOXL", "UCO"}
+
+
+def sharpe_catalogo_elegible(c: CasoReferencia, catalogo: list[dict]) -> dict:
+    """Sharpe máximo con **todos** los activos del catálogo sin apalancamiento y con historia
+    completa en la ventana (mismas restricciones). Sirve para justificar el universo de 11."""
+    elegibles = [
+        a["ticker"]
+        for a in catalogo
+        if a["activo"]
+        and a["rol"] == "invertible"
+        and a["ticker"] not in APALANCADOS
+        and a["ticker"] in c.precios.columns
+        and c.precios[a["ticker"]].first_valid_index() is not None
+        and c.precios[a["ticker"]].first_valid_index() <= c.ventana[0]
+    ]
+    est = estimar(c.precios[elegibles], c.rf, c.params.ventana_dias, c.params.min_dias)
+    tang = tangente(est, c.params.w_max, c.params.w_min)
+    sharpe_ind = (est.mu - c.rf) / pd.Series(
+        [est.sigma.loc[t, t] ** 0.5 for t in est.tickers], index=est.tickers
+    )
+    return {"n": len(elegibles), "sharpe": tang.sharpe, "pesos": tang.w[tang.w > 0.005],
+            "sharpe_individual": sharpe_ind}  # fmt: skip

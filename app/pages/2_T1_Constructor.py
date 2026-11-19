@@ -187,11 +187,12 @@ if st.button("Cargar portafolio de referencia (11 ETF)"):
         etiquetas_por_ticker[t] for t in UNIVERSO_REFERENCIA if t in etiquetas_por_ticker
     ]
 st.caption(
-    "Son los mismos **11 ETF para todos los perfiles** (acciones de EE.UU., desarrollados, "
-    "emergentes y Latinoamérica; renta fija de grado de inversión, de alto rendimiento y "
-    "emergente; REIT y oro). El portafolio de riesgo óptimo depende solo del universo y de los "
-    "datos; **tu A define cuánto inviertes en él (y*)**. Tras optimizar verás una tabla con el y* "
-    "de cada perfil. Puedes modificar la selección antes de optimizar."
+    "Son los mismos **11 ETF para todos los perfiles** (acciones de EE.UU., Colombia, "
+    "Latinoamérica, desarrollados y emergentes; renta fija de grado de inversión, de alto "
+    "rendimiento y emergente; REIT y oro), escogidos por maximizar el Sharpe sin "
+    "apalancamiento. El portafolio de riesgo óptimo depende solo del universo y de los datos; "
+    "**tu A define cuánto inviertes en él (y*)**. Tras optimizar verás una tabla con el y* de "
+    "cada perfil. Puedes modificar la selección antes de optimizar."
 )
 
 seleccion_etiquetas = st.multiselect(

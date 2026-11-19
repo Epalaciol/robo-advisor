@@ -87,10 +87,14 @@ Todas las recomendaciones incluyen el texto fijo: *"Ejercicio académico; no con
 ## 11. Portafolio de referencia de 11 ETF
 
 El botón *"Cargar portafolio de referencia (11 ETF)"* del Constructor carga **los mismos 11 ETF para todos
-los perfiles** (`UNIVERSO_REFERENCIA` en `config.py`): SPY, QQQ, EFA, EEM, ILF, LQD, IEF, HYG, EMB, VNQ y GLD.
+los perfiles** (`UNIVERSO_REFERENCIA` en `config.py`): QQQ, SMH, COLO, ILF, EFA, EEM, LQD, HYG, EMB, VNQ y GLD.
+Se escogieron para cubrir las clases del enunciado sin apalancamiento y con ≥ 5 años de historia, y porque
+alcanzan el mismo Sharpe máximo (≈ 0,80) que el portafolio óptimo con los 25 activos elegibles del catálogo
+(SPY se retiró: correlación ≈ 0,95 con QQQ y no aporta Sharpe).
 Así se ve cómo cambia `y*` con A sin que cambie el universo: el portafolio tangente depende solo del
 universo y de los datos; A solo define `y*` (tabla "y* por perfil" tras optimizar). Con datos reales
-(5 años) `y*` = 57 % (A=8), 76 % (A=6) y 100 % (A=4, 3, 1, con tope por no apalancar).
+(5 años, datos al 18-11-2026) `y*` = 49 % (A=8), 65 % (A=6), 98 % (A=4) y 100 % (A=3 y 1, con tope por no
+apalancar; la fórmula da 130 % y 390 %).
 
 *Decisión de diseño:* se probó una selección por reglas que dependía de A (retorno alto con A baja,
 volatilidad baja con A alta), pero la ventana común se acortaba con los ETF jóvenes (IBIT, GXTESCOL.CL),

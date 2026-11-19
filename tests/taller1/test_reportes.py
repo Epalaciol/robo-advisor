@@ -44,7 +44,9 @@ def test_excel_y_markdown_se_generan(caso, tmp_path):
     claves = ("frontera", "pesos", "completo", "correlaciones", "desempeno", "indiferencia")
     figs = {k: tmp_path / f"{k}.png" for k in (*claves, "composicion")}
     md = construir_markdown(caso, figs, None, dt.date(2026, 11, 16))
-    assert "Cumplimiento del enunciado" in md and "Pendiente de completar" in md
+    assert "Resumen ejecutivo" in md and "Pendiente de completar" in md
+    assert "Cumplimiento del enunciado" not in md and "§" not in md
+    assert "Sebastian Duarte Uran" in md
     assert "valor real de y*" in md  # sección del tope de 100 %
 
 
@@ -93,19 +95,14 @@ def test_multiplos_frente_a_acwi(caso):
     from roboadvisor.taller1.reportes.caso import multiplos_referencia
 
     f = pd.DataFrame(
-        {"ticker": ["ACWI", "SPY", "QQQ", "EFA", "EEM", "ILF"],
-         "fecha": "2026-11-13", "pe": [20.0, 24.0, 28.0, 17.0, 14.0, 11.0],
-         "div_yield": [1.4, 1.0, 0.5, 3.3, 1.8, 3.7]}
+        {"ticker": ["ACWI", "QQQ", "SMH", "COLO", "EFA", "EEM", "ILF"],
+         "fecha": "2026-11-13", "pe": [20.0, 28.0, 27.0, None, 17.5, 14.0, 11.0],
+         "div_yield": [1.4, 0.5, 0.2, None, 3.3, 1.8, 3.7]}
     )  # fmt: skip
     m = multiplos_referencia(caso, f)
     senal = dict(zip(m["tabla"]["ticker"], m["tabla"]["senal"], strict=True))
-    assert senal == {
-        "SPY": "cara",
-        "QQQ": "cara",
-        "EFA": "neutral",
-        "EEM": "barata",
-        "ILF": "barata",
-    }
+    assert senal == {"QQQ": "cara", "SMH": "cara", "COLO": "sin_dato", "ILF": "barata",
+                     "EFA": "neutral", "EEM": "barata"}  # fmt: skip
     assert m["ajustado"].sum() == pytest.approx(1.0)
 
 

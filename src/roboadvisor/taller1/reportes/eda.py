@@ -310,6 +310,8 @@ class ResultadosEDA:
     loteria: pd.DataFrame
     portafolios: pd.DataFrame
     figuras: dict[str, Path]
+    y_por_a: dict[int, float]
+    y_sin_tope: dict[int, float]
 
 
 # ------------------------------------------------------------------ figuras
@@ -416,7 +418,9 @@ def fig_correlaciones(d: pd.DataFrame, ruta: Path) -> Path:
         x[ETIQUETA_FACTOR[f]] = d[f].astype(str).map({v: i for i, v in enumerate(niveles, 1)})
     c = x.corr(method="spearman")
     fig, ax = plt.subplots(figsize=(7.2, 6.0))
-    im = ax.imshow(c, cmap="RdBu_r", vmin=-1, vmax=1)
+    from .graficos import MAPA_CORRELACION
+
+    im = ax.imshow(c, cmap=MAPA_CORRELACION, vmin=-1, vmax=1)
     ax.set_xticks(range(len(c)))
     ax.set_yticks(range(len(c)))
     ax.set_xticklabels(c.columns, rotation=60, ha="right", fontsize=7)
@@ -426,7 +430,7 @@ def fig_correlaciones(d: pd.DataFrame, ruta: Path) -> Path:
             v = c.iat[i, j]
             if np.isfinite(v):
                 ax.text(j, i, f"{v:.1f}".replace(".", ","), ha="center", va="center", fontsize=5.5,
-                        color="white" if abs(v) > 0.6 else "black")  # fmt: skip
+                        color="white" if abs(v) > 0.7 else "black")  # fmt: skip
     fig.colorbar(im, ax=ax, shrink=0.75, label="ρ de Spearman")
     return _guardar(fig, ruta)
 
@@ -492,4 +496,6 @@ def analizar(
         loteria=loteria(d),
         portafolios=portafolios(d),
         figuras=figuras,
+        y_por_a=y_por_a,
+        y_sin_tope=y_sin_tope,
     )

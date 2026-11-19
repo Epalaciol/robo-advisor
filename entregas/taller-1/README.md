@@ -2,6 +2,7 @@
 
 **Inversiones — Maestría en Finanzas, Universidad EAFIT · Semestre II de 2026**  
 Profesor: Juan Carlos Botero Ramírez  
+Integrantes: Sebastian Duarte Uran, Paulina Jaramillo, Juan David Londoño, Juan Luis Orrego Henao y Esteban Palacio Londoño  
 Entrega: **19 de noviembre de 2026**
 
 Este taller pide tres cosas: (1) medir el **grado de aversión al riesgo (A)** de cinco voluntarios con un
@@ -21,8 +22,7 @@ de cada persona (cuánto en activos de riesgo y cuánto en el activo libre de ri
 
 ## Cómo leer el informe
 
-- **Resumen ejecutivo y "Cumplimiento del enunciado":** la respuesta en una página y una tabla que dice en
-  qué sección se cumple cada punto que pide el enunciado.
+- **Resumen ejecutivo:** la respuesta en una página.
 - **1 – Metodología:** el flujo completo, las herramientas y los supuestos.
 - **2 – Parte 1, aversión al riesgo:** la función de utilidad, el cuestionario (puntaje 9–27 → A) y el cálculo
   paso a paso de los **cinco voluntarios** (uno por rango de edad), con su función de utilidad y su
@@ -47,9 +47,12 @@ la CAL. En cada nuevo ingreso muestra cómo le ha ido con los precios del día y
 
 En el paso de construcción, el botón **"Cargar portafolio de referencia (11 ETF)"** carga los mismos 11 ETF
 para todos los perfiles. El portafolio de riesgo óptimo es el mismo; lo que cambia con A es cuánto se invierte
-en él (**y\***): con los datos del informe, 54 % (A = 8), 71 % (A = 6) y 100 % para A = 4, 3 y 1. En estos
-tres la fórmula da 107 %, 143 % y 429 % (querrían endeudarse); como el modelo no admite apalancamiento se
+en él (**y\***): con los datos del informe, 49 % (A = 8), 65 % (A = 6), 98 % (A = 4) y 100 % para A = 3 y 1.
+En estos dos la fórmula da 130 % y 390 % (querrían endeudarse); como el modelo no admite apalancamiento se
 limita a 100 %, y el informe explica el valor real y cómo se interpreta (sección 3.7).
+
+Los 11 ETF (QQQ, SMH, COLO, ILF, EFA, EEM, LQD, HYG, EMB, VNQ y GLD) se escogieron para cubrir las clases del
+enunciado sin apalancamiento y porque alcanzan el Sharpe máximo (0,80) de todo el catálogo elegible.
 
 ## ¿Dónde está el código?
 

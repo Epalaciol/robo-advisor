@@ -11,6 +11,10 @@ import numpy as np  # noqa: E402
 from .caso import CasoReferencia  # noqa: E402
 
 AZUL, NARANJA, GRIS = "#1f4e79", "#d9822b", "#8a8a8a"
+# Correlaciones: roja (negativa) → blanca (cero) → verde (alta)
+MAPA_CORRELACION = matplotlib.colors.LinearSegmentedColormap.from_list(
+    "rojo_blanco_verde", ["#c0392b", "#ffffff", "#1e8449"]
+)
 
 
 def _guardar(fig, ruta: Path) -> Path:
@@ -87,7 +91,7 @@ def correlaciones(c: CasoReferencia, ruta: Path) -> Path:
     corr = s / np.outer(d, d)
     t = list(c.est.tickers)
     fig, ax = plt.subplots(figsize=(6.4, 5.4))
-    im = ax.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1)
+    im = ax.imshow(corr, cmap=MAPA_CORRELACION, vmin=-1, vmax=1)
     ax.set_xticks(range(len(t)))
     ax.set_yticks(range(len(t)))
     ax.set_xticklabels(t, rotation=45, ha="right", fontsize=8)
@@ -103,9 +107,8 @@ def correlaciones(c: CasoReferencia, ruta: Path) -> Path:
 def desempeno(c: CasoReferencia, ruta: Path) -> Path:
     """Valor de $100 invertidos al inicio de la ventana: cada ETF y el portafolio óptimo."""
     tickers = list(c.est.tickers)
-    p = c.precios[tickers].loc[c.ventana[0] : c.ventana[1]].dropna()
-    base = p / p.iloc[0] * 100
-    r = p.pct_change().fillna(0)
+    r = c.precios[tickers].sort_index().pct_change().dropna(how="any").tail(c.est.n_obs)
+    base = (1 + r).cumprod() * 100
     optimo = (1 + (r * c.tangente.w.reindex(tickers).fillna(0)).sum(axis=1)).cumprod() * 100
     fig, ax = plt.subplots(figsize=(7.2, 4.0))
     for t in tickers:
@@ -121,47 +124,66 @@ def desempeno(c: CasoReferencia, ruta: Path) -> Path:
 
 
 def indiferencia(c: CasoReferencia, ruta: Path) -> Path:
-    """CAL, frontera y, para cada A, su curva de indiferencia tangente y el punto escogido.
+    """CAL, frontera y la curva de indiferencia tangente de cada A, en dos escalas.
 
-    Curva de indiferencia: `E(r) = U* + ½·A·σ²`. Con tope de 100 % el punto se queda en el
-    portafolio de riesgo óptimo (σp); sin tope estaría más arriba en la CAL (apalancado).
+    Izquierda: detalle alrededor de P. Derecha (zoom out): la CAL prolongada con el punto que cada
+    perfil escogería **sin** el tope de 100 % (círculo vacío, apalancado) frente al punto que se le
+    asigna con el tope (círculo lleno, en P). Curva de indiferencia: `E(r) = U* + ½·A·σ²`.
     """
     colores = {8: "#1f4e79", 6: "#4f81bd", 4: "#7f7f7f", 3: "#f2a65a", 1: "#c0504d"}
     t = c.tangente
-    fig, ax = plt.subplots(figsize=(7.2, 4.6))
-    xs = np.linspace(0, 0.32, 200)
-    ax.plot(
-        c.frontera["sigma"], c.frontera["retorno"], color=GRIS, lw=1.5, label="Frontera eficiente"
-    )
-    ax.plot(xs, c.rf + c.cal_pendiente * xs, color="black", lw=1.4, label="CAL óptima")
-    ax.scatter([t.sigma], [t.retorno], color="black", s=40, zorder=5)
-    ax.annotate("P (portafolio de riesgo)", (t.sigma, t.retorno), xytext=(6, -12),
-                textcoords="offset points", fontsize=7)  # fmt: skip
+    puntos = []
     for r in c.escenarios.itertuples():
         a = int(r.a)
         y_libre = (t.retorno - c.rf) / (a * t.sigma**2)
-        s_libre = y_libre * t.sigma
-        u = c.rf + t.sharpe**2 / (2 * a)
-        ax.plot(xs, u + 0.5 * a * xs**2, color=colores[a], lw=1, ls="--")
-        ax.scatter(
-            [r.sigma],
-            [r.retorno],
-            color=colores[a],
-            s=45,
-            zorder=6,
-            label=f"A = {a}: y* = {r.y:.0%}",
+        puntos.append(
+            (a, r, y_libre, y_libre * t.sigma, c.rf + c.cal_pendiente * y_libre * t.sigma)
         )
-        if y_libre > 1 and s_libre <= xs[-1]:
-            ax.scatter([s_libre], [c.rf + c.cal_pendiente * s_libre], facecolors="none",
-                       edgecolors=colores[a], s=45, zorder=6)  # fmt: skip
-    ax.set_xlim(0, xs[-1])
-    ax.set_ylim(0, 0.30)
-    ax.set_xlabel("Riesgo (desviación estándar anual)")
-    ax.set_ylabel("Retorno esperado anual")
-    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
-    ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
-    ax.grid(alpha=0.25)
-    ax.legend(fontsize=6.5, loc="upper left")
+    s_max = max(p[3] for p in puntos) * 1.12
+    fig, (izq, der) = plt.subplots(1, 2, figsize=(9.6, 4.4))
+    for ax, x_max, detalle in ((izq, max(0.32, t.sigma * 1.6), True), (der, s_max, False)):
+        xs = np.linspace(0, x_max, 300)
+        ax.plot(
+            c.frontera["sigma"],
+            c.frontera["retorno"],
+            color=GRIS,
+            lw=1.5,
+            label="Frontera eficiente",
+        )
+        ax.plot(xs, c.rf + c.cal_pendiente * xs, color="black", lw=1.3, label="CAL")
+        ax.scatter([t.sigma], [t.retorno], color="black", s=35, zorder=5)
+        ax.annotate(
+            "P", (t.sigma, t.retorno), xytext=(5, -11), textcoords="offset points", fontsize=8
+        )
+        for a, r, y_libre, s_libre, e_libre in puntos:
+            u = c.rf + t.sharpe**2 / (2 * a)
+            if detalle:
+                ax.plot(xs, u + 0.5 * a * xs**2, color=colores[a], lw=1, ls="--")
+            ax.scatter([r.sigma], [r.retorno], color=colores[a], s=45, zorder=6,
+                       label=f"A = {a}: y* = {r.y:.0%}" if detalle else None)  # fmt: skip
+            if y_libre > 1:
+                if s_libre <= x_max:
+                    ax.scatter([s_libre], [e_libre], facecolors="white", edgecolors=colores[a],
+                               s=55, lw=1.6, zorder=6)  # fmt: skip
+                if not detalle:
+                    flecha = {"arrowstyle": "<-", "color": colores[a], "lw": 1.2}
+                    ax.annotate("", xy=(s_libre, e_libre), xytext=(r.sigma, r.retorno),
+                                arrowprops=flecha)  # fmt: skip
+                    ax.annotate(f"A = {a}: y* real = {y_libre:.0%}\n(limitado a 100 %)",
+                                (s_libre, e_libre), xytext=(-8, 6), textcoords="offset points",
+                                ha="right", fontsize=7, color=colores[a])  # fmt: skip
+        ax.set_xlim(0, x_max)
+        ax.set_ylim(0, (c.rf + c.cal_pendiente * x_max) * (1.05 if not detalle else 1.0))
+        if detalle:
+            ax.set_ylim(0, max(0.30, t.retorno * 1.5))
+        ax.set_xlabel("Riesgo (desviación estándar anual)")
+        ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
+        ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
+        ax.grid(alpha=0.25)
+    izq.set_ylabel("Retorno esperado anual")
+    izq.set_title("Detalle: elección de cada perfil", fontsize=9)
+    der.set_title("Zoom out: y* real (vacío) frente a y* limitado (lleno)", fontsize=9)
+    izq.legend(fontsize=6.5, loc="upper left")
     return _guardar(fig, ruta)
 
 

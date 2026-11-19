@@ -13,6 +13,7 @@ from pathlib import Path
 import pandas as pd
 
 from roboadvisor.taller1.core.cuestionario import IDS_PREGUNTAS, PREGUNTAS, puntuar
+from roboadvisor.taller1.data.semillas import leer_catalogo
 
 from . import eda as eda_mod
 from . import graficos
@@ -28,6 +29,7 @@ from .caso import (
     multiplos_referencia,
     optimo_sin_apalancamiento,
     portafolio_de_voluntario,
+    sharpe_catalogo_elegible,
 )
 
 URL_APP = "https://mft-investements.streamlit.app/"
@@ -38,13 +40,13 @@ MESES = [
 ]  # fmt: skip
 RANGOS_ENUNCIADO = ["25-34", "35-44", "45-54", "55-64", "65-74"]
 CLASE_ETF = {
-    "SPY": "Acciones EE.UU.",
+    "SMH": "Acciones EE.UU. (semiconductores)",
+    "COLO": "Acciones Colombia",
     "QQQ": "Acciones EE.UU.",
     "EFA": "Acciones EAFE",
     "EEM": "Acciones emergentes",
-    "ILF": "Acciones Latam (incl. Colombia)",
+    "ILF": "Acciones Latinoamérica",
     "LQD": "Renta fija IG EE.UU.",
-    "IEF": "Renta fija IG EE.UU. (Tesoro)",
     "HYG": "Renta fija HY EE.UU.",
     "EMB": "Renta fija resto del mundo (emergente)",
     "VNQ": "REIT",
@@ -171,7 +173,7 @@ aplicación. Los alias son anónimos (V1…V{len(voluntarios)}, ordenados por ra
 no se publican nombres ni correos.
 
 **Cálculo de A, paso a paso** (respuesta de cada voluntario a cada pregunta; a = 1, b = 2 y c = 3
-puntos). Las filas finales anticipan su portafolio completo (§3.6), con el mismo portafolio de riesgo
+puntos). Las filas finales anticipan su portafolio completo, con el mismo portafolio de riesgo
 óptimo para todos:
 
 {tabla}
@@ -180,7 +182,7 @@ puntos). Las filas finales anticipan su portafolio completo (§3.6), con el mism
 
 {tabla_factores}
 
-Lectura: {lectura}. Con cinco personas esto es solo un indicio; el EDA (§5) lo revisa con las
+Lectura: {lectura}. Con cinco personas esto es solo un indicio; el análisis exploratorio (sección 5) lo revisa con las
 {len(voluntarios)} encuestas recogidas.{aviso}
 """
 
@@ -286,7 +288,7 @@ def construir_markdown(
         texto_frontera = (
             f"Con este universo y el tope de {_pct(c.params.w_max, 0)} por activo, esa frontera apenas se extiende "
             f"más allá de P: para A = 1 el mejor punto factible es su extremo (retorno {_pct(a1['retorno'])}, "
-            f"σ {_pct(a1['sigma'])}, U {_pct(a1['utilidad'], 2)} frente a {_pct(u_p_a1, 2)} en P); para A = 3 y 4 sigue siendo P."
+            f"σ {_pct(a1['sigma'])}, U {_pct(a1['utilidad'], 2)} frente a {_pct(u_p_a1, 2)} en P); para los demás sigue siendo P."
         )
     else:
         texto_frontera = (
@@ -317,7 +319,18 @@ def construir_markdown(
         else f"Duration ponderada de la parte de renta fija: {_num(c.duration_port['duration_rf_normalizada'], 1)} años."
     )
 
-    texto_mult = seccion_multiplos(c, fundamentales)
+    texto_mult, resumen_mult = seccion_multiplos(c, fundamentales)
+    eleg = sharpe_catalogo_elegible(c, leer_catalogo())
+    ret_d = c.precios.sort_index().pct_change().dropna(how="any").tail(c.est.n_obs)
+    corr_spy_qqq = (
+        float(ret_d["SPY"].corr(ret_d["QQQ"])) if {"SPY", "QQQ"} <= set(ret_d) else float("nan")
+    )
+    sharpe_spy = float(eleg["sharpe_individual"].get("SPY", float("nan")))
+    mejores = est_u.drop(index="Óptimo")["sharpe"].sort_values(ascending=False)
+    negativos = [x for x in est_u.drop(index="Óptimo").index if est_u.loc[x, "retorno_medio"] < 0]
+    bonos_txt = ", ".join(x for x in DURATIONS)
+    a_altos = " y ".join(str(int(a)) for a in altos["a"])
+    dur_ej = max(DURATIONS, key=DURATIONS.get)
     seccion_eda = (
         construir_eda(eda, figuras)
         if eda is not None
@@ -327,7 +340,13 @@ def construir_markdown(
     return f"""---
 title: "Taller 1 · Aversión al riesgo, función de utilidad y portafolio óptimo de Markowitz"
 subtitle: "Inversiones — Maestría en Finanzas, Universidad EAFIT · Semestre II de 2026"
-author: "Prof. Juan Carlos Botero Ramírez · Grupo MFT Investments"
+author:
+  - Sebastian Duarte Uran
+  - Paulina Jaramillo
+  - Juan David Londoño
+  - Juan Luis Orrego Henao
+  - Esteban Palacio Londoño
+  - "Profesor: Juan Carlos Botero Ramírez"
 date: "{_fecha(fecha)}"
 lang: es
 geometry: margin=2.2cm
@@ -357,34 +376,15 @@ cálculos para revisarlos en detalle.
   esperado **{_pct(t.retorno)}**, desviación estándar **{_pct(t.sigma)}**, ratio de Sharpe **{_num(t.sharpe)}**, con
   {", ".join(f"{x} {_pct(activos[x], 0)}" for x in activos.index)}.
 - **Portafolio completo:** un conservador (A = 8) invierte **{_pct(y8, 0)}** en el portafolio de riesgo y el resto
-  en el activo libre de riesgo; A = 6, **{_pct(y6, 0)}**. Para A = 4, 3 y 1 la fórmula pide **más de 100 %**
-  ({", ".join(_pct(v, 0) for v in altos["y_sin_recorte"])}), es decir, endeudarse; como el aplicativo no apalanca,
-  se limita a 100 % (§3.7 explica el valor real y cómo se interpreta).
-- **Múltiplos:** las acciones de EE.UU. están caras frente al mundo y Latinoamérica barata: se sugiere
-  subponderar SPY y QQQ y sobreponderar ILF (§3.9).
+  en el activo libre de riesgo; A = 6, **{_pct(y6, 0)}**; A = 4, **{_pct(float(esc.loc[esc.a == 4, "y"].iloc[0]), 0)}**. Para A = {a_altos} la fórmula pide
+  **más de 100 %** ({", ".join(_pct(v, 0) for v in altos["y_sin_recorte"])}), es decir, endeudarse; como el aplicativo no apalanca, se
+  limita a 100 %. La sección 3.7 explica el valor real y cómo se interpreta.
+- **Múltiplos:** {resumen_mult}
 - **EDA:** la mitad de los encuestados es *moderada*; la mayor aversión aparece en los mayores de 65 años
-  y en los jubilados, no en función de ingresos o educación (§5).
+  y en los jubilados, no en función de ingresos o educación.
 
 > **Aviso:** ejercicio académico. No constituye asesoría de inversión. Los retornos pasados no
 > garantizan retornos futuros.
-
-# Cumplimiento del enunciado {{-}}
-
-| Lo que pide el enunciado | Dónde se cumple |
-|---|---|
-| Encuestar 5 voluntarios (25-34, 35-44, 45-54, 55-64 y 65-74) con el formato y obtener A | §2.4 ({n_vol} encuestas en total, §5) |
-| Recolectar información personal para entender qué moldea la aversión | §2.3, §2.4 y §5.7 |
-| Reemplazar A en $U = E(r) - \\tfrac{{1}}{{2}}A\\sigma^2$ | §2.1 y §2.4 |
-| Porcentaje en el portafolio de riesgo y en el libre de riesgo (portafolio total) | §3.6 y §3.7 |
-| Proporción en cada uno de los **11 activos** con Markowitz | §3.1 y §3.5 |
-| Universo amplio: Colombia/Latam, EE.UU., EAFE, TES, IG, HY, resto del mundo, REIT, cripto | §3.1 (catálogo de 34 activos) |
-| Aplicativo construido con IA que determina el perfil (5 perfiles) | §1 y §4 |
-| Portafolio óptimo de riesgo y luego el total según el perfil; ver su composición | §3.5, §3.6 y §4 |
-| Análisis de múltiplos (investing.com) para aumentar o reducir posiciones | §3.9 |
-| Portafolio óptimo con desviación estándar, retorno promedio histórico y Sharpe | §3.3 y §3.5 |
-| Frontera eficiente y CAL óptima | §3.5 |
-| Beta de las acciones y duration de los bonos | §3.8 |
-| Entregables: PDF + Excel + código Python | Este PDF, `Taller1.xlsx` y el repositorio |
 
 # Metodología general
 
@@ -399,12 +399,18 @@ cálculos para revisarlos en detalle.
 El portafolio de riesgo óptimo **no depende de A**: es el mismo para todos (teorema de separación de
 Tobin). A solo decide la mezcla entre P y el activo libre de riesgo.
 
-**Herramientas.** Python 3.11 (numpy, pandas, scipy para la optimización SLSQP, matplotlib), una base de
-datos Supabase (PostgreSQL con seguridad por filas) y una aplicación Streamlit. Un proceso automático
-(GitHub Actions) descarga los precios de Yahoo Finance cada día hábil a las 5:00 p. m. de Bogotá. El
-aplicativo se construyó con apoyo de **herramientas de inteligencia artificial** (el asistente de
-programación Claude Code), como pide el enunciado; dentro de la aplicación, en cambio, los cálculos y las
-recomendaciones salen de **fórmulas y reglas fijas**, sin IA, para que sean reproducibles y auditables.
+**Herramientas y en qué aportó cada una.**
+
+- **Python** hace todos los cálculos: estadística, optimización de Markowitz, gráficos, este informe y el
+  Excel. Las mismas funciones sirven a la aplicación y al informe, así los números coinciden.
+- **Una base de datos en la nube** guarda los precios, el catálogo de activos y, de forma segura, las
+  encuestas y portafolios de cada usuario.
+- **Una aplicación web** es la cara del robo-advisor: registro, encuesta, construcción y seguimiento del
+  portafolio, desde el computador o el celular.
+- **Un proceso automático** descarga los precios de mercado cada día hábil, sin intervención manual.
+- **Inteligencia artificial**, como pide el enunciado, se usó para **construir** el aplicativo (un asistente de
+  programación). Dentro de la aplicación, en cambio, los cálculos y las recomendaciones salen de fórmulas y
+  reglas fijas, para que sean reproducibles y auditables.
 
 **Supuestos principales.**
 
@@ -436,7 +442,7 @@ prefiere mezclar P con el activo libre de riesgo, y el agresivo no.
 
 $U$ puede leerse como un **equivalente cierto**: el retorno seguro que el inversionista consideraría
 igual de bueno que la inversión riesgosa. Las preguntas 5, 6 y 7 del formato son pequeñas *loterías*
-que revelan esa preferencia (§5.6).
+que revelan esa preferencia.
 
 ## El instrumento: formato de medición de aversión al riesgo
 
@@ -475,13 +481,27 @@ para todos los perfiles:
 
 {_md(universo)}
 
-**Por qué estos 11.** Todos tienen al menos 5 años de historia diaria, de modo que la ventana común no
-se recorta. Los ETF de TES (GXTESCOL, datos desde 2025-05) y de bitcoin (IBIT, desde 2024-01) son
-jóvenes: incluirlos reduciría la estimación de **todos** los activos a uno o dos años y, en una ventana
-tan corta, inflaría el Sharpe (se probó: pasaba de ≈ 0,6 a ≈ 1,6, con $y^*$ = 100 % hasta para perfiles
-conservadores). Siguen disponibles en la aplicación, que avisa al usuario cuando acortan la ventana.
-Colombia queda representada dentro de ILF y, en el catálogo, con COLO. Se excluyen los ETF apalancados
-(2x, 3x): su retorno histórico no representa una inversión de largo plazo.
+**Por qué estos 11.** Se escogieron con tres criterios:
+
+1. *Cubrir las clases del enunciado:* acciones de EE.UU., Colombia, Latinoamérica, EAFE y emergentes; renta fija
+   de grado de inversión, alto rendimiento y emergente; REIT y oro.
+2. *Ser comparables:* sin apalancamiento y con al menos 5 años de historia diaria, para que la ventana común
+   no se recorte.
+3. *Maximizar el ratio de Sharpe del portafolio de riesgo.* Se calculó el portafolio óptimo con **los {eleg["n"]}
+   activos del catálogo** que cumplen el criterio 2: su Sharpe máximo es **{_num(eleg["sharpe"])}**, el mismo que se
+   obtiene con estos 11. Ningún otro activo elegible lo mejora.
+
+Por eso se **retiró SPY** (S&P 500): su correlación con QQQ es {_num(corr_spy_qqq)} y no aporta Sharpe; y se incluyeron **SMH**
+(semiconductores, el ETF de mayor Sharpe individual del catálogo) y **COLO** (acciones colombianas, que pide el
+enunciado). Los ETF de TES (GXTESCOL, datos desde 2025-05) y de bitcoin (IBIT, desde 2024-01) son jóvenes:
+incluirlos reduciría la estimación de **todos** los activos a uno o dos años y, en una ventana tan corta, el
+Sharpe saldría artificialmente alto (se probó: 1,2 a 1,5). Siguen disponibles en la aplicación, que avisa al
+usuario cuando acortan la ventana. Los ETF apalancados (2x, 3x) se excluyen.
+
+**¿Es bajo un Sharpe de {_num(t.sharpe)}?** No para este periodo. La tasa libre de riesgo es alta ({_pct(c.rf, 2)}) y la ventana
+incluye 2022, cuando acciones y bonos cayeron a la vez. En la misma ventana el S&P 500 (SPY) tuvo un Sharpe de
+{_num(sharpe_spy)}. Con datos de 5 años, un Sharpe mayor que 1 solo aparece cuando se usan ventanas cortas o activos
+escogidos *a posteriori*, y eso es sobreajuste.
 
 ## Datos
 
@@ -506,10 +526,11 @@ pérdida desde un máximo) como indicadores complementarios. La última fila es 
 
 ![Correlaciones de los retornos diarios de los 11 ETF]({figuras["correlaciones"].name}){{width=70%}}
 
-**Lectura.** El oro (GLD) y las acciones de EE.UU. (SPY, QQQ) tuvieron el mejor retorno ajustado por
-riesgo. Los bonos de grado de inversión (LQD, IEF) **perdieron** dinero en la ventana, que incluye la
-mayor subida de tasas de la Reserva Federal en 40 años; por eso su Sharpe es negativo. El oro tiene baja
-correlación con las acciones: aporta diversificación además de retorno.
+**Lectura.** Los mejores retornos ajustados por riesgo fueron los de {", ".join(f"{x} ({_num(v)})" for x, v in mejores.head(3).items())}.
+{(", ".join(negativos) + " tuvieron retorno medio **negativo**") if negativos else "Ningún activo tuvo retorno negativo"}: la ventana incluye la mayor subida de tasas de
+la Reserva Federal en 40 años, que golpeó a la renta fija ({bonos_txt}). El oro tiene baja correlación con las
+acciones (verde claro en el mapa): aporta diversificación además de retorno. Las acciones de EE.UU. entre sí
+(QQQ y SMH) están muy correlacionadas.
 
 ## El problema de optimización
 
@@ -540,7 +561,8 @@ por separado (el mejor, GLD, tiene {_num(est_u.loc["GLD", "sharpe"])}): ese es e
 mínima varianza tiene σ = {_pct(c.min_var.sigma)} y retorno {_pct(c.min_var.retorno)}.
 {(" y ".join(tope) + f" llegan al tope de {_pct(c.params.w_max, 0)}: sin esa restricción el optimizador concentraría aún más en ellos, lo que reflejaría el desempeño reciente más que una expectativa razonable.") if tope else ""}
 Los otros {11 - len(activos)} ETF quedan en 0 % porque en esta ventana no mejoran el Sharpe: su retorno es bajo para el
-riesgo que agregan. Es la conocida sensibilidad de Markowitz a los retornos esperados históricos.
+riesgo que agregan. Es la conocida sensibilidad de Markowitz a los retornos esperados históricos, y el costo
+es un portafolio **concentrado** en {len(activos)} activos, con caída máxima de {_pct(est_u.loc["Óptimo", "caida_maxima"], 0)} en la ventana.
 
 ## Portafolio completo según el perfil
 
@@ -560,11 +582,11 @@ El portafolio completo tiene $E(R_C) = r_f + y^*(E(R_P) - r_f)$ y $\\sigma_C = y
 
 ![Composición del portafolio completo de cada perfil]({figuras["composicion"].name}){{width=85%}}
 
-![Curvas de indiferencia de cada perfil tangentes a la CAL (puntos llenos: elección con el tope de 100 %; círculos: dónde estaría sin tope)]({figuras["indiferencia"].name}){{width=88%}}
+![Izquierda: curvas de indiferencia de cada perfil tangentes a la CAL. Derecha (zoom out): la CAL prolongada; los círculos vacíos muestran dónde quedaría cada perfil con su y* real y las flechas cómo el tope lo lleva a P]({figuras["indiferencia"].name}){{width=88%}}
 
 ## Perfiles con A baja: el tope de 100 % y el valor real de y*
 
-Para A = {", ".join(str(int(a)) for a in altos["a"])} la fórmula da $y^* > 1$. **Interpretación:** dado lo atractivo de P (Sharpe
+Para A = {a_altos} la fórmula da $y^* > 1$. **Interpretación:** dado lo atractivo de P (Sharpe
 {_num(t.sharpe)}), esas personas querrían invertir **más que todo su dinero** en él y pedir prestada la diferencia
 a la tasa libre de riesgo (quedarían con $1 - y^* < 0$ en el activo libre de riesgo, es decir, con una
 deuda). Con A = 1 el valor real es $y^*$ = **{_pct(y_a1, 0)}**: por cada 100 USD propios pediría prestados
@@ -580,11 +602,11 @@ deuda). Con A = 1 el valor real es $y^*$ = **{_pct(y_a1, 0)}**: por cada 100 USD
 2. *El riesgo se multiplica:* con apalancamiento una caída de 20 % en P se convierte en una pérdida de
    {", ".join(_pct(0.2 * v, 0) for v in altos["y_sin_recorte"])} del patrimonio (última columna), más posibles llamados al margen.
 3. *Producto responsable:* el robo-advisor no ofrece crédito, así que $0 \\le y^* \\le 1$ es una restricción del
-   modelo. Además, el {_pct(float((voluntarios["q6"] == "a").mean()), 0) if voluntarios is not None else "—"} de los encuestados dijo que *definitivamente no* tomaría un préstamo para invertir (§5.5).
+   modelo. Además, el {_pct(float((voluntarios["q6"] == "a").mean()), 0) if voluntarios is not None else "—"} de los encuestados dijo que *definitivamente no* tomaría un préstamo para invertir.
 
 **Qué significa para la persona.** Con el tope, su mejor opción factible es $y = 1$ (100 % en P): una
-solución de esquina. La pérdida de utilidad frente al valor sin tope es mínima para A = 4 ($y^*$ apenas pasa
-de 1) y grande para A = 1. Si no se puede pedir prestado, la teoría (Bodie, Kane y Marcus) indica que quien
+solución de esquina. La pérdida de utilidad frente al valor sin tope crece a medida que A baja (ver las
+columnas U de la tabla); es mayor para A = 1. Si no se puede pedir prestado, la teoría (Bodie, Kane y Marcus) indica que quien
 quiere más riesgo debería moverse **por la frontera eficiente a la derecha de P**, hacia un portafolio de
 riesgo más agresivo, en lugar de apalancarse. {texto_frontera} La aplicación muestra al usuario el
 $y^*$ real y le avisa que fue limitado a 100 %.
@@ -596,16 +618,16 @@ $\\beta_i = \\mathrm{{Cov}}(r_i, r_{{ACWI}}) / \\mathrm{{Var}}(r_{{ACWI}})$.
 
 {_md(betas)}
 
-Beta ponderada de la parte accionaria de P: **{_num(c.beta_port["beta_normalizada"])}**. QQQ (β {_num(c.betas.get("QQQ", float("nan")))}) es el
-componente más sensible al mercado y ILF (β {_num(c.betas.get("ILF", float("nan")))}) el menos.
+Beta ponderada de la parte accionaria de P: **{_num(c.beta_port["beta_normalizada"])}**: amplifica los movimientos del mercado
+mundial. {c.betas.idxmax()} (β {_num(c.betas.max())}) es el componente más sensible al mercado y {c.betas.idxmin()} (β {_num(c.betas.min())}) el menos.
 
 **Duration** (modificada, en años) de los ETF de renta fija, según el emisor (iShares), y su resultado en
 la ventana:
 
 {_md(durs)}
 
-{texto_duration} Interpretación: con duration 7,5 (IEF), una subida de 1 punto porcentual en las tasas
-reduce su precio ≈ 7,5 %.
+{texto_duration} Interpretación: con duration {_num(DURATIONS[dur_ej], 1)} ({dur_ej}), una subida de 1 punto porcentual en las
+tasas reduce su precio ≈ {_num(DURATIONS[dur_ej], 1)} %.
 
 ## Análisis de múltiplos
 
@@ -633,7 +655,7 @@ datos (políticas de seguridad por fila). Los precios se actualizan solos cada d
 **Los portafolios de los encuestados.** De las {n_vol} personas con encuesta, {int((origen == "propio").sum())} armaron su propio
 portafolio en la aplicación; a las otras {int((origen == "asignado").sum())} el grupo les **asignó** el portafolio de riesgo de
 referencia de este informe, con el $y^*$ de su propio A, para que todas puedan ver la composición de su
-portafolio completo y su seguimiento. Esa diferencia queda marcada en los datos (§5.8).
+portafolio completo y su seguimiento. Esa diferencia queda marcada en los datos.
 
 # Análisis exploratorio de las encuestas (EDA)
 
@@ -644,18 +666,17 @@ portafolio completo y su seguimiento. Esa diferencia queda marcada en los datos 
 1. El formato del enunciado clasifica a la mitad de los encuestados como **moderados** (A = 4) y los
    extremos son poco frecuentes. Los mayores de 65 años son los más aversos al riesgo; entre 18 y 64 años
    el puntaje no cambia de forma sistemática.
-2. El portafolio de riesgo óptimo se concentra en acciones de EE.UU. y oro, con Sharpe {_num(t.sharpe)}. Es el
-   mismo para todos; el perfil solo cambia la mezcla con el activo libre de riesgo: de {_pct(y8, 0)} en riesgo
-   (conservador) a 100 % (moderado o más agresivo).
-3. Para A ≤ 4 la fórmula pide apalancarse ({", ".join(_pct(v, 0) for v in altos["y_sin_recorte"])}); el tope de 100 % es una decisión prudente,
-   coherente con lo que declaran los encuestados, y su costo en utilidad es pequeño salvo para el perfil
-   agresivo.
-4. Los múltiplos sugieren un ajuste táctico contrario al pasado reciente: menos EE.UU. y más Latam.
+2. El portafolio de riesgo óptimo ({", ".join(f"{x} {_pct(activos[x], 0)}" for x in activos.index)}) tiene Sharpe {_num(t.sharpe)}, el máximo
+   alcanzable con los {eleg["n"]} activos elegibles del catálogo. Es el mismo para todos; el perfil solo cambia la mezcla
+   con el activo libre de riesgo: de {_pct(y8, 0)} en riesgo (conservador) a 100 % (los más agresivos).
+3. Para A = {a_altos} la fórmula pide apalancarse ({", ".join(_pct(v, 0) for v in altos["y_sin_recorte"])}); el tope de 100 % es una decisión
+   prudente, coherente con lo que declaran los encuestados.
+4. Los múltiplos sugieren un ajuste táctico: {resumen_mult}
 
 # Limitaciones
 
 - Retornos esperados **históricos** (5 años): son inestables y empujan a concentrar en lo que más subió
-  (el oro y la tecnología en esta ventana). Un modelo de equilibrio (CAPM, Black-Litterman) o una ventana
+  (el oro y los semiconductores en esta ventana). Un modelo de equilibrio (CAPM, Black-Litterman) o una ventana
   más larga darían pesos más diversificados.
 - Sin apalancamiento, solo posiciones largas y tope de {_pct(c.params.w_max, 0)} por activo; moneda base USD.
 - La muestra de encuestas es de conveniencia ({n_vol} personas cercanas al grupo, muchas jóvenes): sirve para
@@ -687,13 +708,17 @@ Código: <{URL_REPO}>. Cálculos en `taller1/core/`; este informe, el EDA y el E
 """
 
 
-def seccion_multiplos(c: CasoReferencia, fundamentales: pd.DataFrame | None) -> str:
+def seccion_multiplos(c: CasoReferencia, fundamentales: pd.DataFrame | None) -> tuple[str, str]:
+    """Texto de la sección de múltiplos y una frase de resumen."""
     if (
         fundamentales is None
         or fundamentales.empty
         or BENCHMARK not in set(fundamentales["ticker"])
     ):
-        return "No hay fotos de múltiplos en la instantánea de datos; ver la página *Mi portafolio* de la aplicación."
+        return (
+            "No hay fotos de múltiplos en la instantánea de datos; ver la página *Mi portafolio* de la aplicación.",
+            "sin datos de múltiplos.",
+        )
     m = multiplos_referencia(c, fundamentales)
     mt = m["tabla"]
     tabla = pd.DataFrame(
@@ -702,7 +727,7 @@ def seccion_multiplos(c: CasoReferencia, fundamentales: pd.DataFrame | None) -> 
             "P/E": [_num(v, 1) if pd.notna(v) else "—" for v in mt["pe"]],
             "1/PE": [_pct(v) if pd.notna(v) else "—" for v in mt["rendimiento_utilidades"]],
             "P/E relativo": [_num(v) if pd.notna(v) else "—" for v in mt["pe_relativo"]],
-            "Div. yield": [_pct(v) for v in mt["dividend_yield"]],
+            "Div. yield": [_pct(v) if pd.notna(v) else "—" for v in mt["dividend_yield"]],
             "Señal": mt["senal"],
             "Peso neutral": [_pct(v) for v in mt["peso_neutral"]],
             "Peso sugerido": [_pct(v) for v in mt["peso_ajustado"]],
@@ -710,8 +735,24 @@ def seccion_multiplos(c: CasoReferencia, fundamentales: pd.DataFrame | None) -> 
     )
     aj = m["ajustado"]
     otros = [x for x in aj.index if x not in mt["ticker"].tolist() and aj[x] > 0.0005]
-    ey_spy = float(mt.loc[mt.ticker == "SPY", "rendimiento_utilidades"].iloc[0])
-    return f"""
+    caras = mt.loc[mt.senal == "cara", "ticker"].tolist()
+    baratas = mt.loc[mt.senal == "barata", "ticker"].tolist()
+    sin_dato = mt.loc[mt.senal == "sin_dato", "ticker"].tolist()
+    ey_caras = [float(v) for v in mt.loc[mt.senal == "cara", "rendimiento_utilidades"]]
+    bajo_rf = [x for x, v in zip(caras, ey_caras, strict=True) if v < c.rf]
+
+    def _lista(xs: list[str]) -> str:
+        return (
+            " y ".join([", ".join(xs[:-1]), xs[-1]])
+            if len(xs) > 1
+            else (xs[0] if xs else "ninguno")
+        )
+
+    resumen = (
+        f"{_lista(caras)} cotizan caros frente al mundo (P/E relativo > {_num(c.params.pe_relativo_cara)}) y {_lista(baratas)} baratos "
+        f"(< {_num(c.params.pe_relativo_barata)}): se sugiere subponderar los primeros y sobreponderar los segundos."
+    )
+    texto = f"""
 **Fuente y fecha.** P/E (precio / utilidad de los últimos 12 meses) y dividend yield de cada ETF según
 Yahoo Finance (la misma información que publica investing.com), foto semanal del **{_fecha(m["fecha"])}**.
 Referencia: el índice mundial **ACWI**, con P/E = **{_num(m["pe_acwi"], 1)}**.
@@ -725,19 +766,18 @@ y se sugiere **subponderar** lo mismo. Luego se renormaliza para que el portafol
 
 El resto del portafolio sugerido queda en {", ".join(f"{x} {_pct(aj[x])}" for x in otros)}.
 
-**Lectura.** Las acciones de EE.UU. (SPY y, sobre todo, QQQ por la tecnología) cotizan con prima frente
-al mundo: el rendimiento de utilidades de SPY (1/PE = {_pct(ey_spy)}) es incluso menor que la tasa libre de
-riesgo ({_pct(c.rf, 2)}), lo que sugiere poca compensación por el riesgo accionario. Latinoamérica (ILF),
-emergentes (EEM) y EAFE (EFA) cotizan con descuento: el análisis de múltiplos recomienda **aumentar la
-posición en ILF** y abrir una posición pequeña en EEM y EFA, al contrario de lo que dicta el pasado reciente
-(Markowitz las descarta por su menor retorno histórico).
+**Lectura.** {_lista(caras)} (tecnología y semiconductores de EE.UU.) cotizan con prima frente al mundo{": su rendimiento de utilidades (1/PE) es incluso menor que la tasa libre de riesgo (" + _pct(c.rf, 2) + "), lo que sugiere poca compensación por el riesgo accionario" if bajo_rf else ""}.
+{_lista(baratas)} cotizan con descuento: el análisis de múltiplos recomienda **reducir la posición en {_lista([x for x in caras if mt.loc[mt.ticker == x, "peso_neutral"].iloc[0] > 0])}** y abrir
+posiciones pequeñas en {_lista(baratas)}, al contrario de lo que dicta el pasado reciente (Markowitz las descarta
+por su menor retorno histórico).{(" Yahoo Finance no publica P/E para " + _lista(sin_dato) + ", así que su peso no se ajusta.") if sin_dato else ""}
 
 **Cuidado.** Un P/E menor no siempre significa "barato": también refleja la mezcla de sectores (tecnología
-en QQQ; bancos y materias primas en ILF), el crecimiento esperado y el riesgo país. Por eso la aplicación,
-además, compara cada activo **con su propio P/E histórico** (z-score robusto frente a la mediana); esa señal
-necesita al menos {c.params.min_obs_pe} fotos semanales y hoy hay {m["fotos"]}, así que este informe usa la comparación
-frente al índice mundial.
+en QQQ y SMH; bancos y materias primas en ILF), el crecimiento esperado y el riesgo país. Por eso la
+aplicación, además, compara cada activo **con su propio P/E histórico** (z-score robusto frente a la mediana);
+esa señal necesita al menos {c.params.min_obs_pe} fotos semanales y hoy hay {m["fotos"]}, así que este informe usa la
+comparación frente al índice mundial.
 """
+    return texto, resumen
 
 
 def anexo_cuestionario() -> str:
@@ -839,6 +879,8 @@ def construir_eda(r: "eda_mod.ResultadosEDA", figuras: dict[str, Path]) -> str:
     )
     media_occ = {k: _num(float(occ.loc[k, "Media"]), 1) for k in occ.index}
     ninguno_sig = bool((r.asociaciones["p ajustado (BH)"] >= 0.05).all())
+    a_tope = sorted((a for a, v in r.y_sin_tope.items() if v > 1), reverse=True)
+    a_casi = sorted((a for a, v in r.y_sin_tope.items() if 0.9 <= v <= 1), reverse=True)
 
     return f"""
 ## Objetivo y preguntas guía
@@ -969,10 +1011,11 @@ Hallazgos:
 
 ![Personas en cada A y su y*: aplicado (con tope) y el valor de la fórmula]({figuras["eda_ystar"].name}){{width=86%}}
 
-Con el portafolio de riesgo de referencia, el **{_pct(float((d["a"] <= 4).mean()), 0)} de los encuestados** (A ≤ 4) tendría $y^*$ ≥ 100 % y
-quedaría totalmente invertido en el portafolio de riesgo; solo {int((d["a"] >= 6).sum())} personas lo combinan con el activo libre de
-riesgo. La paradoja: el {_pct(float(it.loc["6", "a"]), 0)} dijo que nunca se endeudaría para invertir, mientras la fórmula le pide
-endeudarse a la mayoría. El tope de 100 % es coherente con lo que las personas declaran.
+Con el portafolio de riesgo de referencia, la fórmula pide endeudarse ($y^*$ > 100 %) a quienes tienen A = {", ".join(str(a) for a in a_tope)}:
+el **{_pct(float(d["a"].isin(a_tope).mean()), 0)} de los encuestados**, que quedan totalmente invertidos en el portafolio de riesgo. El
+{_pct(float(d["a"].isin(a_casi).mean()), 0)} (A = {", ".join(str(a) for a in a_casi)}) queda con {", ".join(_pct(r.y_por_a[a], 0) for a in a_casi)} en riesgo, y el resto combina el portafolio de riesgo con el
+activo libre de riesgo. La paradoja: el {_pct(float(it.loc["6", "a"]), 0)} dijo que nunca se endeudaría para invertir, mientras la
+fórmula le pediría endeudarse a una parte de ellos. El tope de 100 % es coherente con lo que las personas declaran.
 
 **Portafolios guardados:** {len(propios)} personas armaron su propio portafolio y {len(pf) - len(propios)} recibieron el de referencia.
 Activos más escogidos por quienes armaron el suyo: {", ".join(f"{k} ({v})" for k, v in elegidos.head(8).items())}.
