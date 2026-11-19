@@ -95,14 +95,14 @@ def test_multiplos_frente_a_acwi(caso):
     from roboadvisor.taller1.reportes.caso import multiplos_referencia
 
     f = pd.DataFrame(
-        {"ticker": ["ACWI", "QQQ", "SMH", "COLO", "EFA", "EEM", "ILF"],
+        {"ticker": ["ACWI", "QQQ", "SMH", "COLO", "EFA", "EWZ", "ILF"],
          "fecha": "2026-11-13", "pe": [20.0, 28.0, 27.0, None, 17.5, 14.0, 11.0],
          "div_yield": [1.4, 0.5, 0.2, None, 3.3, 1.8, 3.7]}
     )  # fmt: skip
     m = multiplos_referencia(caso, f)
     senal = dict(zip(m["tabla"]["ticker"], m["tabla"]["senal"], strict=True))
     assert senal == {"QQQ": "cara", "SMH": "cara", "COLO": "sin_dato", "ILF": "barata",
-                     "EFA": "neutral", "EEM": "barata"}  # fmt: skip
+                     "EWZ": "barata", "EFA": "neutral"}  # fmt: skip
     assert m["ajustado"].sum() == pytest.approx(1.0)
 
 
@@ -138,3 +138,13 @@ def test_eda_con_encuestas_sinteticas(tmp_path):
     assert r.horizonte["monotonas"] == 6
     assert set(r.asociaciones["Factor"]) >= {"Edad", "Ocupación"}
     assert all(p.exists() for p in r.figuras.values())
+
+
+def test_universo_de_referencia_es_el_de_mayor_sharpe(caso):
+    from roboadvisor.taller1.data.semillas import leer_catalogo
+    from roboadvisor.taller1.reportes.caso import GRUPOS_ENUNCIADO, buscar_universo
+
+    mejor, sharpe = buscar_universo(caso, leer_catalogo())
+    assert sorted(mejor) == sorted(UNIVERSO_REFERENCIA)  # si cambian los datos, revisar config
+    assert sharpe == pytest.approx(caso.tangente.sharpe, abs=1e-6)
+    assert "SPY" not in mejor and all(set(mejor) & g for g in GRUPOS_ENUNCIADO.values())

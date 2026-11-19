@@ -23,8 +23,10 @@ from .caso import (
     TABLA_PERFILES,
     UNIVERSO_REFERENCIA,
     CasoReferencia,
+    buscar_universo,
     comparacion_piso,
     composicion_completa,
+    elegibles_catalogo,
     escenarios_extendidos,
     estadisticas_universo,
     multiplos_referencia,
@@ -45,11 +47,11 @@ CLASE_ETF = {
     "COLO": "Acciones Colombia",
     "QQQ": "Acciones EE.UU.",
     "EFA": "Acciones EAFE",
-    "EEM": "Acciones emergentes",
+    "EWZ": "Acciones Brasil (emergentes)",
     "ILF": "Acciones Latinoamérica",
-    "LQD": "Renta fija IG EE.UU.",
+    "AGG": "Renta fija IG EE.UU.",
     "HYG": "Renta fija HY EE.UU.",
-    "EMB": "Renta fija resto del mundo (emergente)",
+    "BNDX": "Renta fija resto del mundo",
     "VNQ": "REIT",
     "GLD": "Materias primas (oro)",
 }
@@ -271,8 +273,10 @@ def construir_markdown(
     tabla_tope = pd.DataFrame(
         {
             "A": altos["a"].astype(int).astype(str),
-            "y* real": [_pct(v, 0) for v in altos["y_sin_recorte"]],
-            "Préstamo por $100 propios": [f"\\${v * 100:.0f}" for v in altos["prestamo_sin_tope"]],
+            "y* real": [_pct(v, 1) for v in altos["y_sin_recorte"]],
+            "Préstamo por $100 propios": [
+                f"\\${_num(v * 100, 1)}" for v in altos["prestamo_sin_tope"]
+            ],
             "E(Rc) sin tope": [_pct(v) for v in altos["retorno_sin_tope"]],
             "σc sin tope": [_pct(v) for v in altos["sigma_sin_tope"]],
             "U sin tope": [_pct(v, 2) for v in altos["utilidad_sin_tope"]],
@@ -322,7 +326,11 @@ def construir_markdown(
     )
 
     texto_mult, resumen_mult = seccion_multiplos(c, fundamentales)
-    eleg = sharpe_catalogo_elegible(c, leer_catalogo())
+    catalogo = leer_catalogo()
+    eleg = sharpe_catalogo_elegible(c, catalogo)
+    elegibles = elegibles_catalogo(c, catalogo)
+    _, sharpe_busqueda = buscar_universo(c, catalogo)
+    _, sharpe_sin_smh = buscar_universo(c, catalogo, excluir={"SMH"})
     ret_d = c.precios.sort_index().pct_change().dropna(how="any").tail(c.est.n_obs)
     corr_spy_qqq = (
         float(ret_d["SPY"].corr(ret_d["QQQ"])) if {"SPY", "QQQ"} <= set(ret_d) else float("nan")
@@ -331,7 +339,8 @@ def construir_markdown(
     mejores = est_u.drop(index="Óptimo")["sharpe"].sort_values(ascending=False)
     negativos = [x for x in est_u.drop(index="Óptimo").index if est_u.loc[x, "retorno_medio"] < 0]
     bonos_txt = ", ".join(x for x in DURATIONS)
-    a_altos = " y ".join(str(int(a)) for a in altos["a"])
+    _a = [str(int(a)) for a in altos["a"]]
+    a_altos = " y ".join([", ".join(_a[:-1]), _a[-1]]) if len(_a) > 1 else "".join(_a)
     dur_ej = max(DURATIONS, key=DURATIONS.get)
     piso = comparacion_piso(c)
     w0 = piso.loc[0, "pesos"]
@@ -510,23 +519,29 @@ para todos los perfiles:
 
 {_md(universo)}
 
-**Por qué estos 11.** Se escogieron con tres criterios:
+**Cómo se escogieron estos 11.** No a mano, sino con una búsqueda sobre el catálogo:
 
-1. *Cubrir las clases del enunciado:* acciones de EE.UU., Colombia, Latinoamérica, EAFE y emergentes; renta fija
-   de grado de inversión, alto rendimiento y emergente; REIT y oro.
-2. *Ser comparables:* sin apalancamiento y con al menos 5 años de historia diaria, para que la ventana común
-   no se recorte.
-3. *Buen potencial de Sharpe:* se calculó el portafolio óptimo (sin peso mínimo) con **los {eleg["n"]} activos del
-   catálogo** que cumplen el criterio 2: su Sharpe máximo es **{_num(eleg["sharpe"])}**, el mismo que se obtiene con estos 11.
-   Ningún otro activo elegible lo mejora.
+1. *Candidatos:* los {len(elegibles)} activos del catálogo sin apalancamiento, con al menos 5 años de historia diaria
+   (para que la ventana común no se recorte) y **sin SPY**. El S&P 500 se suele tomar en la literatura como el
+   portafolio de mercado; incluirlo hace que el óptimo termine replicando ese índice (además, su correlación con
+   QQQ es {_num(corr_spy_qqq)}).
+2. *Cobertura del enunciado:* la combinación debe incluir al menos un activo de cada clase: acciones de
+   Colombia, Latinoamérica/emergentes, EE.UU. y EAFE; renta fija de grado de inversión, alto rendimiento y
+   resto del mundo; y REIT.
+3. *Criterio:* entre las combinaciones de 11 que cumplen lo anterior, la de **mayor Sharpe** con las mismas
+   restricciones del portafolio (pesos entre {_pct(c.params.w_min, 0)} y {_pct(c.params.w_max, 0)}, sección 3.4). Se resolvió con una búsqueda local
+   por intercambios (sale un activo, entra otro, se conserva el cambio si sube el Sharpe). Se verificó
+   arrancando también desde 15 combinaciones al azar: todas llegan a la misma, con Sharpe **{_num(sharpe_busqueda)}**.
 
-**Sin SPY.** El S&P 500 se suele tomar en la literatura como el portafolio de mercado; incluirlo hace que el
-óptimo termine replicando ese índice. Se retiró: su correlación con QQQ es {_num(corr_spy_qqq)} y no aporta Sharpe. Se
-incluyeron **SMH** (semiconductores, el ETF de mayor Sharpe individual del catálogo) y **COLO** (acciones
-colombianas, que pide el enunciado). Los ETF de TES (GXTESCOL, datos desde 2025-05) y de bitcoin (IBIT, desde 2024-01) son jóvenes:
-incluirlos reduciría la estimación de **todos** los activos a uno o dos años y, en una ventana tan corta, el
-Sharpe saldría artificialmente alto (se probó: 1,2 a 1,5). Siguen disponibles en la aplicación, que avisa al
-usuario cuando acortan la ventana. Los ETF apalancados (2x, 3x) se excluyen.
+Frente a una selección "a mano" (EEM, LQD y EMB), la búsqueda prefiere **EWZ** (Brasil), **AGG** (bonos
+agregados de EE.UU.) y **BNDX** (bonos internacionales), que diversifican mejor. Se probó también **sin SMH**
+(para no depender de un sector): el mejor Sharpe posible cae a **{_num(sharpe_sin_smh)}** y el oro sube al tope de
+{_pct(c.params.w_max, 0)}, es decir, la concentración solo cambia de activo. Por eso SMH se mantiene, limitado por el tope.
+
+Los ETF de TES (GXTESCOL, datos desde 2025-05) y de bitcoin (IBIT, desde 2024-01) son jóvenes: incluirlos
+reduciría la estimación de **todos** los activos a uno o dos años y, en una ventana tan corta, el Sharpe saldría
+artificialmente alto (se probó: 1,2 a 1,5). Siguen disponibles en la aplicación, que avisa al usuario cuando
+acortan la ventana.
 
 **¿Es bajo un Sharpe de {_num(t.sharpe)}?** No para este periodo. La tasa libre de riesgo es alta ({_pct(c.rf, 2)}) y la ventana
 incluye 2022, cuando acciones y bonos cayeron a la vez. En la misma ventana el S&P 500 (SPY) tuvo un Sharpe de

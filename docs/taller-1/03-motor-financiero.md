@@ -87,14 +87,15 @@ Todas las recomendaciones incluyen el texto fijo: *"Ejercicio académico; no con
 ## 11. Portafolio de referencia de 11 ETF
 
 El botón *"Cargar portafolio de referencia (11 ETF)"* del Constructor carga **los mismos 11 ETF para todos
-los perfiles** (`UNIVERSO_REFERENCIA` en `config.py`): QQQ, SMH, COLO, ILF, EFA, EEM, LQD, HYG, EMB, VNQ y GLD.
-Se escogieron para cubrir las clases del enunciado sin apalancamiento y con ≥ 5 años de historia, y porque
-alcanzan el mismo Sharpe máximo (≈ 0,80) que el portafolio óptimo con los 25 activos elegibles del catálogo
-(SPY se retiró: correlación ≈ 0,95 con QQQ y no aporta Sharpe).
+los perfiles** (`UNIVERSO_REFERENCIA` en `config.py`): QQQ, SMH, COLO, ILF, EWZ, EFA, AGG, HYG, BNDX, VNQ y GLD.
+Salen de `reportes/caso.buscar_universo`: entre los activos sin apalancamiento, con ≥ 5 años de historia y sin
+SPY (proxy del portafolio de mercado), la combinación de 11 que cubre las clases del enunciado
+(`GRUPOS_ENUNCIADO`) con mayor Sharpe (≈ 0,66) usando pesos entre 5 % y 40 %. Una prueba verifica que
+la búsqueda devuelve este mismo universo.
 Así se ve cómo cambia `y*` con A sin que cambie el universo: el portafolio tangente depende solo del
 universo y de los datos; A solo define `y*` (tabla "y* por perfil" tras optimizar). Con datos reales
-(5 años, datos al 18-11-2026, pesos entre 5 % y 40 %) `y*` = 46 % (A=8), 61 % (A=6), 92 % (A=4) y 100 % (A=3
-y 1, con tope por no apalancar; la fórmula da 122 % y 367 %). `w_min` = 5 % por defecto: sin piso el óptimo
+(5 años, datos al 18-11-2026, pesos entre 5 % y 40 %) `y*` = 50 % (A=8), 67 % (A=6) y 100 % (A=4, 3 y 1,
+con tope por no apalancar; la fórmula da 100,1 %, 133 % y 400 %). `w_min` = 5 % por defecto: sin piso el óptimo
 queda en 3 activos (SMH 40 %, GLD 40 %, COLO 20 %).
 
 *Decisión de diseño:* se probó una selección por reglas que dependía de A (retorno alto con A baja,

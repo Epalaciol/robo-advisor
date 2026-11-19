@@ -20,7 +20,7 @@ from roboadvisor.taller1.core.retornos import Estimacion, estimar, retornos_diar
 from roboadvisor.taller1.core.riesgo import beta_portafolio, betas, duration_portafolio
 
 # Duration (años) de los ETF de renta fija, tomadas del catálogo `supabase/seed/activos.csv`.
-DURATIONS: dict[str, float] = {"LQD": 8.4, "HYG": 3.5, "EMB": 7.0}
+DURATIONS: dict[str, float] = {"AGG": 6.0, "HYG": 3.5, "BNDX": 8.0}
 BENCHMARK = "ACWI"
 VALORES_A = [8, 6, 4, 3, 1]
 
@@ -99,7 +99,7 @@ def portafolio_de_voluntario(caso: CasoReferencia, respuestas: dict[str, str]) -
 TABLA_PERFILES = [(a, b, etiqueta, A) for a, b, _clave, etiqueta, A in PERFILES]
 
 
-ACCIONES_REFERENCIA = ["QQQ", "SMH", "COLO", "ILF", "EFA", "EEM"]
+ACCIONES_REFERENCIA = ["QQQ", "SMH", "COLO", "ILF", "EWZ", "EFA"]
 
 
 def escenarios_extendidos(c: CasoReferencia) -> pd.DataFrame:
@@ -265,3 +265,80 @@ def comparacion_piso(c: CasoReferencia) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(filas)
+
+
+# Clases del enunciado que el universo de 11 debe cubrir (al menos un activo de cada grupo).
+GRUPOS_ENUNCIADO: dict[str, set[str]] = {
+    "Acciones Colombia": {"COLO"},
+    "Acciones Latam / emergentes": {"ILF", "EWZ", "EEM", "FXI", "KWEB"},
+    "Acciones EE.UU.": {"QQQ", "IWM", "SMH", "XBI", "ARKK"},
+    "Acciones EAFE": {"EFA"},
+    "Renta fija IG EE.UU.": {"LQD", "AGG", "IEF", "TLT", "TIP"},
+    "Renta fija HY": {"HYG"},
+    "Renta fija resto del mundo": {"BNDX", "EMB"},
+    "REIT": {"VNQ", "VNQI"},
+}
+EXCLUIDOS_UNIVERSO = {"SPY"}  # proxy del portafolio de mercado: sesgaría el óptimo hacia el S&P 500
+
+
+def elegibles_catalogo(c: CasoReferencia, catalogo: list[dict]) -> list[str]:
+    """Activos invertibles, sin apalancamiento, con historia completa en la ventana y sin SPY."""
+    return [
+        a["ticker"]
+        for a in catalogo
+        if a["activo"]
+        and a["rol"] == "invertible"
+        and a["ticker"] not in APALANCADOS | EXCLUIDOS_UNIVERSO
+        and a["ticker"] in c.precios.columns
+        and c.precios[a["ticker"]].first_valid_index() is not None
+        and c.precios[a["ticker"]].first_valid_index() <= c.ventana[0]
+    ]
+
+
+def buscar_universo(
+    c: CasoReferencia,
+    catalogo: list[dict],
+    n: int = 11,
+    excluir: set[str] | None = None,
+    grupos: dict[str, set[str]] | None = None,
+    inicio: list[str] | None = None,
+) -> tuple[list[str], float]:
+    """Combinación de `n` activos elegibles con mayor Sharpe (pesos entre w_min y w_max) que cubre
+    los `grupos` del enunciado. Búsqueda local por intercambios (sale uno, entra otro) desde el
+    universo de referencia: se repite mientras algún intercambio mejore el Sharpe.
+    """
+    grupos = GRUPOS_ENUNCIADO if grupos is None else grupos
+    elegibles = [t for t in elegibles_catalogo(c, catalogo) if t not in (excluir or set())]
+    cache: dict[frozenset, float] = {}
+
+    def sharpe(ts: list[str]) -> float:
+        k = frozenset(ts)
+        if k not in cache:
+            est = estimar(c.precios[sorted(ts)], c.rf, c.params.ventana_dias, c.params.min_dias)
+            cache[k] = tangente(est, c.params.w_max, c.params.w_min).sharpe
+        return cache[k]
+
+    def cubre(ts: list[str]) -> bool:
+        return all(set(ts) & g for g in grupos.values())
+
+    actual = [t for t in (inicio or list(UNIVERSO_REFERENCIA)) if t in elegibles]
+    for t in elegibles:  # completa hasta n si faltan (p. ej. al excluir uno)
+        if len(actual) >= n:
+            break
+        if t not in actual:
+            actual.append(t)
+    mejor = sharpe(actual)
+    mejora = True
+    while mejora:
+        mejora = False
+        for sale in list(actual):
+            for entra in elegibles:
+                if entra in actual:
+                    continue
+                cand = [x for x in actual if x != sale] + [entra]
+                if cubre(cand) and sharpe(cand) > mejor + 1e-9:
+                    actual, mejor, mejora = cand, sharpe(cand), True
+                    break
+            if mejora:
+                break
+    return sorted(actual), mejor

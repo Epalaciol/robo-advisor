@@ -12,19 +12,19 @@ RF_NOMBRE = "T-note de EE.UU. a 10 años"
 RF_FUENTE = f"yahoo:{RF_TICKER}"
 
 # Portafolio de referencia: 11 ETF (el número del enunciado) sin apalancamiento y con ≥ 5 años de
-# historia, que cubren las clases del enunciado. Es el mismo para todos los perfiles, así se ve cómo
-# cambia y* con A sin que cambie el universo. Con los 25 activos elegibles del catálogo el Sharpe
-# máximo es el mismo que con estos 11 (ver docs/taller-1/03 §11).
+# historia, sin SPY, que cubren las clases del enunciado. Es el mismo para todos los perfiles, así
+# se ve cómo cambia y* con A sin que cambie el universo. Es la combinación de 11 con mayor Sharpe
+# con pesos entre w_min y w_max (reportes/caso.buscar_universo; docs/taller-1/03 §11).
 UNIVERSO_REFERENCIA: dict[str, str] = {
     "QQQ": "Acciones EE.UU. (Nasdaq 100)",
     "SMH": "Acciones EE.UU. (semiconductores)",
     "COLO": "Acciones Colombia (MSCI Colombia)",
     "ILF": "Acciones Latinoamérica",
+    "EWZ": "Acciones Brasil (emergentes)",
     "EFA": "Acciones EAFE (desarrollados ex-EE.UU.)",
-    "EEM": "Acciones mercados emergentes",
-    "LQD": "Renta fija grado de inversión EE.UU.",
+    "AGG": "Renta fija grado de inversión EE.UU. (agregado)",
     "HYG": "Renta fija alto rendimiento (HY) EE.UU.",
-    "EMB": "Renta fija emergente en USD",
+    "BNDX": "Renta fija resto del mundo (grado de inversión)",
     "VNQ": "REIT (finca raíz EE.UU.)",
     "GLD": "Oro",
 }

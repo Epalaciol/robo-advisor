@@ -47,14 +47,13 @@ la CAL. En cada nuevo ingreso muestra cómo le ha ido con los precios del día y
 
 En el paso de construcción, el botón **"Cargar portafolio de referencia (11 ETF)"** carga los mismos 11 ETF
 para todos los perfiles. El portafolio de riesgo óptimo es el mismo; lo que cambia con A es cuánto se invierte
-en él (**y\***): con los datos del informe, 46 % (A = 8), 61 % (A = 6), 92 % (A = 4) y 100 % para A = 3 y 1.
-En estos dos la fórmula da 122 % y 367 % (querrían endeudarse); como el modelo no admite apalancamiento se
+en él (**y\***): con los datos del informe, 50 % (A = 8), 67 % (A = 6) y 100 % para A = 4, 3 y 1.
+En estos tres la fórmula da 100,1 %, 133 % y 400 % (querrían endeudarse); como el modelo no admite apalancamiento se
 limita a 100 %, y el informe explica el valor real y cómo se interpreta (sección 3.7).
 
-Los 11 ETF (QQQ, SMH, COLO, ILF, EFA, EEM, LQD, HYG, EMB, VNQ y GLD) se escogieron para cubrir las clases del
-enunciado sin apalancamiento y porque alcanzan el Sharpe máximo (0,80) de todo el catálogo elegible. Cada
-peso va entre 5 % y 40 %: sin el piso de 5 % el óptimo quedaba en solo 3 activos (40-40-20); con él entran los
-11 y el Sharpe es 0,63.
+Los 11 ETF (QQQ, SMH, COLO, ILF, EWZ, EFA, AGG, HYG, BNDX, VNQ y GLD) salen de una búsqueda sobre el catálogo:
+sin SPY ni apalancados, cubriendo las clases del enunciado, la combinación de 11 con mayor Sharpe (0,66) con
+pesos entre 5 % y 40 %. Sin el piso de 5 % el óptimo quedaba en solo 3 activos (40-40-20); con él entran los 11.
 
 ## ¿Dónde está el código?
 
