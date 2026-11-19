@@ -209,10 +209,23 @@ def figura_frontera(
     retorno_min_visible = float(retornos_reales.min()) - margen_y
     retorno_max_visible = float(retornos_reales.max()) + margen_y
 
+    # Límites del zoom out: σ nunca negativa y hasta donde quepa el óptimo sin tope (apalancado)
+    # del usuario; la CAL y las curvas se dibujan hasta ese borde para que no "terminen" a la vista.
+    sigma_limite = max(0.6, sigma_max_visible * 1.5)
+    if a_usuario is not None:
+        y_raw_u = max(
+            (port_tangente.retorno - cal_intercepto) / (a_usuario * port_tangente.sigma**2), 0
+        )
+        sigma_limite = max(sigma_limite, min(y_raw_u * port_tangente.sigma * 1.15, 1.5))
+    retorno_limite_sup = (
+        max(cal_intercepto + cal_pendiente * sigma_limite, retorno_max_visible) * 1.05
+    )
+    retorno_limite_inf = min(retorno_min_visible, -0.05)
+
     fig.add_trace(
         go.Scatter(
-            x=[0, sigma_max_visible],
-            y=[cal_intercepto, cal_intercepto + cal_pendiente * sigma_max_visible],
+            x=[0, sigma_limite],
+            y=[cal_intercepto, cal_intercepto + cal_pendiente * sigma_limite],
             mode="lines",
             name="CAL (con el activo libre de riesgo: T-note 10 años)",
             line={"color": COLOR_CAL, "dash": "dot", "width": 2},
@@ -233,11 +246,13 @@ def figura_frontera(
         # er(σ) = U* + ½·A·σ², con U* la utilidad en el punto tangente a la CAL
         _, sig_opt, er_opt = _optimo_sin_tope(a)
         u_opt = _utilidad(er_opt, sig_opt, a)
-        sigmas_curva = np.linspace(0, sigma_max_visible, 100)
+        sigmas_curva = np.linspace(0, sigma_limite, 300)
+        er_curva = u_opt + 0.5 * a * sigmas_curva**2
+        er_curva = np.where(er_curva <= retorno_limite_sup, er_curva, np.nan)  # recorta arriba
         fig.add_trace(
             go.Scatter(
                 x=sigmas_curva,
-                y=u_opt + 0.5 * a * sigmas_curva**2,
+                y=er_curva,
                 mode="lines",
                 name=nombre,
                 showlegend=mostrar_ley,
@@ -267,7 +282,7 @@ def figura_frontera(
             True,
         )
         y_raw, sig_opt, er_opt = _optimo_sin_tope(a_usuario)
-        if y_raw > 1 + 1e-9 and sig_opt <= sigma_max_visible:
+        if y_raw > 1 + 1e-9 and sig_opt <= sigma_limite:
             fig.add_trace(
                 go.Scatter(
                     x=[sig_opt],
@@ -370,6 +385,10 @@ def figura_frontera(
         yaxis_tickformat=".0%",
         xaxis_range=[0, sigma_max_visible],
         yaxis_range=[retorno_min_visible, retorno_max_visible],
+        xaxis_minallowed=0,
+        xaxis_maxallowed=sigma_limite,
+        yaxis_minallowed=retorno_limite_inf,
+        yaxis_maxallowed=retorno_limite_sup,
         height=680,
         margin={"l": 10, "r": 10, "t": 50, "b": 10},
         # Leyendas abajo: el gráfico usa todo el ancho; clic en un ítem oculta/muestra,
