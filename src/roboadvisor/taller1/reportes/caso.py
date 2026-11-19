@@ -231,9 +231,37 @@ def sharpe_catalogo_elegible(c: CasoReferencia, catalogo: list[dict]) -> dict:
         and c.precios[a["ticker"]].first_valid_index() <= c.ventana[0]
     ]
     est = estimar(c.precios[elegibles], c.rf, c.params.ventana_dias, c.params.min_dias)
-    tang = tangente(est, c.params.w_max, c.params.w_min)
+    tang = tangente(est, c.params.w_max, 0.0)  # sin piso: el máximo Sharpe "puro" del catálogo
     sharpe_ind = (est.mu - c.rf) / pd.Series(
         [est.sigma.loc[t, t] ** 0.5 for t in est.tickers], index=est.tickers
     )
     return {"n": len(elegibles), "sharpe": tang.sharpe, "pesos": tang.w[tang.w > 0.005],
             "sharpe_individual": sharpe_ind}  # fmt: skip
+
+
+def comparacion_piso(c: CasoReferencia) -> pd.DataFrame:
+    """Óptimo de los 11 ETF sin piso (w ∈ [0, w_max]) frente al usado (w ∈ [w_min, w_max]).
+
+    Muestra el costo en Sharpe y la ganancia en diversificación de exigir un peso mínimo.
+    """
+    filas = []
+    for nombre, w_min in (("Sin piso", 0.0), ("Con piso", c.params.w_min)):
+        p = tangente(c.est, c.params.w_max, w_min)
+        r = c.precios[list(c.est.tickers)].sort_index().pct_change().dropna(how="any")
+        r = (r.tail(c.est.n_obs) * p.w.reindex(c.est.tickers).fillna(0)).sum(axis=1)
+        valor = (1 + r).cumprod()
+        filas.append(
+            {
+                "caso": nombre,
+                "w_min": w_min,
+                "activos": int((p.w > 0.005).sum()),
+                "peso_max": float(p.w.max()),
+                "top3": float(p.w.sort_values(ascending=False).head(3).sum()),
+                "retorno": p.retorno,
+                "sigma": p.sigma,
+                "sharpe": p.sharpe,
+                "caida_maxima": float((valor / valor.cummax() - 1).min()),
+                "pesos": p.w,
+            }
+        )
+    return pd.DataFrame(filas)

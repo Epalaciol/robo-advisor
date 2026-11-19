@@ -93,8 +93,9 @@ alcanzan el mismo Sharpe máximo (≈ 0,80) que el portafolio óptimo con los 25
 (SPY se retiró: correlación ≈ 0,95 con QQQ y no aporta Sharpe).
 Así se ve cómo cambia `y*` con A sin que cambie el universo: el portafolio tangente depende solo del
 universo y de los datos; A solo define `y*` (tabla "y* por perfil" tras optimizar). Con datos reales
-(5 años, datos al 18-11-2026) `y*` = 49 % (A=8), 65 % (A=6), 98 % (A=4) y 100 % (A=3 y 1, con tope por no
-apalancar; la fórmula da 130 % y 390 %).
+(5 años, datos al 18-11-2026, pesos entre 5 % y 40 %) `y*` = 46 % (A=8), 61 % (A=6), 92 % (A=4) y 100 % (A=3
+y 1, con tope por no apalancar; la fórmula da 122 % y 367 %). `w_min` = 5 % por defecto: sin piso el óptimo
+queda en 3 activos (SMH 40 %, GLD 40 %, COLO 20 %).
 
 *Decisión de diseño:* se probó una selección por reglas que dependía de A (retorno alto con A baja,
 volatilidad baja con A alta), pero la ventana común se acortaba con los ETF jóvenes (IBIT, GXTESCOL.CL),

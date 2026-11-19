@@ -23,6 +23,7 @@ from .caso import (
     TABLA_PERFILES,
     UNIVERSO_REFERENCIA,
     CasoReferencia,
+    comparacion_piso,
     composicion_completa,
     escenarios_extendidos,
     estadisticas_universo,
@@ -201,7 +202,6 @@ def construir_markdown(
     t = c.tangente
     w = t.w
     activos = w[w > 0.0005].sort_values(ascending=False)
-    tope = [x for x in activos.index if activos[x] >= c.params.w_max - 1e-4]
     est_u = estadisticas_universo(c)
     esc = escenarios_extendidos(c)
     sin_ap = optimo_sin_apalancamiento(c)
@@ -280,15 +280,17 @@ def construir_markdown(
             "Si P cae 20 %": [_pct(-0.2 * v, 0) for v in altos["y_sin_recorte"]],
         }
     )
-    fila_a1 = sin_ap[sin_ap["a"] == 1]
-    a1 = fila_a1.iloc[0] if not fila_a1.empty else None
+    en_frontera = sin_ap[sin_ap["donde"] == "frontera"]
     y_a1 = float(esc.loc[esc.a == 1, "y_sin_recorte"].iloc[0]) if (esc.a == 1).any() else 1.0
-    u_p_a1 = float(esc.loc[esc.a == 1, "utilidad"].iloc[0]) if (esc.a == 1).any() else 0.0
-    if a1 is not None and a1["donde"] == "frontera":
+    if not en_frontera.empty:
+        detalle = "; ".join(
+            f"A = {int(r.a)}: retorno {_pct(r.retorno)}, σ {_pct(r.sigma)}, U {_pct(r.utilidad, 2)} frente a "
+            f"{_pct(float(esc.loc[esc.a == r.a, 'utilidad'].iloc[0]), 2)} en P"
+            for r in en_frontera.itertuples()
+        )
         texto_frontera = (
-            f"Con este universo y el tope de {_pct(c.params.w_max, 0)} por activo, esa frontera apenas se extiende "
-            f"más allá de P: para A = 1 el mejor punto factible es su extremo (retorno {_pct(a1['retorno'])}, "
-            f"σ {_pct(a1['sigma'])}, U {_pct(a1['utilidad'], 2)} frente a {_pct(u_p_a1, 2)} en P); para los demás sigue siendo P."
+            "Con este universo, para esos perfiles el mejor punto factible está sobre la frontera, a la derecha "
+            f"de P ({detalle}): un portafolio de riesgo con más peso en los activos de mayor retorno."
         )
     else:
         texto_frontera = (
@@ -331,6 +333,33 @@ def construir_markdown(
     bonos_txt = ", ".join(x for x in DURATIONS)
     a_altos = " y ".join(str(int(a)) for a in altos["a"])
     dur_ej = max(DURATIONS, key=DURATIONS.get)
+    piso = comparacion_piso(c)
+    w0 = piso.loc[0, "pesos"]
+    pesos_sin_piso = ", ".join(
+        f"{x} {_pct(v, 0)}" for x, v in w0[w0 > 0.005].sort_values(ascending=False).items()
+    )
+    tabla_piso = pd.DataFrame(
+        {
+            "Restricción": [
+                f"{_pct(r.w_min, 0)} ≤ w ≤ {_pct(c.params.w_max, 0)}" for r in piso.itertuples()
+            ],
+            "Activos con peso": [str(r.activos) for r in piso.itertuples()],
+            "Peso máximo": [_pct(r.peso_max, 0) for r in piso.itertuples()],
+            "Top 3": [_pct(r.top3, 0) for r in piso.itertuples()],
+            "Retorno": [_pct(r.retorno) for r in piso.itertuples()],
+            "σ": [_pct(r.sigma) for r in piso.itertuples()],
+            "Sharpe": [_num(r.sharpe) for r in piso.itertuples()],
+            "Caída máx.": [_pct(r.caida_maxima, 0) for r in piso.itertuples()],
+        }
+    )
+    en_piso = [x for x in w.index if w[x] <= c.params.w_min + 1e-4]
+    sobre_piso = [x for x in w.sort_values(ascending=False).index if w[x] > c.params.w_min + 1e-4]
+    ind = est_u.drop(index="Óptimo")["sharpe"]
+    texto_sharpe_ind = (
+        f"Es mayor que el de cualquier ETF por separado (el mejor, {ind.idxmax()}, tiene {_num(ind.max())}): ese es el beneficio de diversificar."
+        if t.sharpe > ind.max()
+        else f"Es mayor que el de {int((ind < t.sharpe).sum())} de los 11 ETF por separado; solo {', '.join(ind[ind >= t.sharpe].index)} lo supera{'n' if (ind >= t.sharpe).sum() > 1 else ''} individualmente ({', '.join(_num(v) for v in ind[ind >= t.sharpe])}), pero con mucha más volatilidad y caída máxima."
+    )
     seccion_eda = (
         construir_eda(eda, figuras)
         if eda is not None
@@ -421,7 +450,7 @@ Tobin). A solo decide la mezcla entre P y el activo libre de riesgo.
 | Retorno esperado | Media histórica × 252 | Es el "retorno promedio histórico" del enunciado |
 | Riesgo | Covarianza muestral × 252 | Como en clase |
 | Tasa libre de riesgo | T-note de EE.UU. a 10 años: **{_pct(c.rf, 2)}** ({fin:%d-%m-%Y}) | Activo libre de riesgo en USD |
-| Restricciones | Solo largos; máximo {_pct(c.params.w_max, 0)} por activo | Evita concentrar todo en uno o dos activos |
+| Restricciones | Solo largos; entre {_pct(c.params.w_min, 0)} y {_pct(c.params.w_max, 0)} por activo | Los 11 activos entran y ninguno domina (sección 3.4) |
 | Apalancamiento | No: $0 \\le y^* \\le 1$ | Un robo-advisor minorista no presta dinero |
 
 Todos los números salen del mismo código Python que usa la aplicación (paquete
@@ -487,21 +516,23 @@ para todos los perfiles:
    de grado de inversión, alto rendimiento y emergente; REIT y oro.
 2. *Ser comparables:* sin apalancamiento y con al menos 5 años de historia diaria, para que la ventana común
    no se recorte.
-3. *Maximizar el ratio de Sharpe del portafolio de riesgo.* Se calculó el portafolio óptimo con **los {eleg["n"]}
-   activos del catálogo** que cumplen el criterio 2: su Sharpe máximo es **{_num(eleg["sharpe"])}**, el mismo que se
-   obtiene con estos 11. Ningún otro activo elegible lo mejora.
+3. *Buen potencial de Sharpe:* se calculó el portafolio óptimo (sin peso mínimo) con **los {eleg["n"]} activos del
+   catálogo** que cumplen el criterio 2: su Sharpe máximo es **{_num(eleg["sharpe"])}**, el mismo que se obtiene con estos 11.
+   Ningún otro activo elegible lo mejora.
 
-Por eso se **retiró SPY** (S&P 500): su correlación con QQQ es {_num(corr_spy_qqq)} y no aporta Sharpe; y se incluyeron **SMH**
-(semiconductores, el ETF de mayor Sharpe individual del catálogo) y **COLO** (acciones colombianas, que pide el
-enunciado). Los ETF de TES (GXTESCOL, datos desde 2025-05) y de bitcoin (IBIT, desde 2024-01) son jóvenes:
+**Sin SPY.** El S&P 500 se suele tomar en la literatura como el portafolio de mercado; incluirlo hace que el
+óptimo termine replicando ese índice. Se retiró: su correlación con QQQ es {_num(corr_spy_qqq)} y no aporta Sharpe. Se
+incluyeron **SMH** (semiconductores, el ETF de mayor Sharpe individual del catálogo) y **COLO** (acciones
+colombianas, que pide el enunciado). Los ETF de TES (GXTESCOL, datos desde 2025-05) y de bitcoin (IBIT, desde 2024-01) son jóvenes:
 incluirlos reduciría la estimación de **todos** los activos a uno o dos años y, en una ventana tan corta, el
 Sharpe saldría artificialmente alto (se probó: 1,2 a 1,5). Siguen disponibles en la aplicación, que avisa al
 usuario cuando acortan la ventana. Los ETF apalancados (2x, 3x) se excluyen.
 
 **¿Es bajo un Sharpe de {_num(t.sharpe)}?** No para este periodo. La tasa libre de riesgo es alta ({_pct(c.rf, 2)}) y la ventana
 incluye 2022, cuando acciones y bonos cayeron a la vez. En la misma ventana el S&P 500 (SPY) tuvo un Sharpe de
-{_num(sharpe_spy)}. Con datos de 5 años, un Sharpe mayor que 1 solo aparece cuando se usan ventanas cortas o activos
-escogidos *a posteriori*, y eso es sobreajuste.
+{_num(sharpe_spy)}. Además, exigir un peso mínimo de {_pct(c.params.w_min, 0)} por activo cuesta Sharpe a cambio de diversificación
+(sección 3.4). Con datos de 5 años, un Sharpe mayor que 1 solo aparece con ventanas cortas o activos escogidos
+*a posteriori*, y eso es sobreajuste.
 
 ## Datos
 
@@ -536,7 +567,7 @@ acciones (verde claro en el mapa): aporta diversificación además de retorno. L
 
 **Portafolio de riesgo óptimo (tangente).** Maximiza el ratio de Sharpe:
 
-$$\\max_{{w}} \\; \\frac{{w^\\top\\mu - r_f}}{{\\sqrt{{w^\\top\\Sigma\\, w}}}} \\quad \\text{{s.a.}} \\quad \\sum_i w_i = 1,\\quad 0 \\le w_i \\le {_num(c.params.w_max, 2)}$$
+$$\\max_{{w}} \\; \\frac{{w^\\top\\mu - r_f}}{{\\sqrt{{w^\\top\\Sigma\\, w}}}} \\quad \\text{{s.a.}} \\quad \\sum_i w_i = 1,\\quad {_num(c.params.w_min, 2)} \\le w_i \\le {_num(c.params.w_max, 2)}$$
 
 **Frontera eficiente.** Para una malla de retornos objetivo $R^*$ entre el de mínima varianza y el máximo
 alcanzable: $\\min_w w^\\top\\Sigma w$ s.a. $w^\\top\\mu = R^*$ y las mismas restricciones. Se resuelve con SLSQP
@@ -544,6 +575,19 @@ alcanzable: $\\min_w w^\\top\\Sigma w$ s.a. $w^\\top\\mu = R^*$ y las mismas res
 
 **CAL óptima.** Recta desde el activo libre de riesgo que toca la frontera en P:
 $E(R_C) = r_f + \\text{{Sharpe}}_P\\,\\sigma_C$, con pendiente {_num(c.cal_pendiente, 3)}.
+
+**Por qué los pesos van entre {_pct(c.params.w_min, 0)} y {_pct(c.params.w_max, 0)}.** El tope de {_pct(c.params.w_max, 0)} evita que un solo activo domine. El piso
+de {_pct(c.params.w_min, 0)} se agregó por lo que mostraron las pruebas: **sin peso mínimo**, Markowitz con retornos históricos
+deja un portafolio extremo, {pesos_sin_piso}, es decir, **{piso.loc[0, "activos"]} activos de 11**,
+con {_pct(piso.loc[0, "top3"], 0)} en los tres principales y {_pct(w0.max(), 0)} en un solo sector ({w0.idxmax()}: {CLASE_ETF.get(w0.idxmax(), "")}). Con el piso, los 11 activos entran y el
+optimizador solo decide cómo repartir el {_pct(1 - 11 * c.params.w_min, 0)} restante:
+
+{_md(tabla_piso)}
+
+El piso cuesta {_num(piso.loc[0, "sharpe"] - piso.loc[1, "sharpe"])} de Sharpe *dentro de muestra*, pero da un portafolio menos dependiente de lo
+que mejor le fue en estos 5 años (un error de estimación conocido de Markowitz: maximiza los errores de los
+retornos esperados), con menor volatilidad y menor caída máxima. Es la versión que se usa en el resto del
+informe y la que propone la aplicación por defecto.
 
 ## Resultado: frontera eficiente, CAL y portafolio óptimo
 
@@ -556,13 +600,10 @@ $E(R_C) = r_f + \\text{{Sharpe}}_P\\,\\sigma_C$, con pendiente {_num(c.cal_pendi
 ![Pesos del portafolio de riesgo óptimo en los 11 activos]({figuras["pesos"].name}){{width=70%}}
 
 **Indicadores de P:** retorno promedio histórico (esperado) **{_pct(t.retorno)}**, desviación estándar
-**{_pct(t.sigma)}** y ratio de Sharpe **{_num(t.sharpe)}** = ({_pct(t.retorno)} − {_pct(c.rf, 2)}) / {_pct(t.sigma)}. Es mayor que el de cualquier ETF
-por separado (el mejor, GLD, tiene {_num(est_u.loc["GLD", "sharpe"])}): ese es el beneficio de diversificar. El portafolio de
-mínima varianza tiene σ = {_pct(c.min_var.sigma)} y retorno {_pct(c.min_var.retorno)}.
-{(" y ".join(tope) + f" llegan al tope de {_pct(c.params.w_max, 0)}: sin esa restricción el optimizador concentraría aún más en ellos, lo que reflejaría el desempeño reciente más que una expectativa razonable.") if tope else ""}
-Los otros {11 - len(activos)} ETF quedan en 0 % porque en esta ventana no mejoran el Sharpe: su retorno es bajo para el
-riesgo que agregan. Es la conocida sensibilidad de Markowitz a los retornos esperados históricos, y el costo
-es un portafolio **concentrado** en {len(activos)} activos, con caída máxima de {_pct(est_u.loc["Óptimo", "caida_maxima"], 0)} en la ventana.
+**{_pct(t.sigma)}** y ratio de Sharpe **{_num(t.sharpe)}** = ({_pct(t.retorno)} − {_pct(c.rf, 2)}) / {_pct(t.sigma)}. {texto_sharpe_ind} El portafolio de mínima varianza tiene σ = {_pct(c.min_var.sigma)} y
+retorno {_pct(c.min_var.retorno)}. {", ".join(en_piso[:-1])} y {en_piso[-1]} quedan en el piso de {_pct(c.params.w_min, 0)}: el optimizador no les daría más peso
+porque, en esta ventana, su retorno es bajo para el riesgo que agregan; los demás ({", ".join(sobre_piso)}) reciben el
+resto. La caída máxima de P en la ventana fue {_pct(est_u.loc["Óptimo", "caida_maxima"], 0)}.
 
 ## Portafolio completo según el perfil
 
@@ -666,8 +707,8 @@ portafolio completo y su seguimiento. Esa diferencia queda marcada en los datos.
 1. El formato del enunciado clasifica a la mitad de los encuestados como **moderados** (A = 4) y los
    extremos son poco frecuentes. Los mayores de 65 años son los más aversos al riesgo; entre 18 y 64 años
    el puntaje no cambia de forma sistemática.
-2. El portafolio de riesgo óptimo ({", ".join(f"{x} {_pct(activos[x], 0)}" for x in activos.index)}) tiene Sharpe {_num(t.sharpe)}, el máximo
-   alcanzable con los {eleg["n"]} activos elegibles del catálogo. Es el mismo para todos; el perfil solo cambia la mezcla
+2. El portafolio de riesgo óptimo incluye los 11 activos (entre {_pct(c.params.w_min, 0)} y {_pct(c.params.w_max, 0)} cada uno; {", ".join(f"{x} {_pct(w[x], 0)}" for x in sobre_piso)}
+   y el resto en el piso) y tiene Sharpe {_num(t.sharpe)}; sin piso llegaría a {_num(piso.loc[0, "sharpe"])}, pero con solo {piso.loc[0, "activos"]} activos. Es el mismo para todos; el perfil solo cambia la mezcla
    con el activo libre de riesgo: de {_pct(y8, 0)} en riesgo (conservador) a 100 % (los más agresivos).
 3. Para A = {a_altos} la fórmula pide apalancarse ({", ".join(_pct(v, 0) for v in altos["y_sin_recorte"])}); el tope de 100 % es una decisión
    prudente, coherente con lo que declaran los encuestados.

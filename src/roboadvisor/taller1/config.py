@@ -36,7 +36,9 @@ class ParametrosFinancieros:
 
     ventana_dias: int = 1260  # ≈ 5 años de retornos diarios (252 días/año)
     min_dias: int = 252  # ≈ 1 año; permite ETF jóvenes (IBIT, GXTESCOL)
-    w_min: float = 0.0  # peso mínimo por activo elegido (0 = sin mínimo)
+    # Peso mínimo por activo elegido. Sin piso (0 %) Markowitz con retornos históricos deja
+    # portafolios extremos (40-40-20 en 3 de 11 activos); con 5 % entran todos los elegidos.
+    w_min: float = 0.05
     w_max: float = 0.40
     n_min_activos: int = 3
     n_max_activos: int = 11

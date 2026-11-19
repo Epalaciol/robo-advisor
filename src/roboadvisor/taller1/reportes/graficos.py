@@ -189,12 +189,14 @@ def indiferencia(c: CasoReferencia, ruta: Path) -> Path:
 
 def composicion_por_perfil(comp, ruta: Path) -> Path:
     """Barras apiladas: en qué activos queda el 100 % del dinero de cada perfil."""
-    colores = [AZUL, "#d4a017", "#4f81bd", "#3b7d3b", "#7f7f7f", "#9e480e", "#c0504d"]
+    colores = [matplotlib.colormaps["tab20"](i) for i in range(0, 20, 2)] + [
+        matplotlib.colormaps["tab20"](i) for i in range(1, 20, 2)
+    ]  # un color distinto por activo (hasta 20)
     fig, ax = plt.subplots(figsize=(6.8, 3.8))
     base = np.zeros(comp.shape[1])
     for (activo, fila), color in zip(comp.iterrows(), colores * 3, strict=False):
         es_rf = activo.startswith("Libre")
-        ax.bar(comp.columns, fila.to_numpy(), bottom=base, color=NARANJA if es_rf else color,
+        ax.bar(comp.columns, fila.to_numpy(), bottom=base, color="#b0b0b0" if es_rf else color,
                label=activo, hatch="//" if es_rf else None, edgecolor="white")  # fmt: skip
         for i, v in enumerate(fila.to_numpy()):
             if v >= 0.06:
