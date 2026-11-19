@@ -253,9 +253,14 @@ class _ConsultaFalsa:
         return _tabla(self._tabla)
 
     def _con_alcance_de_usuario(self, filas: list[dict]) -> list[dict]:
+        usuario_actual = self._usuario_actual_ref[0]
+        if self._tabla == "administradores" and not self._es_servicio:
+            return [f for f in filas if f.get("user_id") == usuario_actual]
         if self._es_servicio or self._tabla not in TABLAS_DEL_USUARIO:
             return filas
-        usuario_actual = self._usuario_actual_ref[0]
+        es_admin = any(f.get("user_id") == usuario_actual for f in _tabla("administradores"))
+        if es_admin and self._modo == "select":  # como la migración 0004: un admin lee todo
+            return filas
         return [f for f in filas if f.get("user_id") == usuario_actual]
 
     def _con_filtros(self, filas: list[dict]) -> list[dict]:

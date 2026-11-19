@@ -140,7 +140,7 @@ def main() -> None:
         pie_de_pagina()
         return
 
-    repositorio = RepositorioUsuario(cliente)
+    repositorio = RepositorioUsuario(cliente, st.session_state.get("user_id"))
     perfil = repositorio.obtener_perfil()
     alias = perfil["alias"] if perfil else "—"
     estado = estado_usuario(repositorio)

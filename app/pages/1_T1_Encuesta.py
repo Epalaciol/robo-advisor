@@ -22,7 +22,7 @@ from roboadvisor.taller1.data.repositorio_usuario import RepositorioUsuario  # n
 configurar_pagina("Perfil de riesgo")
 requerir_sesion()
 
-repositorio = RepositorioUsuario(cliente_sesion_actual())
+repositorio = RepositorioUsuario(cliente_sesion_actual(), st.session_state.get("user_id"))
 st.title("Perfil de riesgo del inversionista")
 
 

@@ -45,6 +45,11 @@ hr {{ border: none; height: 2px;
 """
 
 
+# La página de administración (6.º ítem del menú) se oculta a quien no es administrador; además,
+# la propia página verifica el rol (ocultarla es comodidad, la seguridad la da RLS).
+_CSS_SIN_ADMIN = (
+    "<style>[data-testid='stSidebarNavItems'] > li:nth-child(6) {display: none;}</style>"
+)
 _CSS_MENU = "<style>" + (ESTATICO / "menu.css").read_text(encoding="utf-8") + "</style>"
 
 
@@ -54,6 +59,8 @@ def configurar_pagina(titulo: str) -> None:
     st.logo(LOGO, icon_image=ICONO, size="large")
     st.markdown(_CSS, unsafe_allow_html=True)
     st.markdown(_CSS_MENU, unsafe_allow_html=True)
+    if not st.session_state.get("es_admin"):  # la página de administración solo para admins
+        st.markdown(_CSS_SIN_ADMIN, unsafe_allow_html=True)
 
 
 def barra_superior(alias: str | None = None, correo: str | None = None) -> None:

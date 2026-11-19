@@ -41,7 +41,7 @@ configurar_pagina("Constructor")
 requerir_sesion()
 
 cliente = cliente_sesion_actual()
-repo_usuario = RepositorioUsuario(cliente)
+repo_usuario = RepositorioUsuario(cliente, st.session_state.get("user_id"))
 repo_mercado = RepositorioMercado(cliente)
 
 st.title("Construcción de portafolio")

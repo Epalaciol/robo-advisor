@@ -42,6 +42,12 @@ responda el cuestionario, escoja entre 3 y 11 activos y vea su portafolio comple
 la CAL. En cada nuevo ingreso muestra cómo le ha ido con los precios del día y da recomendaciones con
 **reglas fijas** (sin inteligencia artificial). Para un recorrido rápido: `a3@local.test` / `Prueba1234!`.
 
+**Acceso de administrador para el profesor.** Con la cuenta de administrador (el correo y la clave se
+envían por correo, no están en el repositorio) aparece la página **Administración**: lista a todos los
+encuestados (alias y rango de edad, sin correos) y, para cada uno, sus respuestas y el cálculo de A, su
+portafolio de riesgo y completo con el cálculo de y\* paso a paso, y el seguimiento con los precios de
+hoy. Es de solo lectura.
+
 ## Cómo se ve `y*` en cada perfil
 
 En el paso de construcción, el botón **"Cargar portafolio de referencia (11 ETF)"** carga los mismos 11 ETF

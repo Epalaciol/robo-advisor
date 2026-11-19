@@ -192,3 +192,33 @@ def test_segundo_portafolio_mismo_usuario_falla_por_unique(usuario_a):
     cliente_a.table("portafolios").insert(portafolio).execute()
     with pytest.raises(APIError):
         cliente_a.table("portafolios").insert(portafolio).execute()
+
+
+def _migracion_admin_aplicada(admin) -> bool:
+    try:
+        admin.table("administradores").select("user_id").limit(1).execute()
+        return True
+    except APIError:
+        return False
+
+
+def test_admin_lee_a_todos_pero_no_modifica_y_un_usuario_normal_no(admin, usuario_a, usuario_b):
+    if not _migracion_admin_aplicada(admin):
+        pytest.skip("Migración 0004_administradores.sql sin aplicar")
+    user_id_a, cliente_a = usuario_a
+    user_id_b, cliente_b = usuario_b
+    cliente_a.table("perfiles").insert(_perfil(user_id_a)).execute()
+    cliente_a.table("encuestas").insert(_encuesta(user_id_a)).execute()
+    admin.table("administradores").insert({"user_id": user_id_b}).execute()
+
+    # B (admin) ve el perfil y la encuesta de A
+    assert cliente_b.table("perfiles").select("*").eq("user_id", user_id_a).execute().data
+    assert cliente_b.table("encuestas").select("*").eq("user_id", user_id_a).execute().data
+    # …pero no puede modificarlos
+    cliente_b.table("perfiles").update({"alias": "hackeado"}).eq("user_id", user_id_a).execute()
+    perfil_a = admin.table("perfiles").select("alias").eq("user_id", user_id_a).execute().data
+    assert perfil_a[0]["alias"] == "tester"
+    # A (normal) no puede hacerse admin ni ver a B en la tabla de administradores
+    with pytest.raises(APIError):
+        cliente_a.table("administradores").insert({"user_id": user_id_a}).execute()
+    assert cliente_a.table("administradores").select("*").execute().data == []

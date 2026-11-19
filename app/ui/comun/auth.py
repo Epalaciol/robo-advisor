@@ -104,10 +104,14 @@ def guardar_sesion(datos: dict) -> None:
     st.session_state["correo"] = datos.get("correo", "")
     st.session_state["access_token"] = datos["access_token"]
     st.session_state["refresh_token"] = datos["refresh_token"]
+    try:  # ¿cuenta de administrador? (muestra la página de administración en el menú)
+        st.session_state["es_admin"] = repositorio_usuario_actual().es_admin()
+    except Exception:
+        st.session_state["es_admin"] = False
 
 
 def cerrar_sesion() -> None:
-    for clave in ("user_id", "correo", "access_token", "refresh_token"):
+    for clave in ("user_id", "correo", "access_token", "refresh_token", "es_admin"):
         st.session_state.pop(clave, None)
 
 
@@ -126,6 +130,13 @@ def cliente_sesion_actual():
         cerrar_sesion()
         raise ValueError("Tu sesión expiró. Inicia sesión de nuevo.") from error
     return cliente
+
+
+def repositorio_usuario_actual(cliente=None):
+    """`RepositorioUsuario` del usuario en sesión (filtra por su `user_id`)."""
+    from roboadvisor.taller1.data.repositorio_usuario import RepositorioUsuario
+
+    return RepositorioUsuario(cliente or cliente_sesion_actual(), st.session_state.get("user_id"))
 
 
 def requerir_sesion() -> None:

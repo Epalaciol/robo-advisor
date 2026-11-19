@@ -25,6 +25,10 @@ def main() -> None:
     c = cliente_servicio()
     usuarios = c.auth.admin.list_users()
     demo = {u.id for u in usuarios if (u.email or "").endswith("@local.test")}
+    try:  # las cuentas de administrador no son voluntarios
+        demo |= {r["user_id"] for r in c.table("administradores").select("user_id").execute().data}
+    except Exception:
+        pass
     perfiles = pd.DataFrame(
         c.table("perfiles").select("user_id, edad_rango, factores, created_at").execute().data
     )

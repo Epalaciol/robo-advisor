@@ -54,7 +54,7 @@ pruebas finales en producción y reporte.
 | `app/` | App Streamlit: `Inicio.py`, `pages/` (`T1_*` con login, `4_T2_Curva_TES.py` pública), `ui/{comun,taller1,taller2}` |
 | `.streamlit/config.toml` | Tema de la app (colores de la marca) |
 | `tests/{taller1,taller2,comun}/` | `pytest -q` (unitarias) y `pytest -m integration -q` (requieren Supabase real) |
-| `supabase/migrations/` | T1: `0001_init.sql`, `0002_*`; T2: `0003_taller2_tes.sql` (tablas `t2_*`). Ver `supabase/README.md` |
+| `supabase/migrations/` | T1: `0001_init.sql`, `0002_*`; T2: `0003_taller2_tes.sql` (tablas `t2_*`); `0004_administradores.sql` (cuenta de administrador de solo lectura). Ver `supabase/README.md` |
 | `supabase/seed/activos.csv` | Catálogo inicial (23 filas, sin GXG; los tickers los valida el profesor) |
 | `.env.example`, `.gitignore` | Variables y exclusiones (nunca se commitea `.env`) |
 

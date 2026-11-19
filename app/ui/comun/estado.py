@@ -46,7 +46,7 @@ def mostrar_usuario_en_barra() -> None:
 
     from .auth import cliente_sesion_actual
 
-    repositorio = RepositorioUsuario(cliente_sesion_actual())
+    repositorio = RepositorioUsuario(cliente_sesion_actual(), st.session_state.get("user_id"))
     perfil = repositorio.obtener_perfil()
     bloque_usuario(perfil["alias"] if perfil else "—", estado_usuario(repositorio))
 
