@@ -88,6 +88,7 @@ def main() -> None:
             f"  - {correo}: A={e['a']} ({e['perfil']}) → y*={payload['y_star']:.1%}, "
             f"rf={payload['peso_rf']:.1%}, activos={', '.join(payload['tickers'])}"
         )
+        payload["parametros"]["origen"] = "asignado_referencia"  # no lo armó el usuario
         if a.aplicar:
             c.table("portafolios").insert(payload).execute()
             hechos += 1
