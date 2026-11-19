@@ -90,7 +90,10 @@ class RepositorioUsuario:
         portafolios = {
             p["user_id"]: p
             for p in self._cliente.table("portafolios")
-            .select("user_id, tickers, y_star, peso_rf, fecha_base, parametros, metricas")
+            .select(
+                "user_id, tickers, pesos_riesgo, pesos_completo, y_star, peso_rf, fecha_base, "
+                "parametros, metricas"
+            )
             .execute()
             .data
         }

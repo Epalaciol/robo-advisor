@@ -221,7 +221,8 @@ with tab_seguimiento:
                 s = r.seguimiento
                 m1, m2, m3 = st.columns(3)
                 m1.metric("Retorno acumulado", f"{s.retorno_acum:.1%}")
-                m2.metric("Volatilidad realizada", f"{s.vol_realizada:.1%}")
+                vol = s.vol_realizada
+                m2.metric("Volatilidad realizada", "—" if vol != vol else f"{vol:.1%}")
                 m3.metric("Máxima caída", f"{s.max_drawdown:.1%}")
                 st.plotly_chart(
                     figura_comportamiento(
