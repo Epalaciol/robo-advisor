@@ -282,7 +282,7 @@ def _hoja_encuestas(wb, voluntarios: pd.DataFrame | None) -> None:
     """Todas las encuestas (anonimizadas) con puntaje, perfil, A e y* calculados con fórmulas."""
     ws = wb.create_sheet("Encuestas")
     if voluntarios is None or voluntarios.empty:
-        ws["A1"] = "Pendiente: ver entregas/taller-1/datos/voluntarios_plantilla.csv"
+        ws["A1"] = "Sin encuestas: correr scripts/taller1/exportar_voluntarios.py"
         return
     extra = [x for x in voluntarios.columns if x not in ("alias", "rango_edad", *IDS_PREGUNTAS)]
     cols = ["Alias", "Edad", *[x.upper() for x in IDS_PREGUNTAS], "Puntaje", "Perfil", "A",

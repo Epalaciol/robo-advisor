@@ -1,7 +1,7 @@
 # 00 · Contexto, requisitos y supuestos
 
 ## 1. Origen
-Taller 1 de Inversiones (EAFIT, Semestre II 2026, prof. Juan Carlos Botero). Grupos de 4. **Entrega: 12 de noviembre de 2026.**
+Taller 1 de Inversiones (EAFIT, Semestre II 2026, prof. Juan Carlos Botero). Grupos de 4. **Entrega: 19 de noviembre de 2026.**
 Entregable formal: **PDF** autoexplicativo (el que más pesa) + Excel + código Python. El Excel solo se revisa si hay dudas.
 
 ## 2. Qué pide el taller y cómo lo cubre la app

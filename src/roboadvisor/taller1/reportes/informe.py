@@ -1110,7 +1110,6 @@ def generar_pdf(
     figuras = {
         "frontera": graficos.frontera_y_cal(c, figs / "frontera.png"),
         "pesos": graficos.pesos_optimos(c, figs / "pesos.png"),
-        "completo": graficos.completo_por_perfil(c, figs / "completo.png"),
         "correlaciones": graficos.correlaciones(c, figs / "correlaciones.png"),
         "desempeno": graficos.desempeno(c, figs / "desempeno.png"),
         "indiferencia": graficos.indiferencia(c, figs / "indiferencia.png"),

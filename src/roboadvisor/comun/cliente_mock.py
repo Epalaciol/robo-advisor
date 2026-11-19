@@ -18,8 +18,8 @@ reiniciar el servidor de Streamlit y no los ve ningún script lanzado aparte
 (`scripts/taller1/cargar_catalogo.py`, ...), que
 corren en su propio proceso. El catálogo y los precios se siembran
 automáticamente la primera vez que se usa el mock, desde
-`supabase/seed/activos.csv` y `data_local/taller1/precios.csv`/`rf.csv` (si existen:
-ver `scripts/taller1/descargar_precios_prueba.py`). También se crea un usuario de
+`supabase/seed/activos.csv` y `data_local/taller1/precios.csv`/`rf.csv` (instantánea de
+`scripts/taller1/exportar_instantanea.py`). También se crea un usuario de
 prueba fijo: correo `prueba@local.test`, clave `Prueba1234!`; y otro con encuesta
 hecha (A = 3) y sin portafolio: `a3@local.test`, misma clave.
 """

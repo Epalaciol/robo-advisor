@@ -17,7 +17,6 @@ de cada persona (cuánto en activos de riesgo y cuánto en el activo libre de ri
 |---|---|---|
 | [**Taller1_Informe.pdf**](Taller1_Informe.pdf) | El informe: explica el procedimiento paso a paso y los resultados | **Empiece por aquí** |
 | [Taller1.xlsx](Taller1.xlsx) | El soporte en Excel: retornos, covarianzas, frontera, CAL, portafolio completo con y sin tope, composición por perfil, múltiplos, las 37 encuestas (puntaje, perfil, A e y* con fórmulas vivas) y las tablas del EDA | Para revisar un cálculo en detalle |
-| [datos/voluntarios_plantilla.csv](datos/voluntarios_plantilla.csv) | Formato en que se cargan las respuestas de los voluntarios | Solo quien regenere el informe |
 | [figuras/](figuras/) | Los gráficos del informe en imagen | Opcional |
 
 ## Cómo leer el informe

@@ -68,22 +68,6 @@ def pesos_optimos(c: CasoReferencia, ruta: Path) -> Path:
     return _guardar(fig, ruta)
 
 
-def completo_por_perfil(c: CasoReferencia, ruta: Path) -> Path:
-    e = c.escenarios
-    etiquetas = [f"A = {int(a)}" for a in e["a"]]
-    fig, ax = plt.subplots(figsize=(6.4, 3.6))
-    ax.bar(etiquetas, e["y"], color=AZUL, label="En el portafolio de riesgo (y*)")
-    ax.bar(
-        etiquetas, 1 - e["y"], bottom=e["y"], color=NARANJA, label="En el activo libre de riesgo"
-    )
-    for i, v in enumerate(e["y"]):
-        ax.text(i, v / 2, f"{v:.0%}", ha="center", color="white", fontsize=9)
-    ax.set_ylim(0, 1)
-    ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
-    ax.legend(fontsize=7, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.12))
-    return _guardar(fig, ruta)
-
-
 def correlaciones(c: CasoReferencia, ruta: Path) -> Path:
     """Matriz de correlaciones de los retornos diarios de los 11 ETF (misma ventana)."""
     s = c.est.sigma.to_numpy()

@@ -9,7 +9,7 @@ vea [`../entregas/`](../entregas/).
 | [00 · Contexto y requisitos](taller-1/00-contexto-y-requisitos.md) | Qué pide el taller y qué decisiones se tomaron |
 | [03 · Motor financiero](taller-1/03-motor-financiero.md) | Las fórmulas (Markowitz, CAL, y\*, betas, duration, múltiplos) |
 | [01 · Arquitectura](taller-1/01-arquitectura.md), [02 · Modelo de datos](taller-1/02-modelo-datos.md), [04 · Pipeline](taller-1/04-pipeline-datos.md) | Cómo encajan las piezas técnicas |
-| [05](taller-1/05-plan-entregables.md), [06](taller-1/06-despliegue-y-operacion.md) | Plan y operación (para quien mantenga el proyecto) |
+| [06 · Despliegue y operación](taller-1/06-despliegue-y-operacion.md) | Cómo se pone en marcha y se opera (para quien mantenga el proyecto) |
 
 ## Taller 2
 | Documento | Para qué sirve |

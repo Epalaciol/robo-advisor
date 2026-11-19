@@ -1,7 +1,6 @@
 # 06 · Despliegue y operación
 
-Estrategia (actualizada 2026-11-01, ver `docs/taller-1/05-plan-entregables.md` §"Orden
-real seguido"): **primero desplegar con datos mock para que el equipo dé
+Estrategia (actualizada 2026-11-01): **primero desplegar con datos mock para que el equipo dé
 feedback**, y solo al final —cuando la app ya esté validada— conectar el
 proyecto Supabase real. Antes seguíamos el orden inverso (Supabase real desde
 E01); se invirtió porque conectar la base de datos real es la parte más lenta

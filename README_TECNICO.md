@@ -25,7 +25,6 @@ cd robo-advisor
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 
-python scripts/taller1/descargar_precios_prueba.py   # ~1 min, descarga 10 años de ETF reales de Yahoo
 MOCK_DATA=true streamlit run app/Inicio.py
 ```
 
@@ -36,7 +35,7 @@ nada de claves) — ver [Modo mock](#modo-mock-correr-la-app-sin-supabase) más 
 ## Estado del proyecto
 Motor financiero y app completos, con Supabase real conectado, datos de Yahoo cargados y el
 pipeline diario activo en GitHub Actions. Pendiente: verificación de tickers con el profesor,
-pruebas finales en producción y reporte. Ver `docs/taller-1/05-plan-entregables.md`.
+pruebas finales en producción y reporte.
 
 ## Qué hay en este paquete
 | Ruta | Contenido |
@@ -73,13 +72,11 @@ MOCK_DATA=true streamlit run app/Inicio.py
 ```
 Usa un cliente Supabase falso en memoria (`roboadvisor/comun/cliente_mock.py`): se siembra con
 el catálogo (`supabase/seed/activos.csv`) y, si existen, los precios reales de `data_local/`
-(corre primero `python scripts/taller1/descargar_precios_prueba.py` — 10 años de los ETF del catálogo;
-el catálogo es solo ETF;
-`GXG` suele aparecer deslistado en Yahoo, consistente con el `VERIFICAR en E02` que ya tenía
-anotado el catálogo). Entra con `prueba@local.test` / `Prueba1234!`, o con `a3@local.test` / `Prueba1234!` (encuesta ya hecha, A = 3, sin portafolio: listo para armarlo).
+(la instantánea versionada en `data_local/taller1/`, que se actualiza con
+`python scripts/taller1/exportar_instantanea.py`). Entra con `prueba@local.test` / `Prueba1234!`, o con `a3@local.test` / `Prueba1234!` (encuesta ya hecha, A = 3, sin portafolio: listo para armarlo).
 
 Los datos viven solo en la memoria del proceso del servidor y **se pierden al reiniciarlo**;
-`data_local/` está en `.gitignore`, cada quien la descarga localmente. Los scripts sueltos
+`data_local/taller1/` se versiona (instantánea de precios para el mock y los informes); `data_local/tes/` no. Los scripts sueltos
 (`cargar_catalogo.py`) no ven los datos del mock porque corren en
 otro proceso — son para el flujo con Supabase real. **El modo mock no reemplaza** las pruebas
 de RLS de `tests/taller1/db/test_rls.py`, que siguen corriendo solo contra un Supabase real.

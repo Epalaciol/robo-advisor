@@ -40,6 +40,7 @@ y = min(max(y_sin_recorte, 0.0), 1.0)  # sin apalancamiento: entre 0 % y 100 %
 | [`caso.py`](reportes/caso.py) | El caso de referencia (11 ETF): estima y optimiza con el mismo motor de la app |
 | [`excel.py`](reportes/excel.py) | Genera `Taller1.xlsx` |
 | [`informe.py`](reportes/informe.py) | Genera el informe PDF |
+| [`eda.py`](reportes/eda.py) | Análisis exploratorio de las encuestas (tablas, pruebas y gráficos del informe) |
 
 La aplicación web está en [`app/`](../../../app/) (páginas `1_T1_Encuesta`, `2_T1_Constructor`, `3_T1_Mi_portafolio`).
 Las pruebas que garantizan los cálculos están en [`tests/taller1/`](../../../tests/taller1/).

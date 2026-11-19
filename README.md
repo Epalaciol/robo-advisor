@@ -19,7 +19,7 @@ curva de tasas de los TES colombianos para decir qué papeles parecen caros o ba
 | Quiere ver… | Qué hacer |
 |---|---|
 | **Taller 2** (curva de TES) | Abra la página **"T2 Curva TES"** en el menú de la izquierda. **No pide registro.** |
-| **Taller 1** (robo-advisor) | Cree su cuenta en la pestaña **"Crear cuenta"** (solo pide correo, un alias y un rango de edad; no pedimos cédula, teléfono ni nombre). Luego: encuesta → armar portafolio (hay un botón que **sugiere 11 activos según su perfil**) → ver su portafolio. |
+| **Taller 1** (robo-advisor) | Cree su cuenta en la pestaña **"Crear cuenta"** (solo pide correo, un alias y un rango de edad; no pedimos cédula, teléfono ni nombre). Luego: encuesta → armar portafolio (hay un botón que **carga un portafolio de referencia de 11 ETF**) → ver su portafolio. |
 | Recorrido rápido del Taller 1 | Entre con el usuario de demostración `a3@local.test` / `Prueba1234!` (perfil ya definido). Con `prueba@local.test` / `Prueba1234!` empieza desde la encuesta. |
 
 ## 2. Las entregas
