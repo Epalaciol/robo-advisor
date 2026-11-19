@@ -48,6 +48,10 @@ def calcular_caso(
 ) -> CasoReferencia:
     """Calcula el caso con el motor de la app. `precios`: fecha × ticker (incluye ACWI)."""
     params = params or ParametrosFinancieros()
+    # Solo días hábiles de EE.UU. (los del benchmark): la instantánea trae también días en que solo
+    # cotiza un activo de otra bolsa (p. ej. GXTESCOL.CL), y esas filas vacías harían perder el
+    # retorno del día siguiente de los demás activos.
+    precios = precios[precios[BENCHMARK].notna()]
     tickers = list(UNIVERSO_REFERENCIA)
     est = estimar(precios[tickers], rf, params.ventana_dias, params.min_dias)
     tang = tangente(est, params.w_max, params.w_min)

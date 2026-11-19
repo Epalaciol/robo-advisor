@@ -13,6 +13,8 @@ from pathlib import Path
 import pandas as pd
 
 from roboadvisor.taller1.core.cuestionario import IDS_PREGUNTAS, PREGUNTAS, puntuar
+from roboadvisor.taller1.core.markowitz import tangente
+from roboadvisor.taller1.core.retornos import estimar
 from roboadvisor.taller1.data.semillas import leer_catalogo
 
 from . import eda as eda_mod
@@ -330,7 +332,13 @@ def construir_markdown(
     eleg = sharpe_catalogo_elegible(c, catalogo)
     elegibles = elegibles_catalogo(c, catalogo)
     _, sharpe_busqueda = buscar_universo(c, catalogo)
-    _, sharpe_sin_smh = buscar_universo(c, catalogo, excluir={"SMH"})
+    univ_sin_smh, sharpe_sin_smh = buscar_universo(c, catalogo, excluir={"SMH"})
+    w_sin_smh = tangente(
+        estimar(c.precios[univ_sin_smh], c.rf, c.params.ventana_dias, c.params.min_dias),
+        c.params.w_max,
+        c.params.w_min,
+    ).w.sort_values(ascending=False)
+    texto_sin_smh = " y ".join(f"{x} ({_pct(v, 0)})" for x, v in w_sin_smh.head(2).items())
     ret_d = c.precios.sort_index().pct_change().dropna(how="any").tail(c.est.n_obs)
     corr_spy_qqq = (
         float(ret_d["SPY"].corr(ret_d["QQQ"])) if {"SPY", "QQQ"} <= set(ret_d) else float("nan")
@@ -535,8 +543,8 @@ para todos los perfiles:
 
 Frente a una selección "a mano" (EEM, LQD y EMB), la búsqueda prefiere **EWZ** (Brasil), **AGG** (bonos
 agregados de EE.UU.) y **BNDX** (bonos internacionales), que diversifican mejor. Se probó también **sin SMH**
-(para no depender de un sector): el mejor Sharpe posible cae a **{_num(sharpe_sin_smh)}** y el oro sube al tope de
-{_pct(c.params.w_max, 0)}, es decir, la concentración solo cambia de activo. Por eso SMH se mantiene, limitado por el tope.
+(para no depender de un sector): el mejor Sharpe posible cae a **{_num(sharpe_sin_smh)}** y el peso se concentra en {texto_sin_smh}: la
+concentración solo cambia de activo. Por eso SMH se mantiene, limitado por el tope.
 
 Los ETF de TES (GXTESCOL, datos desde 2025-05) y de bitcoin (IBIT, desde 2024-01) son jóvenes: incluirlos
 reduciría la estimación de **todos** los activos a uno o dos años y, en una ventana tan corta, el Sharpe saldría
