@@ -5,7 +5,8 @@ Profesor: Juan Carlos Botero Ramírez
 Entrega: **19 de noviembre de 2026**
 
 Este taller pide tres cosas: (1) medir el **grado de aversión al riesgo (A)** de cinco voluntarios con un
-cuestionario; (2) calcular el **portafolio de riesgo óptimo** con Markowitz y el **portafolio completo**
+cuestionario (se recogieron 37 encuestas: los cinco voluntarios, uno por rango de edad, y un análisis
+exploratorio de todas); (2) calcular el **portafolio de riesgo óptimo** con Markowitz y el **portafolio completo**
 de cada persona (cuánto en activos de riesgo y cuánto en el activo libre de riesgo); y (3) construir un
 **proto robo-advisor** que lo haga automáticamente.
 
@@ -14,18 +15,26 @@ de cada persona (cuánto en activos de riesgo y cuánto en el activo libre de ri
 | Archivo | Qué es | Para quién |
 |---|---|---|
 | [**Taller1_Informe.pdf**](Taller1_Informe.pdf) | El informe: explica el procedimiento paso a paso y los resultados | **Empiece por aquí** |
-| [Taller1.xlsx](Taller1.xlsx) | El soporte en Excel: datos, retornos, matriz de covarianzas, frontera, CAL y portafolio completo (con fórmulas vivas) | Para revisar un cálculo en detalle |
+| [Taller1.xlsx](Taller1.xlsx) | El soporte en Excel: retornos, covarianzas, frontera, CAL, portafolio completo con y sin tope, composición por perfil, múltiplos, las 37 encuestas (puntaje, perfil, A e y* con fórmulas vivas) y las tablas del EDA | Para revisar un cálculo en detalle |
 | [datos/voluntarios_plantilla.csv](datos/voluntarios_plantilla.csv) | Formato en que se cargan las respuestas de los voluntarios | Solo quien regenere el informe |
 | [figuras/](figuras/) | Los gráficos del informe en imagen | Opcional |
 
-## Cómo leer el informe (10 minutos)
+## Cómo leer el informe
 
-1. **Sección 1 – Resumen:** la respuesta en un párrafo.
-2. **Sección 2 – Aversión al riesgo:** cómo el cuestionario (9 preguntas, puntaje 9–27) se convierte en el
-   coeficiente A (8, 6, 4, 3 o 1) y qué resultó con los cinco voluntarios.
-3. **Sección 3 – Markowitz, en 7 pasos:** universo de 11 ETF → retornos y riesgos → frontera eficiente y CAL →
-   portafolio óptimo → portafolio completo por perfil → beta y duration → múltiplos.
-4. **Secciones 4 y 5:** la aplicación y las limitaciones.
+- **Resumen ejecutivo y "Cumplimiento del enunciado":** la respuesta en una página y una tabla que dice en
+  qué sección se cumple cada punto que pide el enunciado.
+- **1 – Metodología:** el flujo completo, las herramientas y los supuestos.
+- **2 – Parte 1, aversión al riesgo:** la función de utilidad, el cuestionario (puntaje 9–27 → A) y el cálculo
+  paso a paso de los **cinco voluntarios** (uno por rango de edad), con su función de utilidad y su
+  portafolio completo.
+- **3 – Parte 2, Markowitz:** universo y datos → retorno promedio histórico, riesgo y correlaciones → el
+  problema de optimización → frontera eficiente, CAL y portafolio óptimo → portafolio completo por perfil →
+  **perfiles con A baja: el tope de 100 % y el valor real de y\*** → beta y duration → múltiplos.
+- **4 – El aplicativo.**
+- **5 – EDA de las 37 encuestas:** calidad de datos, perfil de la muestra, distribución del puntaje,
+  respuestas por pregunta, confiabilidad del cuestionario (alfa de Cronbach), factores asociados y qué implica
+  para el portafolio.
+- **Conclusiones, limitaciones y anexos** (cuestionario completo y respuestas anonimizadas).
 
 ## Pruebe la aplicación (el "proto robo-advisor")
 
@@ -37,10 +46,10 @@ la CAL. En cada nuevo ingreso muestra cómo le ha ido con los precios del día y
 ## Cómo se ve `y*` en cada perfil
 
 En el paso de construcción, el botón **"Cargar portafolio de referencia (11 ETF)"** carga los mismos 11 ETF
-para todos los perfiles (acciones, renta fija, REIT y oro). El portafolio de riesgo óptimo es el mismo;
-lo que cambia con A es cuánto se invierte en él (**y\***): con los datos de este informe, 57 % (A=8),
-76 % (A=6) y 100 % (A=4, 3, 1; el modelo no admite apalancamiento). El informe lo muestra en el Paso 5
-y la app en la tabla "y* por perfil" que aparece al optimizar. El usuario puede cambiar la selección.
+para todos los perfiles. El portafolio de riesgo óptimo es el mismo; lo que cambia con A es cuánto se invierte
+en él (**y\***): con los datos del informe, 54 % (A = 8), 71 % (A = 6) y 100 % para A = 4, 3 y 1. En estos
+tres la fórmula da 107 %, 143 % y 429 % (querrían endeudarse); como el modelo no admite apalancamiento se
+limita a 100 %, y el informe explica el valor real y cómo se interpreta (sección 3.7).
 
 ## ¿Dónde está el código?
 

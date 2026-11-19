@@ -36,14 +36,16 @@ def test_caso_tiene_11_activos_y_pesos_validos(caso):
 def test_excel_y_markdown_se_generan(caso, tmp_path):
     ruta = generar_excel(caso, tmp_path / "t1.xlsx")
     wb = load_workbook(ruta)
-    assert {"Resumen", "Portafolio completo", "Betas y duration", "Voluntarios"} <= set(
+    assert {"Resumen", "Portafolio completo", "Composición completa", "Encuestas"} <= set(
         wb.sheetnames
     )
     assert wb["Resumen"]["B6"].value == pytest.approx(caso.rf)  # las fórmulas apuntan a esta celda
     assert wb["Resumen"]["B9"].value == pytest.approx(caso.tangente.sharpe)
-    figs = {k: tmp_path / f"{k}.png" for k in ("frontera", "pesos", "completo")}
+    claves = ("frontera", "pesos", "completo", "correlaciones", "desempeno", "indiferencia")
+    figs = {k: tmp_path / f"{k}.png" for k in (*claves, "composicion")}
     md = construir_markdown(caso, figs, None, dt.date(2026, 11, 16))
-    assert "Paso 5" in md and "Pendiente de completar" in md
+    assert "Cumplimiento del enunciado" in md and "Pendiente de completar" in md
+    assert "valor real de y*" in md  # sección del tope de 100 %
 
 
 def test_seccion_voluntarios_con_datos_avisa_rangos_faltantes(caso):
@@ -60,6 +62,82 @@ def test_seccion_voluntarios_con_datos_avisa_rangos_faltantes(caso):
         ]
     )  # fmt: skip
     md = seccion_voluntarios(caso, v)
-    assert "V1" in md and "V2" in md and "Ocupación" in md
+    assert "V1" in md and "V2" in md and "Ocupación" in md and "Puntaje" in md
     assert "45-54, 55-64, 65-74" in md  # el enunciado pide uno por rango
     assert "Pendiente de completar" in seccion_voluntarios(caso, None)
+
+
+def test_escenarios_sin_tope_y_optimo_sin_apalancamiento(caso):
+    from roboadvisor.taller1.reportes.caso import escenarios_extendidos, optimo_sin_apalancamiento
+
+    e = escenarios_extendidos(caso)
+    t = caso.tangente
+    # sin tope: y* fórmula, préstamo = y* − 1 y U* = rf + Sharpe²/(2A)
+    assert (e["prestamo_sin_tope"] == (e["y_sin_recorte"] - 1).clip(lower=0)).all()
+    assert e["utilidad_sin_tope"].tolist() == pytest.approx(
+        (caso.rf + t.sharpe**2 / (2 * e["a"])).tolist()
+    )
+    assert (e["utilidad_sin_tope"] >= e["utilidad"] - 1e-12).all()  # el tope nunca sube U
+    s = optimo_sin_apalancamiento(caso)
+    assert (s["utilidad"] >= e["utilidad"] - 1e-12).all()  # la frontera solo puede mejorar
+
+
+def test_composicion_completa_suma_100(caso):
+    from roboadvisor.taller1.reportes.caso import composicion_completa
+
+    comp = composicion_completa(caso)
+    assert comp.sum().tolist() == pytest.approx([1.0] * 5, abs=1e-4)
+
+
+def test_multiplos_frente_a_acwi(caso):
+    from roboadvisor.taller1.reportes.caso import multiplos_referencia
+
+    f = pd.DataFrame(
+        {"ticker": ["ACWI", "SPY", "QQQ", "EFA", "EEM", "ILF"],
+         "fecha": "2026-11-13", "pe": [20.0, 24.0, 28.0, 17.0, 14.0, 11.0],
+         "div_yield": [1.4, 1.0, 0.5, 3.3, 1.8, 3.7]}
+    )  # fmt: skip
+    m = multiplos_referencia(caso, f)
+    senal = dict(zip(m["tabla"]["ticker"], m["tabla"]["senal"], strict=True))
+    assert senal == {
+        "SPY": "cara",
+        "QQQ": "cara",
+        "EFA": "neutral",
+        "EEM": "barata",
+        "ILF": "barata",
+    }
+    assert m["ajustado"].sum() == pytest.approx(1.0)
+
+
+def test_eda_con_encuestas_sinteticas(tmp_path):
+    from roboadvisor.taller1.reportes import eda
+
+    filas = []
+    for i, (edad, letra) in enumerate(
+        [
+            ("25-34", "c"),
+            ("35-44", "b"),
+            ("45-54", "b"),
+            ("55-64", "c"),
+            ("65-74", "a"),
+            ("18-24", "b"),
+        ]
+    ):
+        filas.append(
+            {"alias": f"V{i + 1}", "rango_edad": edad, "fecha_encuesta": "2026-11-18",
+             **{q: letra for q in ["q1", "q2a", "q2b", "q2c", "q3", "q4", "q5", "q6", "q7"]},
+             "ocupacion": "Jubilado/a" if letra == "a" else "Empleado/a",
+             "rango_ingresos": "Menos de $2.000.000", "dependientes_economicos": "0",
+             "nivel_educativo": "Pregrado", "experiencia_invirtiendo_anios": "Sin experiencia",
+             "horizonte_principal_inversion": "3 a 5 años",
+             "colchon_emergencia": "Sí" if i % 2 else "No",
+             "activos_elegidos": "SPY, GLD", "y_guardado": "1.0", "origen_portafolio": "asignado"}
+        )  # fmt: skip
+    r = eda.analizar(pd.DataFrame(filas), tmp_path, {a: 1.0 for a in (8, 6, 4, 3, 1)},
+                     {a: 1.0 for a in (8, 6, 4, 3, 1)})  # fmt: skip
+    assert r.puntaje["n"] == 6 and r.puntaje["min"] == 9 and r.puntaje["max"] == 27
+    assert r.perfiles["Personas"].sum() == 6
+    assert r.alfa == pytest.approx(1.0)  # todas las respuestas de cada persona son iguales
+    assert r.horizonte["monotonas"] == 6
+    assert set(r.asociaciones["Factor"]) >= {"Edad", "Ocupación"}
+    assert all(p.exists() for p in r.figuras.values())

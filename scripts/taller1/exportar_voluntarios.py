@@ -3,7 +3,8 @@
 Toma los usuarios reales (excluye los de demostración `@local.test`) que ya respondieron la
 encuesta, los ordena por rango de edad y les asigna alias V1, V2, ... (sin correo ni alias real).
 Escribe `entregas/taller-1/datos/voluntarios.csv` (ignorado por git: son datos personales) con las
-respuestas q1..q7, los factores personales y, si ya armaron portafolio, sus activos y y*.
+respuestas q1..q7, los factores personales y, si ya armaron portafolio, sus activos, y* y si lo
+armaron ellos (`propio`) o se les asignó el de referencia (`asignado`).
 Usa `service_role`: correr solo desde la máquina del administrador, nunca desde la app.
 """
 
@@ -27,21 +28,37 @@ def main() -> None:
     perfiles = pd.DataFrame(
         c.table("perfiles").select("user_id, edad_rango, factores, created_at").execute().data
     )
-    encuestas = pd.DataFrame(c.table("encuestas").select("user_id, respuestas").execute().data)
-    portafolios = pd.DataFrame(
-        c.table("portafolios").select("user_id, tickers, y_star, fecha_base").execute().data
+    encuestas = pd.DataFrame(
+        c.table("encuestas").select("user_id, respuestas, created_at").execute().data
     )
-    df = perfiles[~perfiles["user_id"].isin(demo)].merge(encuestas, on="user_id")
+    portafolios = pd.DataFrame(
+        c.table("portafolios")
+        .select("user_id, tickers, y_star, fecha_base, parametros")
+        .execute()
+        .data
+    )
+    df = perfiles[~perfiles["user_id"].isin(demo)].merge(
+        encuestas, on="user_id", suffixes=("", "_encuesta")
+    )
     df = df.merge(portafolios, on="user_id", how="left")
     df = df.sort_values(["edad_rango", "created_at"]).reset_index(drop=True)
 
     filas = []
     for i, r in df.iterrows():
         fila = {"alias": f"V{i + 1}", "rango_edad": r["edad_rango"]}
+        fila["fecha_encuesta"] = str(r["created_at_encuesta"])[:10]
         fila |= {q: r["respuestas"].get(q, "") for q in IDS_PREGUNTAS}
         fila |= {f: (r["factores"] or {}).get(f, "") for f in FACTORES_SUGERIDOS}
         fila["activos_elegidos"] = ", ".join(r["tickers"]) if isinstance(r["tickers"], list) else ""
         fila["y_guardado"] = "" if pd.isna(r["y_star"]) else float(r["y_star"])
+        par = r["parametros"] if isinstance(r["parametros"], dict) else None
+        fila["origen_portafolio"] = (
+            ""
+            if par is None
+            else "asignado"
+            if par.get("origen") == "asignado_referencia"
+            else "propio"
+        )
         filas.append(fila)
     salida = pd.DataFrame(filas)
     DESTINO.parent.mkdir(parents=True, exist_ok=True)

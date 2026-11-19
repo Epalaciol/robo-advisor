@@ -130,3 +130,30 @@ def peso_ajustado(
     ajustado = ajustado.clip(lower=0.0, upper=1.0)
     total_original = pesos_actuales.sum()
     return ajustado / ajustado.sum() * total_original
+
+
+def senales_relativas(
+    pe: pd.Series, pe_referencia: float, params: ParametrosFinancieros
+) -> list[SenalMultiplo]:
+    """Señal **transversal**: P/E de cada activo frente al de un índice de referencia (ACWI).
+
+    `relativo = PE_activo / PE_referencia`; `< pe_relativo_barata` → barata (sobreponderar
+    `tilt_multiplos`), `> pe_relativo_cara` → cara (subponderar), si no neutral. Complementa la
+    señal contra el propio histórico mientras este se acumula (necesita `min_obs_pe` fotos).
+    """
+    senales = []
+    for ticker, valor in pe.items():
+        if pd.isna(valor) or valor <= 0 or pe_referencia <= 0:
+            senales.append(SenalMultiplo(str(ticker), None, None, None, "sin_dato", 0.0, "Sin P/E"))
+            continue
+        relativo = float(valor) / pe_referencia
+        if relativo < params.pe_relativo_barata:
+            senal, tilt = "barata", params.tilt_multiplos
+        elif relativo > params.pe_relativo_cara:
+            senal, tilt = "cara", -params.tilt_multiplos
+        else:
+            senal, tilt = "neutral", 0.0
+        senales.append(
+            SenalMultiplo(str(ticker), float(valor), pe_referencia, relativo, senal, tilt)
+        )
+    return senales

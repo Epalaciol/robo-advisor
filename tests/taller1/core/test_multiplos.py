@@ -80,3 +80,13 @@ def test_peso_ajustado_aplica_tilt_y_conserva_la_suma():
     assert ajustado.sum() == pytest.approx(1.0)
     assert ajustado["A"] < 0.5
     assert ajustado["B"] > 0.3
+
+
+def test_senales_relativas_frente_al_indice():
+    from roboadvisor.taller1.core.multiplos import senales_relativas
+
+    pe = pd.Series({"CARA": 24.0, "BARATA": 11.0, "NEUTRA": 20.0, "SIN": float("nan")})
+    s = {x.ticker: x for x in senales_relativas(pe, 20.0, PARAMS)}
+    assert s["CARA"].senal == "cara" and s["CARA"].tilt_sugerido == -PARAMS.tilt_multiplos
+    assert s["BARATA"].senal == "barata" and s["BARATA"].z == pytest.approx(0.55)
+    assert s["NEUTRA"].senal == "neutral" and s["SIN"].senal == "sin_dato"

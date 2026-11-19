@@ -44,6 +44,9 @@ class ParametrosFinancieros:
     tol_vol: float = 0.25
     dias_stale: int = 5
     tilt_multiplos: float = 0.025
+    # P/E relativo al índice mundial (ACWI): < 0,85 → barata; > 1,15 → cara (informe del Taller 1)
+    pe_relativo_barata: float = 0.85
+    pe_relativo_cara: float = 1.15
     min_obs_pe: int = 12  # fotos previas de P/E propio para dar señal (≈ 3 meses semanales)
     benchmark: str = "ACWI"
 

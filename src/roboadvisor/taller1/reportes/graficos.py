@@ -78,3 +78,108 @@ def completo_por_perfil(c: CasoReferencia, ruta: Path) -> Path:
     ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
     ax.legend(fontsize=7, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.12))
     return _guardar(fig, ruta)
+
+
+def correlaciones(c: CasoReferencia, ruta: Path) -> Path:
+    """Matriz de correlaciones de los retornos diarios de los 11 ETF (misma ventana)."""
+    s = c.est.sigma.to_numpy()
+    d = np.sqrt(np.diag(s))
+    corr = s / np.outer(d, d)
+    t = list(c.est.tickers)
+    fig, ax = plt.subplots(figsize=(6.4, 5.4))
+    im = ax.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1)
+    ax.set_xticks(range(len(t)))
+    ax.set_yticks(range(len(t)))
+    ax.set_xticklabels(t, rotation=45, ha="right", fontsize=8)
+    ax.set_yticklabels(t, fontsize=8)
+    for i in range(len(t)):
+        for j in range(len(t)):
+            ax.text(j, i, f"{corr[i, j]:.2f}".replace(".", ","), ha="center", va="center",
+                    fontsize=6.5, color="white" if abs(corr[i, j]) > 0.6 else "black")  # fmt: skip
+    fig.colorbar(im, ax=ax, shrink=0.8, label="Correlación")
+    return _guardar(fig, ruta)
+
+
+def desempeno(c: CasoReferencia, ruta: Path) -> Path:
+    """Valor de $100 invertidos al inicio de la ventana: cada ETF y el portafolio óptimo."""
+    tickers = list(c.est.tickers)
+    p = c.precios[tickers].loc[c.ventana[0] : c.ventana[1]].dropna()
+    base = p / p.iloc[0] * 100
+    r = p.pct_change().fillna(0)
+    optimo = (1 + (r * c.tangente.w.reindex(tickers).fillna(0)).sum(axis=1)).cumprod() * 100
+    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    for t in tickers:
+        ax.plot(base.index, base[t], color=GRIS, lw=0.8, alpha=0.6)
+        ax.annotate(t, (base.index[-1], base[t].iloc[-1]), fontsize=6, color=GRIS,
+                    xytext=(3, 0), textcoords="offset points", va="center")  # fmt: skip
+    ax.plot(optimo.index, optimo, color=NARANJA, lw=2.2, label="Portafolio de riesgo óptimo")
+    ax.axhline(100, color="black", lw=0.6)
+    ax.set_ylabel("Valor de $100 invertidos (USD)")
+    ax.grid(alpha=0.25)
+    ax.legend(fontsize=7, loc="upper left")
+    return _guardar(fig, ruta)
+
+
+def indiferencia(c: CasoReferencia, ruta: Path) -> Path:
+    """CAL, frontera y, para cada A, su curva de indiferencia tangente y el punto escogido.
+
+    Curva de indiferencia: `E(r) = U* + ½·A·σ²`. Con tope de 100 % el punto se queda en el
+    portafolio de riesgo óptimo (σp); sin tope estaría más arriba en la CAL (apalancado).
+    """
+    colores = {8: "#1f4e79", 6: "#4f81bd", 4: "#7f7f7f", 3: "#f2a65a", 1: "#c0504d"}
+    t = c.tangente
+    fig, ax = plt.subplots(figsize=(7.2, 4.6))
+    xs = np.linspace(0, 0.32, 200)
+    ax.plot(
+        c.frontera["sigma"], c.frontera["retorno"], color=GRIS, lw=1.5, label="Frontera eficiente"
+    )
+    ax.plot(xs, c.rf + c.cal_pendiente * xs, color="black", lw=1.4, label="CAL óptima")
+    ax.scatter([t.sigma], [t.retorno], color="black", s=40, zorder=5)
+    ax.annotate("P (portafolio de riesgo)", (t.sigma, t.retorno), xytext=(6, -12),
+                textcoords="offset points", fontsize=7)  # fmt: skip
+    for r in c.escenarios.itertuples():
+        a = int(r.a)
+        y_libre = (t.retorno - c.rf) / (a * t.sigma**2)
+        s_libre = y_libre * t.sigma
+        u = c.rf + t.sharpe**2 / (2 * a)
+        ax.plot(xs, u + 0.5 * a * xs**2, color=colores[a], lw=1, ls="--")
+        ax.scatter(
+            [r.sigma],
+            [r.retorno],
+            color=colores[a],
+            s=45,
+            zorder=6,
+            label=f"A = {a}: y* = {r.y:.0%}",
+        )
+        if y_libre > 1 and s_libre <= xs[-1]:
+            ax.scatter([s_libre], [c.rf + c.cal_pendiente * s_libre], facecolors="none",
+                       edgecolors=colores[a], s=45, zorder=6)  # fmt: skip
+    ax.set_xlim(0, xs[-1])
+    ax.set_ylim(0, 0.30)
+    ax.set_xlabel("Riesgo (desviación estándar anual)")
+    ax.set_ylabel("Retorno esperado anual")
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
+    ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
+    ax.grid(alpha=0.25)
+    ax.legend(fontsize=6.5, loc="upper left")
+    return _guardar(fig, ruta)
+
+
+def composicion_por_perfil(comp, ruta: Path) -> Path:
+    """Barras apiladas: en qué activos queda el 100 % del dinero de cada perfil."""
+    colores = [AZUL, "#d4a017", "#4f81bd", "#3b7d3b", "#7f7f7f", "#9e480e", "#c0504d"]
+    fig, ax = plt.subplots(figsize=(6.8, 3.8))
+    base = np.zeros(comp.shape[1])
+    for (activo, fila), color in zip(comp.iterrows(), colores * 3, strict=False):
+        es_rf = activo.startswith("Libre")
+        ax.bar(comp.columns, fila.to_numpy(), bottom=base, color=NARANJA if es_rf else color,
+               label=activo, hatch="//" if es_rf else None, edgecolor="white")  # fmt: skip
+        for i, v in enumerate(fila.to_numpy()):
+            if v >= 0.06:
+                ax.text(i, base[i] + v / 2, f"{v:.0%}", ha="center", va="center", fontsize=7,
+                        color="white")  # fmt: skip
+        base += fila.to_numpy()
+    ax.set_ylim(0, 1)
+    ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
+    ax.legend(fontsize=7, loc="center left", bbox_to_anchor=(1.0, 0.5))
+    return _guardar(fig, ruta)

@@ -31,10 +31,12 @@ def main() -> None:
     caso = calcular_caso(precios, rf)
     ruta_vol = a.voluntarios or a.salida / "datos" / "voluntarios.csv"
     voluntarios = pd.read_csv(ruta_vol, dtype=str).fillna("") if ruta_vol.exists() else None
+    ruta_fund = a.datos / "fundamentales.csv"
+    fundamentales = pd.read_csv(ruta_fund) if ruta_fund.exists() else None
 
     a.salida.mkdir(parents=True, exist_ok=True)
-    print("Excel:", generar_excel(caso, a.salida / "Taller1.xlsx", voluntarios))
-    print("PDF:  ", generar_pdf(caso, a.salida, voluntarios, dt.date.today()))
+    print("Excel:", generar_excel(caso, a.salida / "Taller1.xlsx", voluntarios, fundamentales))
+    print("PDF:  ", generar_pdf(caso, a.salida, voluntarios, dt.date.today(), fundamentales))
 
     if (a.salida / "README.md").exists():
         print(
