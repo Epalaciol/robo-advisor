@@ -13,7 +13,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Instalar dependencias
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,reportes]"
       - name: Lint (ruff)
         run: ruff check .
       - name: Tests (pytest)
