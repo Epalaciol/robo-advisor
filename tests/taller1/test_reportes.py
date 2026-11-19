@@ -47,6 +47,8 @@ def test_excel_y_markdown_se_generan(caso, tmp_path):
     assert "Resumen ejecutivo" in md and "Pendiente de completar" in md
     assert "Cumplimiento del enunciado" not in md and "§" not in md
     assert "Sebastian Duarte Uran" in md
+    assert "Acceso de administrador" in md and "admin@mft-investments.app" in md
+    assert "se envía en el correo" in md  # la clave nunca va en el PDF
     assert "valor real de y*" in md  # sección del tope de 100 %
 
 

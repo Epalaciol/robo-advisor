@@ -39,6 +39,7 @@ from .caso import (
 
 URL_APP = "https://mft-investements.streamlit.app/"
 URL_REPO = "https://github.com/Epalaciol/robo-advisor"
+CORREO_ADMIN = "admin@mft-investments.app"  # la clave no va aquí: se envía en el correo al profesor
 MESES = [
     "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
     "septiembre", "octubre", "noviembre", "diciembre",
@@ -328,6 +329,11 @@ def construir_markdown(
     )
 
     texto_mult, resumen_mult = seccion_multiplos(c, fundamentales)
+    texto_acceso = (
+        f"- **Aplicación:** <{URL_APP}>\n- **Correo:** `{CORREO_ADMIN}`\n"
+        "- **Clave:** se envía en el correo de entrega del taller (no se publica en el repositorio, que es "
+        "público)."
+    )
     catalogo = leer_catalogo()
     eleg = sharpe_catalogo_elegible(c, catalogo)
     elegibles = elegibles_catalogo(c, catalogo)
@@ -720,6 +726,30 @@ datos (políticas de seguridad por fila). Los precios se actualizan solos cada d
 portafolio en la aplicación; a las otras {int((origen == "asignado").sum())} el grupo les **asignó** el portafolio de riesgo de
 referencia de este informe, con el $y^*$ de su propio A, para que todas puedan ver la composición de su
 portafolio completo y su seguimiento. Esa diferencia queda marcada en los datos.
+
+## Acceso de administrador para el profesor
+
+Para revisar los cálculos de cualquier encuestado directamente en la aplicación, existe una cuenta de
+**administrador de solo lectura**:
+
+{texto_acceso}
+
+Al iniciar sesión con ella aparece en el menú la página **Administración** (los demás usuarios no la ven
+y, si intentan abrirla, se les niega el acceso):
+
+1. **Todos los usuarios:** registrados, con encuesta y con portafolio; por persona, alias, rango de edad,
+   puntaje, perfil, A, si el portafolio es propio o asignado, $y^*$ y fecha. No se muestran correos.
+2. **Encuesta y A:** las 9 respuestas con el texto de la opción escogida y sus puntos, el cálculo del
+   puntaje (1·a + 2·b + 3·c), el perfil, A y la función de utilidad $U = E(r) - \tfrac{{1}}{{2}}A\sigma^2$.
+3. **Portafolio y cálculos:** el portafolio de riesgo y el completo (gráficos y tabla), los parámetros con
+   que se calculó (ventana, pesos mínimo y máximo, tasa libre de riesgo) y $y^*$ paso a paso con los números
+   de esa persona; si la fórmula da más de 100 %, se muestra el valor real y que se limitó.
+4. **Seguimiento:** cómo ha rendido el portafolio con los precios de hoy y las recomendaciones (reglas fijas).
+
+**Seguridad.** La cuenta solo puede **leer**: no puede modificar encuestas ni portafolios, ni crear otros
+administradores. El permiso lo da la base de datos (políticas de seguridad por fila), no la interfaz, y
+las pruebas automáticas lo verifican. Es un ejercicio académico; el acceso se puede retirar al terminar la
+calificación.
 
 # Análisis exploratorio de las encuestas (EDA)
 

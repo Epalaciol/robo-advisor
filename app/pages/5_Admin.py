@@ -48,7 +48,12 @@ st.caption(
 
 @st.cache_data(ttl=300, show_spinner="Cargando usuarios...")
 def _usuarios(_repo: RepositorioUsuario, mi_id: str) -> list[dict]:
-    return [u for u in _repo.listar_usuarios() if u["user_id"] != mi_id]
+    # Sin la propia cuenta ni las de prueba (marcadas con scripts/taller1/marcar_usuarios_prueba.py)
+    return [
+        u
+        for u in _repo.listar_usuarios()
+        if u["user_id"] != mi_id and not (u.get("factores") or {}).get("_prueba")
+    ]
 
 
 def _origen(portafolio: dict | None) -> str:
@@ -133,7 +138,11 @@ with tab_encuesta:
         f"perfil **{resultado.etiqueta}** → **A = {resultado.a}**"
     )
     st.latex(rf"U = E(r) - \tfrac{{1}}{{2}}\cdot {a:g}\cdot \sigma^2")
-    factores = {k: v for k, v in (u.get("factores") or {}).items() if str(v).strip()}
+    factores = {
+        k: v
+        for k, v in (u.get("factores") or {}).items()
+        if str(v).strip() and not k.startswith("_")
+    }
     if factores:
         st.markdown("**Información personal**")
         st.dataframe(

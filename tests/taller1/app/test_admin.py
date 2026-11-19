@@ -13,9 +13,12 @@ PAGINA = Path(__file__).resolve().parents[3] / "app" / "pages" / "5_Admin.py"
 @pytest.fixture
 def mock(monkeypatch):
     monkeypatch.setenv("MOCK_DATA", "true")
+    import streamlit as st
+
     from roboadvisor.comun import cliente_mock as m
 
     m.ClienteMock()  # siembra usuarios de prueba
+    st.cache_data.clear()  # la página cachea la lista de usuarios entre corridas
     yield m
     m._tabla("administradores").clear()
 
@@ -74,3 +77,18 @@ def test_pagina_admin_muestra_a_los_demas_usuarios(mock):
     assert mock.ALIAS_A3 in set(tabla["Alias"])  # ve al otro usuario…
     assert mock.ALIAS_PRUEBA not in set(tabla["Alias"])  # …y no se lista a sí mismo
     assert "Esta sección es solo para administradores." not in [w.value for w in at.warning]
+
+
+def test_pagina_admin_no_muestra_cuentas_de_prueba(mock):
+    s = _sesion(mock, mock.CORREO_PRUEBA, mock.CLAVE_PRUEBA)
+    mock._tabla("administradores").append({"user_id": s["user_id"]})
+    a3 = next(p for p in mock._tabla("perfiles") if p["alias"] == mock.ALIAS_A3)
+    original = dict(a3["factores"] or {})
+    a3["factores"] = {**original, "_prueba": True}
+    try:
+        at = _abrir(s)
+        assert not at.exception
+        assert not at.dataframe  # el único otro usuario era de prueba
+        assert any("Aún no hay usuarios" in i.value for i in at.info)
+    finally:
+        a3["factores"] = original
