@@ -113,14 +113,19 @@ def test_pagina_publica_abre_sin_sesion_en_modo_mock(monkeypatch):
 def test_informe_markdown_del_taller2(informe_2oct, resultado_2oct, tmp_path):
     import datetime as dt
 
-    from roboadvisor.taller2.core.analisis import sensibilidad
+    from roboadvisor.taller2.core.analisis import sensibilidad, sensibilidad_tau
     from roboadvisor.taller2.reportes.informe import construir_markdown
 
-    figs = {"curva": tmp_path / "curva.png", "spreads": tmp_path / "spreads.png"}
+    figs = {n: tmp_path / f"{n}.png" for n in ("curva", "spreads", "dv01")}
+    papeles = informe_2oct.papeles()
     md = construir_markdown(
         resultado_2oct,
-        sensibilidad(informe_2oct.papeles(), informe_2oct.fecha),
+        sensibilidad(papeles, informe_2oct.fecha),
         figs,
-        dt.date(2026, 11, 16),
+        dt.date(2026, 11, 19),
+        papeles,
+        sensibilidad_tau(papeles, informe_2oct.fecha),
     )
     assert "13,54 %" in md and "0 comprar · 6 vender · 23 mantener" in md
+    assert "Cumplimiento del enunciado" in md and "Esteban Palacio Londoño" in md
+    assert "19 de noviembre de 2026" in md and "--fecha" in md

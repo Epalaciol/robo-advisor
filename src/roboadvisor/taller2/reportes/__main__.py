@@ -6,7 +6,7 @@ from pathlib import Path
 
 from roboadvisor.comun.readme_pdf import readme_a_pdf
 
-from ..core.analisis import analizar, sensibilidad
+from ..core.analisis import analizar, sensibilidad, sensibilidad_tau
 from ..datos.informe import leer_csv
 from .excel import generar_excel
 from .informe import generar_pdf
@@ -27,7 +27,12 @@ def main() -> None:
     sens = sensibilidad(papeles, inf.fecha)
     a.salida.mkdir(parents=True, exist_ok=True)
     print("Excel:", generar_excel(r, a.salida / "Taller2_2026-10-02.xlsx", sens))
-    print("PDF:  ", generar_pdf(r, sens, a.salida, dt.date.today()))
+    print(
+        "PDF:  ",
+        generar_pdf(
+            r, sens, a.salida, dt.date.today(), papeles, sensibilidad_tau(papeles, inf.fecha)
+        ),
+    )
 
     if (a.salida / "README.md").exists():
         print(

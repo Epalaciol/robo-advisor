@@ -2,7 +2,8 @@
 
 **Inversiones — Maestría en Finanzas, Universidad EAFIT · Semestre II de 2026**  
 Profesor: Juan Carlos Botero Ramírez  
-Entrega: **26 de noviembre de 2026**
+Integrantes: Sebastian Duarte Uran, Paulina Jaramillo, Juan David Londoño, Juan Luis Orrego Henao y Esteban Palacio Londoño  
+Entrega: **19 de noviembre de 2026**
 
 El taller pide un código que, con el *Informe Diario de Deuda Pública* de [www.irc.gov.co](https://www.irc.gov.co/440),
 (1) calcule la **curva cero cupón** (Nelson-Siegel), (2) calcule la **TIR** de cada TES que se transó ese día
@@ -13,14 +14,29 @@ y la compare con la TIR que implica la curva para decidir **comprar, vender o ma
 
 | Archivo | Qué es | Para quién |
 |---|---|---|
-| [**Taller2_Informe.pdf**](Taller2_Informe.pdf) | El informe: método paso a paso, curva, TIR de cada papel, decisiones, duración, convexidad y DV01 | **Empiece por aquí** |
-| [Taller2_2026-10-02.xlsx](Taller2_2026-10-02.xlsx) | El modelo en Excel (siguiendo el "Modelo Nelson Siegel.xlsx"), con fórmulas vivas | Para revisar un cálculo |
+| [**Taller2_Informe.pdf**](Taller2_Informe.pdf) | El informe: tabla de cumplimiento del enunciado, método paso a paso, curva, TIR de cada papel, decisiones, duración, convexidad y DV01 | **Empiece por aquí** |
+| [Taller2_2026-10-02.xlsx](Taller2_2026-10-02.xlsx) | El modelo en Excel (siguiendo el "Modelo Nelson Siegel.xlsx"), con fórmulas vivas y la celda de la suma de errores² lista para Solver | Para revisar un cálculo |
 | [figuras/](figuras/) | Gráficos del informe | Opcional |
+
+## Cómo leer el informe
+
+- **Resumen ejecutivo y cumplimiento del enunciado:** la respuesta en una página y dónde se cumple cada punto.
+- **1 – Metodología:** datos de IRC, flujos de cada papel (con un ejemplo), la curva Nelson-Siegel, la
+  calibración (el Solver), TIR observada vs. estimada y la regla de decisión, y las fórmulas de duración,
+  convexidad y DV01.
+- **2 – Resultados del 2-oct:** curva y tasas cero cupón, TIR y decisión por papel, duración/convexidad/DV01
+  por $1.000 millones y qué tan buena es la aproximación de precio con duración y con convexidad.
+- **3 – Sensibilidad** de la decisión al método de calibración, al umbral y a τ.
+- **4 – Cómo correrlo para un día determinado** (`--fecha`) y la página pública.
+- **5 – Validación, 6 – Conclusiones, 7 – Limitaciones.**
 
 ## Resultado del 2 de octubre de 2026 (en una mirada)
 
 β0 = 13,54 % · β1 = −1,20 % · β2 = 0,78 % · τ = 3,7 → **0 comprar · 6 vender · 23 mantener**
-(umbral: ±23,5 puntos básicos, una desviación estándar de las diferencias).
+(umbral: ±23,5 puntos básicos, una desviación estándar de las diferencias). El DV01 por $1.000 millones va de
+$4.367 (TCO a 18 días) a $653.824 (TFIT 2058).
+
+Para otro día: `python -m roboadvisor.taller2.pipeline.update_tes --fecha AAAA-MM-DD --sin-supabase`.
 
 ## Más allá del taller: la página web, siempre al día
 

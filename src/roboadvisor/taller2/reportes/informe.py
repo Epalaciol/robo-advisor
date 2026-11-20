@@ -3,6 +3,7 @@
 
 import datetime as dt
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 
 import matplotlib
@@ -13,12 +14,25 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from ..core.analisis import ResultadoTES  # noqa: E402
+from ..core.flujos import flujos_papel  # noqa: E402
+from ..core.modelos import Papel  # noqa: E402
 from ..core.nelson_siegel import spot  # noqa: E402
+from ..core.rendimientos import aproximacion_precio, dv01_analitico  # noqa: E402
 
 URL_APP = "https://mft-investements.streamlit.app/"
+URL_REPO = "https://github.com/Epalaciol/robo-advisor"
 COLOR = {"Comprar": "#2E7D32", "Vender": "#C62828", "Mantener": "#8a8a8a"}
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
          "septiembre", "octubre", "noviembre", "diciembre"]  # fmt: skip
+INTEGRANTES = [
+    "Sebastian Duarte Uran",
+    "Paulina Jaramillo",
+    "Juan David Londoño",
+    "Juan Luis Orrego Henao",
+    "Esteban Palacio Londoño",
+]
+PAPEL_EJEMPLO = "TFIT16180930"  # flujos paso a paso
+PAPEL_CONVEXIDAD = "TFIT34130358"  # el más largo: donde más se nota la convexidad
 
 
 def _n(x: float, d: int = 2) -> str:
@@ -31,6 +45,21 @@ def _pct(x: float, d: int = 2) -> str:
 
 def _md(df: pd.DataFrame) -> str:
     return df.to_markdown(index=False, disable_numparse=True)
+
+
+def _md_ancho(df: pd.DataFrame, anchos: Sequence[float]) -> str:
+    """Tabla con anchos relativos (texto que se parte en varias líneas); anchos suman 1."""
+    sep = "|" + "|".join("-" * max(3, int(a * 250)) for a in anchos) + "|"
+    filas = ["| " + " | ".join(map(str, df.columns)) + " |", sep]
+    filas += ["| " + " | ".join(map(str, f)) + " |" for f in df.itertuples(index=False)]
+    return "\n".join(filas)
+
+
+def _fecha(f: dt.date) -> str:
+    return f"{f.day} de {MESES[f.month - 1]} de {f.year}"
+
+
+# ------------------------------------------------------------------ gráficos
 
 
 def grafico_curva(r: ResultadoTES, ruta: Path) -> Path:
@@ -75,155 +104,543 @@ def grafico_spreads(r: ResultadoTES, ruta: Path) -> Path:
     return ruta
 
 
+def grafico_dv01(r: ResultadoTES, ruta: Path) -> Path:
+    tab = r.tabla
+    fig, ax = plt.subplots(figsize=(7.2, 3.8))
+    ax.scatter(tab["duracion_modificada"], tab["dv01_cop"] / 1e3, color="#1F3864", s=24)
+    for _, f in tab.iterrows():
+        if f["plazo_anos"] > 10:
+            ax.annotate(f["nemotecnico"], (f["duracion_modificada"], f["dv01_cop"] / 1e3),
+                        fontsize=6, xytext=(3, 3), textcoords="offset points")  # fmt: skip
+    ax.set_xlabel("Duración modificada (años)")
+    ax.set_ylabel("DV01 por $1.000 millones (miles de COP)")
+    ax.grid(alpha=0.25)
+    fig.tight_layout()
+    fig.savefig(ruta, dpi=160)
+    plt.close(fig)
+    return ruta
+
+
+# ------------------------------------------------------------------ tablas auxiliares
+
+
+def _nombre_umbral(x) -> str:
+    nombres = {"sigma": "1 desviación estándar (base)", "sigma_robusta": "σ robusta (1,4826·MAD)"}
+    return nombres.get(str(x)) or f"Fijo {_n(float(x), 0)} pb"
+
+
+def _tabla_flujos(r: ResultadoTES, nemo: str) -> pd.DataFrame:
+    f = r.flujos[r.flujos["nemotecnico"] == nemo]
+    return pd.DataFrame(
+        {
+            "Fecha del flujo": f["fecha_flujo"].astype(str),
+            "Flujo": [_n(x) for x in f["flujo"]],
+            "Días": f["dias"].astype(str),
+            "t (años)": [_n(x, 4) for x in f["anos"]],
+            "Tasa spot S(t)": [_pct(x, 3) for x in f["tasa_spot"]],
+            "Factor de descuento": [_n(x, 6) for x in f["factor_descuento"]],
+            "Valor presente": [_n(x, 4) for x in f["valor_presente"]],
+        }
+    )
+
+
+def _tabla_convexidad(r: ResultadoTES, papeles: Sequence[Papel]) -> tuple[str, pd.DataFrame]:
+    p = next(x for x in papeles if x.nemotecnico == PAPEL_CONVEXIDAD)
+    fila = r.tabla.set_index("nemotecnico").loc[PAPEL_CONVEXIDAD]
+    f = flujos_papel(p, r.fecha)
+    filas = aproximacion_precio(float(fila["tir_observada"]), f)
+    return p.nemotecnico, pd.DataFrame(
+        {
+            "Δ TIR": [f"{x['cambio_pb']:+.0f} pb" for x in filas],
+            "ΔP/P exacto": [_pct(x["exacto"]) for x in filas],
+            "Solo duración": [_pct(x["duracion"]) for x in filas],
+            "Duración + conv.": [_pct(x["duracion_convexidad"]) for x in filas],
+            "Error D (pb)": [_n((x["duracion"] - x["exacto"]) * 1e4, 1) for x in filas],
+            "Error D + C (pb)": [
+                _n((x["duracion_convexidad"] - x["exacto"]) * 1e4, 1) for x in filas
+            ],
+        }
+    )
+
+
+def _max_dif_dv01(r: ResultadoTES, papeles: Sequence[Papel]) -> float:
+    tab = r.tabla.set_index("nemotecnico")
+    rel = []
+    for p in papeles:
+        y = float(tab.loc[p.nemotecnico, "tir_observada"])
+        a = dv01_analitico(y, flujos_papel(p, r.fecha), p.precio_sucio)
+        rel.append(abs(tab.loc[p.nemotecnico, "dv01_cop"] / a - 1))
+    return max(rel)
+
+
+# ------------------------------------------------------------------ cuerpo
+
+
 def construir_markdown(
-    r: ResultadoTES, sens: pd.DataFrame, figs: dict[str, Path], hoy: dt.date
+    r: ResultadoTES,
+    sens: pd.DataFrame,
+    figs: dict[str, Path],
+    hoy: dt.date,
+    papeles: Sequence[Papel],
+    sens_tau: pd.DataFrame | None = None,
 ) -> str:
     b, tau, cal = r.calibracion.betas, r.calibracion.tau, r.calibracion
     tab = r.tabla
     cont = r.conteo_senales()
-    t1 = pd.DataFrame(
+    n_c, n_v, n_m = cont.get("Comprar", 0), cont.get("Vender", 0), cont.get("Mantener", 0)
+    vender = ", ".join(tab.loc[tab["senal"] == "Vender", "nemotecnico"])
+    comprar = ", ".join(tab.loc[tab["senal"] == "Comprar", "nemotecnico"]) or "ninguno"
+    n_tco = int((tab["cupon"] == 0).sum())
+    n_tf = len(tab) - n_tco
+    nominal_total = float(sum(p.valor_nominal_mm or 0 for p in papeles))
+    tir_vs_pub = (tab["tir_observada"] - tab["tasa_informe"]) / 1e-4
+    sen = tab["origen_tasa"] == "SEN"
+    dur_dif = (tab["duracion_macaulay"] - tab["duracion_informe"]).abs().max()
+    dv_min, dv_max = tab.loc[tab["dv01_cop"].idxmin()], tab.loc[tab["dv01_cop"].idxmax()]
+    corto = float(spot(1e-6, b, tau))
+
+    t_res = pd.DataFrame(
         {
             "Nemotécnico": tab["nemotecnico"],
             "Vence": tab["vencimiento"].astype(str),
             "Cupón %": [_n(x) for x in tab["cupon"]],
-            "Sucio": [_n(x, 3) for x in tab["precio_sucio"]],
+            "Sucio obs.": [_n(x, 3) for x in tab["precio_sucio"]],
+            "Precio curva": [_n(x, 3) for x in tab["precio_estimado"]],
             "TIR obs.": [_pct(x) for x in tab["tir_observada"]],
             "TIR est.": [_pct(x) for x in tab["tir_estimada"]],
             "Spread pb": [_n(x, 1) for x in tab["spread_pb"]],
-            "Señal": tab["senal"],
+            "Decisión": tab["senal"],
         }
     )
-    t2 = pd.DataFrame(
+    t_dur = pd.DataFrame(
         {
             "Nemotécnico": tab["nemotecnico"],
             "Dur. Macaulay": [_n(x) for x in tab["duracion_macaulay"]],
+            "Dur. informe IRC": [_n(x) for x in tab["duracion_informe"]],
             "Dur. modificada": [_n(x) for x in tab["duracion_modificada"]],
             "Convexidad": [_n(x) for x in tab["convexidad"]],
             "DV01 por $1.000 M (COP)": [_n(x, 0) for x in tab["dv01_cop"]],
         }
     )
     spots = pd.DataFrame(
-        {"Plazo": ["1 año", "5 años", "10 años", "30 años"],
-         "Tasa spot": [_pct(spot(float(p), b, tau)) for p in (1, 5, 10, 30)]}
+        {"Plazo": ["1 año", "2 años", "5 años", "10 años", "20 años", "30 años"],
+         "Tasa cero cupón": [_pct(spot(float(p), b, tau)) for p in (1, 2, 5, 10, 20, 30)]}
     )  # fmt: skip
-    s = sens[sens["umbral"].astype(str) == "sigma"] if "umbral" in sens else sens
+    s = sens[sens["umbral"].astype(str) == "sigma"]
     sens_t = pd.DataFrame(
         {
             "Calibración": s["calibracion"],
+            "β0": [_pct(x) for x in s["b0"]],
+            "β1": [_pct(x) for x in s["b1"]],
+            "β2": [_pct(x) for x in s["b2"]],
             "Umbral (pb)": [_n(x, 1) for x in s["umbral_pb"]],
-            "Comprar": s["comprar"], "Vender": s["vender"], "Mantener": s["mantener"],
+            "Comprar": s["comprar"].astype(str),
+            "Vender": s["vender"].astype(str),
+            "Mantener": s["mantener"].astype(str),
         }
-    ) if {"comprar", "vender", "mantener"} <= set(s.columns) else pd.DataFrame()  # fmt: skip
+    )
+    u = sens[sens["calibracion"] == "Excel (todos, sin ponderar)"]
+    sens_u = pd.DataFrame(
+        {
+            "Regla de umbral": [_nombre_umbral(x) for x in u["umbral"]],
+            "Umbral (pb)": [_n(x, 1) for x in u["umbral_pb"]],
+            "Comprar": u["comprar"].astype(str),
+            "Vender": u["vender"].astype(str),
+            "Mantener": u["mantener"].astype(str),
+        }
+    )
+    tau_md = ""
+    if sens_tau is not None and len(sens_tau):
+        tt = sens_tau[sens_tau["tau"].isin([1.0, 2.0, 3.7, 5.0, 8.0])]
+        tau_md = _md(
+            pd.DataFrame(
+                {
+                    "τ": [_n(x, 1) for x in tt["tau"]],
+                    "β0": [_pct(x) for x in tt["b0"]],
+                    "β1": [_pct(x) for x in tt["b1"]],
+                    "β2": [_pct(x) for x in tt["b2"]],
+                    "Suma de errores²": [_n(x, 3) for x in tt["sse"]],
+                }
+            )
+        )
+    nemo_cx, t_cx = _tabla_convexidad(r, papeles)
+    fe = tab.set_index("nemotecnico").loc[PAPEL_EJEMPLO]
+    fl_ej = r.flujos[r.flujos["nemotecnico"] == PAPEL_EJEMPLO]
+    dif_dv = _max_dif_dv01(r, papeles)
+    autores = "\n".join(f"  - {x}" for x in INTEGRANTES)
+
+    cumplimiento = pd.DataFrame(
+        [
+            [
+                "Código que obtenga los betas **para un día determinado**",
+                "Sí",
+                "Comando con `--fecha`; sección 4",
+            ],
+            [
+                "Basado en el informe diario de TES de www.irc.gov.co",
+                "Sí",
+                "Descarga y lectura del PDF de IRC con validaciones; secciones 1.1 y 4",
+            ],
+            ["Curva cero cupón con **Nelson-Siegel**", "Sí", "Secciones 1.3–1.4 y 2.1"],
+            [
+                "**TIR** de cada papel transado ese día **usando la cero cupón**",
+                "Sí",
+                "TIR estimada, secciones 1.5 y 2.2",
+            ],
+            [
+                "Comparar TIR observada vs. estimada → **comprar, vender o mantener**",
+                "Sí",
+                "Secciones 1.5 y 2.2",
+            ],
+            [
+                "Basarse en el **Modelo Nelson Siegel.xlsx**",
+                "Sí",
+                "Mismas convenciones; Excel adjunto con fórmulas; sección 5",
+            ],
+            [
+                "Probar con las transacciones del **2 de octubre de 2026** (tabla del enunciado)",
+                "Sí",
+                f"Los {len(tab)} papeles de la tabla; sección 2",
+            ],
+            [
+                "**DV01** de cada papel por cada **$1.000 millones** de nominal",
+                "Sí",
+                "Secciones 1.6 y 2.3",
+            ],
+            [
+                "Objetivo: duración y convexidad",
+                "Sí",
+                "Secciones 2.3 y 2.4 (aproximación de precio)",
+            ],
+            [
+                "Objetivo: analizar el mercado accionario",
+                "—",
+                "El enunciado no trae una tarea de renta variable; se cubrió en el Taller 1 (beta y múltiplos)",
+            ],
+        ],
+        columns=["Lo que pide el enunciado", "¿Cumple?", "Dónde está"],
+    )
+
     return f"""---
-title: "Taller 2 · Curva cero cupón de TES (Nelson-Siegel)"
+title: "Taller 2 · Curva cero cupón de TES con Nelson-Siegel, TIR, decisión y DV01"
 subtitle: "Inversiones — Maestría en Finanzas, Universidad EAFIT · Semestre II de 2026"
-author: "Prof. Juan Carlos Botero Ramírez · Grupo MFT Investments"
-date: "{hoy.day} de {MESES[hoy.month - 1]} de {hoy.year}"
+author:
+{autores}
+  - "Profesor: Juan Carlos Botero Ramírez"
+date: "{_fecha(hoy)}"
 lang: es
-geometry: margin=2cm
+geometry: margin=2.2cm
 fontsize: 10pt
 mainfont: Arial
 colorlinks: true
+toc: true
+toc-depth: 2
+numbersections: true
+header-includes:
+  - \\usepackage{{float}}
+  - \\floatplacement{{figure}}{{H}}
+  - \\usepackage{{etoolbox}}
+  - \\AtBeginEnvironment{{longtable}}{{\\small}}
 ---
 
-# 1. Qué se hizo
+# Resumen ejecutivo {{-}}
 
-Se construyó un código que, para un día cualquiera, lee el **Informe Diario de Deuda Pública**
-de [www.irc.gov.co](https://www.irc.gov.co/440), calibra los tres betas (β0, β1, β2) de la curva
-**Nelson-Siegel**, calcula la **curva cero cupón**, la **TIR** de cada TES tasa fija en pesos
-transado ese día y decide, comparando la TIR observada con la estimada, si hay una oportunidad de
-**comprar, vender o mantener**. También calcula **duración, convexidad y DV01** por cada
-$1.000 millones de valor nominal. Se probó con las transacciones del **2 de octubre de 2026**
-(29 papeles). El mismo código alimenta la página pública de la aplicación: <{URL_APP}> (sección
-"Taller 2 · Curva TES", sin necesidad de registrarse).
+Construimos un código en Python que, para **cualquier día**, toma el *Informe Diario de Deuda Pública* de
+[www.irc.gov.co](https://www.irc.gov.co/440), calibra los betas de **Nelson-Siegel**, calcula la **curva cero
+cupón**, valora cada TES tasa fija en pesos que se transó ese día, calcula su **TIR observada** (con el precio de
+mercado) y su **TIR estimada** (con el precio que da la curva), y decide si hay una oportunidad de **comprar,
+vender o mantener**. Además calcula **duración, convexidad y DV01 por cada $1.000 millones** de nominal.
 
-**Resultado del 2-oct:** β0 = {_pct(b.b0)}, β1 = {_pct(b.b1)}, β2 = {_pct(b.b2)}, τ = {_n(tau, 1)} (fijo, como en el
-Excel del profesor). Umbral de decisión: ±{_n(r.umbral_pb, 1)} pb. Decisiones:
-**{cont.get("Comprar", 0)} comprar · {cont.get("Vender", 0)} vender · {cont.get("Mantener", 0)} mantener**.
+Con las transacciones del **2 de octubre de 2026** (la tabla del enunciado: {len(tab)} papeles, {n_tco} TCO y {n_tf}
+TFIT/TFVT):
 
-# 2. Metodología paso a paso
+- **Betas:** β0 = **{_pct(b.b0)}**, β1 = **{_pct(b.b1)}**, β2 = **{_pct(b.b2)}**, con τ = {_n(tau, 1)} (como el Excel del
+  profesor). La curva es **creciente**: parte de {_pct(corto)} en el muy corto plazo y se acerca a {_pct(b.b0)} en el largo.
+- **Decisión** (umbral ±{_n(r.umbral_pb, 1)} pb, una desviación estándar de las diferencias del día):
+  **{n_c} comprar · {n_v} vender · {n_m} mantener**. Vender: {vender}. Comprar: {comprar}.
+- **DV01:** va de ${_n(dv_min["dv01_cop"], 0)} ({dv_min["nemotecnico"]}) a **${_n(dv_max["dv01_cop"], 0)}** ({dv_max["nemotecnico"]})
+  por punto básico y por $1.000 millones de nominal.
+- **Validación:** el motor reproduce el *Modelo Nelson Siegel.xlsx* del profesor (error < $10^{{-10}}$) y el Excel
+  del grupo (betas a $5\\times10^{{-9}}$).
+- **Más allá del enunciado:** el mismo código corre solo cada día hábil y publica la curva en una página
+  **pública, sin registro**: <{URL_APP}> → "T2 Curva TES".
 
-1. **Datos.** Para cada papel: vencimiento, cupón, precio limpio y sucio, tasa publicada y valor
-   nominal. Se validan (suma de nominales contra el total del informe, nemotécnico contra fecha de
-   vencimiento, cupón corrido) antes de usarlos.
-2. **Flujos.** Cada TES paga cupones anuales en los aniversarios de su vencimiento y 100 al final.
-   El tiempo de cada flujo es *t* = días / 365 desde la fecha del informe.
-3. **Curva Nelson-Siegel.** La tasa spot a plazo *t* es
-   $S(t)=\\beta_0+\\beta_1\\frac{{1-e^{{-t/\\tau}}}}{{t/\\tau}}+\\beta_2\\left[\\frac{{1-e^{{-t/\\tau}}}}{{t/\\tau}}-e^{{-t/\\tau}}\\right]$
-   y el factor de descuento es $(1+S(t))^{{-t}}$.
-4. **Calibración.** Se escogen β0, β1, β2 que minimizan la suma de cuadrados de
-   (precio sucio observado − precio estimado con la curva), exactamente como el Solver del Excel
-   del profesor. Resultado: suma de errores² = {_n(cal.sse, 4)}.
-5. **TIR observada y estimada.** La observada es la tasa que iguala los flujos al precio sucio de
-   mercado; la estimada, la que iguala los flujos al precio calculado con la curva.
-6. **Decisión.** Spread = TIR observada − TIR estimada. Si el spread supera +σ (una desviación
-   estándar de los spreads del día) el papel paga más de lo que la curva indica → **comprar**; si es
-   menor que −σ → **vender**; en otro caso **mantener**.
-7. **DV01.** Pesos que gana (o pierde) un nominal de $1.000 millones si la TIR baja 1 punto básico.
+> **Aviso:** ejercicio académico. Las decisiones del modelo no constituyen una recomendación de inversión.
 
-# 3. Resultados del 2 de octubre de 2026
+## Cumplimiento del enunciado {{-}}
 
-![Curva cero cupón y TIR observada de cada papel]({figs["curva"].name}){{width=90%}}
+{_md_ancho(cumplimiento, (0.45, 0.1, 0.45))}
+
+# Metodología
+
+**Flujo.** Para un día *d*:
+
+1. *Datos:* informe de IRC del día *d* → tabla "Tasa Fija en Pesos" (vencimiento, cupón, precio limpio y sucio,
+   tasa publicada, duración y nominal) → validaciones.
+2. *Flujos:* calendario de pagos de cada papel y su plazo *t* en años.
+3. *Curva:* betas de Nelson-Siegel que mejor explican los precios sucios de todos los papeles (Solver).
+4. *Por papel:* precio con la curva → TIR estimada; precio de mercado → TIR observada; diferencia en pb → decisión.
+5. *Riesgo:* duración de Macaulay y modificada, convexidad y DV01 por $1.000 millones.
+
+**Herramientas.** **Python** hace los cálculos (numpy, scipy para el Solver, pandas), este informe y el Excel; las
+mismas funciones alimentan la aplicación, así los números coinciden. El **Excel** adjunto repite el modelo con
+fórmulas vivas para revisarlo celda por celda. Un **proceso automático** (GitHub Actions) descarga el informe de
+cada día y guarda los resultados en una **base de datos en la nube** (Supabase) que lee la página pública. Se usó
+**inteligencia artificial** (un asistente de programación) para construir el código; los cálculos son fórmulas fijas.
+
+**Supuestos** (los mismos del *Modelo Nelson Siegel.xlsx*):
+
+| Supuesto | Valor | Por qué |
+|---------------------------------------------|-------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| Papeles | TES tasa fija en pesos con vencimiento posterior al día del informe | Es la tabla que indica el enunciado |
+| Cupón | Anual, en el aniversario del vencimiento; los TCO no pagan cupón | Convención de los TES |
+| Plazo | *t* = días / 365 desde la fecha del informe | Igual al Excel del profesor |
+| Tasas | Efectivas anuales; descuento $(1+S(t))^{{-t}}$ | Igual al Excel del profesor |
+| τ | {_n(tau, 1)} fijo | Igual al Excel del profesor; la sensibilidad está en la sección 3.3 |
+| Función objetivo | $\\sum$ (precio sucio observado − precio con la curva)², sin ponderar | La celda que minimiza el Solver del Excel |
+| Decisión | Umbral = 1 desviación estándar de las diferencias del día | Separa lo "normal" de lo que se sale de la curva |
+| DV01 | Nominal de $1.000 millones = $10^9$ pesos | Lo pide el enunciado |
+
+## Datos del informe de IRC
+
+El *Informe Diario de Deuda Pública* trae, para cada TES transado o valorado, el nemotécnico, la fecha de
+vencimiento, el cupón, el precio limpio y el sucio, la tasa y su origen (**SEN**: sale de operaciones del día en el
+sistema del Banco de la República; **VAL**: sale del proveedor de precios), la duración y el valor nominal en
+circulación. Para el 2-oct se usó **la tabla del enunciado** ({len(tab)} filas; nominal total {_n(nominal_total, 0)} millones,
+igual al total del informe). Antes de calcular se revisa que la suma de nominales cuadre con el total, que la fecha
+del nemotécnico coincida con el vencimiento y que el cupón corrido (sucio − limpio) sea coherente con el cupón.
+
+## Flujos de cada papel
+
+Un TES paga su cupón (en % del nominal) cada año en el aniversario de su vencimiento y 100 al final; un TCO
+paga solo 100 al vencimiento. Ejemplo, **{PAPEL_EJEMPLO}** (cupón {_n(fe["cupon"])} %, vence {fe["vencimiento"]}):
+
+{_md(_tabla_flujos(r, PAPEL_EJEMPLO))}
+
+La suma de los valores presentes, **{_n(fl_ej["valor_presente"].sum(), 4)}**, es el precio sucio que da la curva; el de
+mercado es {_n(fe["precio_sucio"], 3)}.
+
+## La curva Nelson-Siegel
+
+La tasa cero cupón (spot) a plazo *t* años es
+
+$$S(t)=\\beta_0+\\beta_1\\,\\frac{{1-e^{{-t/\\tau}}}}{{t/\\tau}}+\\beta_2\\left[\\frac{{1-e^{{-t/\\tau}}}}{{t/\\tau}}-e^{{-t/\\tau}}\\right],
+\\qquad FD(t)=(1+S(t))^{{-t}}, \\qquad P=\\sum_k F_k\\,FD(t_k).$$
+
+- **β0 (nivel):** la tasa de largo plazo; $S(t)\\to\\beta_0$ cuando $t\\to\\infty$.
+- **β1 (pendiente):** $S(0)=\\beta_0+\\beta_1$; si β1 < 0 la curva es creciente.
+- **β2 (curvatura):** crea una joroba (β2 > 0) o un valle (β2 < 0) en plazos medios, con su máximo efecto
+  cerca de $t\\approx1{{,}}79\\,\\tau$.
+- **τ:** dónde ocurre la transición entre corto y largo plazo.
+
+## Calibración (el Solver)
+
+Se buscan β0, β1 y β2 que minimizan $\\sum_i (P_i^{{obs}}-P_i^{{NS}})^2$ sobre todos los papeles del día, con τ fijo. Se usa el
+método SLSQP de scipy (equivalente al Solver GRG de Excel) desde varios puntos de partida, entre ellos los betas
+del Excel del profesor, y se conserva la mejor solución. Para el 2-oct la suma de errores² es **{_n(cal.sse, 4)}**
+(error cuadrático medio de {_n(cal.rmse, 3)} por cada 100 de precio).
+
+## TIR observada, TIR estimada y decisión
+
+- **TIR observada** $y^{{obs}}$: la tasa que iguala los flujos del papel a su **precio sucio de mercado**,
+  $P^{{obs}}=\\sum_k F_k (1+y^{{obs}})^{{-t_k}}$.
+- **TIR estimada** $y^{{est}}$: la tasa que iguala los mismos flujos al **precio que da la curva** cero cupón,
+  $P^{{NS}}=\\sum_k F_k (1+y^{{est}})^{{-t_k}}$. Es la TIR "justa" según el resto del mercado.
+- **Spread** $=(y^{{obs}}-y^{{est}})\\times 10.000$ pb. Con $\\sigma$ = desviación estándar de los spreads del día:
+
+| Spread | Lectura | Decisión |
+|---|---|---|
+| > +σ | El papel rinde más de lo que indica la curva: está **barato** | **Comprar** |
+| < −σ | Rinde menos de lo que indica la curva: está **caro** | **Vender** |
+| entre −σ y +σ | Dentro de lo normal | **Mantener** |
+
+## Duración, convexidad y DV01
+
+Con la TIR observada *y* y $VP_k=F_k(1+y)^{{-t_k}}$:
+
+$$D_{{Mac}}=\\frac{{\\sum_k t_k\\,VP_k}}{{P}},\\qquad D^*=\\frac{{D_{{Mac}}}}{{1+y}},\\qquad C=\\frac{{\\sum_k t_k(t_k+1)\\,VP_k}}{{P\\,(1+y)^2}},$$
+
+$$DV01=\\big[P(y-\\tfrac12\\,\\text{{pb}})-P(y+\\tfrac12\\,\\text{{pb}})\\big]\\cdot\\frac{{N}}{{100}}\\;\\approx\\;N\\cdot\\frac{{P}}{{100}}\\cdot D^*\\cdot 0{{,}}0001,
+\\qquad N=\\$1.000\\text{{ millones}}=10^9.$$
+
+El DV01 es cuántos pesos gana (pierde) una posición de $1.000 millones de nominal si la TIR baja (sube) 1 pb. Se
+calcula revaluando el bono y se verifica contra la fórmula con la duración modificada (diferencia relativa
+máxima {dif_dv:.0e}).
+
+# Resultados del 2 de octubre de 2026
+
+## La curva cero cupón
+
+β0 = **{_pct(b.b0, 4)}**, β1 = **{_pct(b.b1, 4)}**, β2 = **{_pct(b.b2, 4)}**, τ = {_n(tau, 1)}.
+
+![Curva cero cupón y TIR observada de cada papel (color = decisión)]({figs["curva"].name}){{width=88%}}
 
 {_md(spots)}
 
+La curva es **creciente y poco empinada**: unos {_n((spot(30.0, b, tau) - spot(1.0, b, tau)) / 1e-4, 0)} pb entre 1 y 30 años. β1 < 0 da la
+pendiente positiva y β2 > 0 una leve joroba en plazos medios. Los TCO (menos de un año) quedan muy cerca de la
+curva; la mayor dispersión está en los TFIT de 1 a 5 años y en los más largos.
+
 ## TIR observada vs. estimada y decisión
 
-{_md(t1)}
+{_md(t_res)}
 
-![Spread de cada papel frente al umbral]({figs["spreads"].name}){{width=90%}}
+![Spread de cada papel frente al umbral de ±{_n(r.umbral_pb, 1)} pb]({figs["spreads"].name}){{width=88%}}
+
+**Lectura.** Con umbral ±{_n(r.umbral_pb, 1)} pb el modelo marca **{n_v} papeles para vender** ({vender}) y **{n_c} para comprar**.
+El caso más claro es el **TFIT08031127**: su TIR observada ({_pct(tab.set_index("nemotecnico").loc["TFIT08031127", "tir_observada"])}) está unos
+{_n(abs(tab.set_index("nemotecnico").loc["TFIT08031127", "spread_pb"]), 0)} pb por debajo de lo que indica la curva; en todos los informes revisados (21-sep a 6-nov) este papel cotiza muy por debajo de la curva, así
+que la señal refleja una característica persistente del papel más que una oportunidad pasajera. Los
+otros "vender" son TCO de 4 a 8 meses, cuyo precio sale en su mayoría del proveedor (VAL) y no de operaciones
+del día, y el TFIT31261050, el único TFIT largo con precio VAL.
+
+**TIR observada vs. tasa publicada por IRC.** Para los {int(sen.sum())} papeles con tasa SEN la TIR calculada con el precio sucio
+difiere de la publicada en máximo {_n(tir_vs_pub[sen].abs().max(), 1)} pb (redondeo del precio a 3 decimales). En los TCO con tasa VAL la diferencia
+llega a {_n(tir_vs_pub[~sen].abs().max(), 0)} pb en el más corto: la tasa VAL del proveedor no sale del precio publicado. Por eso la TIR
+observada se calcula siempre desde el precio, igual que en el Excel del profesor.
 
 ## Duración, convexidad y DV01 por $1.000 millones
 
-{_md(t2)}
+{_md(t_dur)}
 
-El DV01 se calcula siempre sobre un nominal de $1.000 millones = $10^9$ pesos.
+La duración de Macaulay calculada coincide con la que publica IRC (diferencia máxima {_n(dur_dif, 3)} años). El DV01
+crece con la duración modificada y con el precio: un TFIT con cupón alto y precio sobre la par (TFIT34130358,
+TFIT23250746) tiene más DV01 que uno más largo pero muy por debajo de la par (TFIT31261050).
 
-# 4. Qué tan sensible es la decisión al método
+![DV01 por $1.000 millones frente a la duración modificada]({figs["dv01"].name}){{width=80%}}
 
-{_md(sens_t) if len(sens_t) else "Ver hoja *Sensibilidad* del Excel."}
+**Cómo leerlo.** Si la TIR del {dv_max["nemotecnico"]} sube 1 pb, una posición de $1.000 millones de nominal pierde unos
+${_n(dv_max["dv01_cop"], 0)}; si sube 100 pb, alrededor de 100 veces eso (menos por la convexidad).
 
-La señal depende del método de calibración y del umbral: se presenta como una **ayuda para
-priorizar el análisis**, no como una orden de operación.
+## Duración y convexidad: qué tan buena es la aproximación
 
-# 5. Cómo sabemos que está bien (validación)
+Para el papel más largo, **{nemo_cx}**, se compara el cambio exacto de precio (revaluando el bono) con las
+aproximaciones $\\Delta P/P\\approx-D^*\\Delta y$ y $\\Delta P/P\\approx-D^*\\Delta y+\\tfrac12 C(\\Delta y)^2$:
 
-- Con la tabla del enunciado, los betas coinciden con el Excel del grupo (diferencia máxima
-  $4{{,}}6\\times 10^{{-9}}$), y precios, TIR, spreads y DV01 coinciden con diferencias menores a $10^{{-7}}$.
-- El motor reproduce además el Excel del profesor (17-mar-2026) con error menor a $10^{{-10}}$.
-- El lector de PDF se probó con **31 informes reales** de IRC (21-sep a 6-nov-2026); ver
-  `docs/taller-2/09-validacion.md` para las anomalías de los datos que se encontraron y cómo se tratan.
+{_md(t_cx)}
 
-# 6. La aplicación y su actualización automática
+(Errores en puntos básicos de precio: aproximación − exacto.) La duración sola **subestima el precio en ambos
+sentidos**: se queda corta en la subida cuando la tasa baja y exagera la caída cuando la tasa sube, porque el precio
+es convexo en la tasa. Al sumar la convexidad el error baja de unos 45–50 pb a unos 3 pb con ±100 pb. Por eso, para movimientos grandes,
+el DV01 no basta y conviene mirar también la convexidad.
 
-Un proceso automático (GitHub Actions) puede correr cada día hábil: descarga los informes que falten
-de IRC, los valida, calibra la curva y guarda el resultado en la base de datos (Supabase). La página
-pública lo lee y muestra siempre el último día disponible y la historia desde el 2-oct. IRC publica con
-unos días de retraso, por eso el proceso revisa una ventana de días. No es información en tiempo real:
-es actualización diaria. Todo el proceso es repetible (idempotente).
+# Qué tan sensible es la decisión
 
-# 7. Limitaciones
+## Al método de calibración
 
-- τ fijo en {_n(tau, 1)}; el ajuste minimiza errores de **precio**, no de tasa.
-- Los papeles de muy corto plazo (TCO) pesan poco en el precio pero mucho en la TIR; algunos días
-  el informe trae precios con rezago (documentado en la validación).
-- Una sola fecha de prueba en el informe; la decisión es sensible al umbral.
+{_md(sens_t)}
+
+Ponderar por duración (que aproxima minimizar errores de **tasa** en vez de precio) o calibrar solo con las tasas SEN
+mueve los betas, sobre todo β2 (la curvatura), y cambia qué papeles quedan fuera del umbral.
+
+## Al umbral
+
+{_md(sens_u)}
+
+## A τ
+
+{tau_md}
+
+La suma de errores² casi no cambia entre τ = 1 y τ = 8: τ = {_n(tau, 1)} es razonable y los betas son estables.
+
+**Conclusión.** La señal depende del método y del umbral: se presenta como una **ayuda para priorizar el análisis**
+de papeles que se salen de la curva, no como una orden de operación.
+
+# Cómo se usa para un día determinado
+
+El mismo código corre para cualquier fecha publicada por IRC:
+
+```
+pip install -e ".[reportes]"
+python -m roboadvisor.taller2.pipeline.update_tes --fecha 2026-10-02 --sin-supabase
+python -m roboadvisor.taller2.pipeline.update_tes --archivo informe.pdf --sin-supabase
+```
+
+El primero descarga el informe de esa fecha de www.irc.gov.co; el segundo usa un PDF (o la tabla en CSV) ya
+descargado. Ambos imprimen los betas y guardan en `exports/taller2/<fecha>/` la tabla por papel (TIR, decisión,
+duración, convexidad, DV01), los flujos, la curva de 1 a 10.950 días y los parámetros.
+
+**Página pública.** Un proceso automático (GitHub Actions) ejecuta lo anterior cada día hábil: descarga los informes
+que falten, los valida, calibra (partiendo de los betas del día anterior, como se haría con el Solver) y guarda el
+resultado en la base de datos. La página <{URL_APP}> → **"T2 Curva TES"** (sin registro) muestra el último día
+disponible, la decisión por papel, la duración y el DV01, y la historia de los betas y de la curva desde el 2-oct.
+IRC publica con algunos días de rezago, así que es una actualización **diaria**, no en tiempo real.
+
+# Validación
+
+- **Modelo Nelson Siegel.xlsx (profesor, 17-mar-2026):** con los betas del Excel el motor reproduce el precio de
+  los papeles con error menor a $10^{{-10}}$.
+- **Excel y script del grupo (2-oct):** betas con diferencia máxima $4{{,}}6\\times10^{{-9}}$; precio estimado, TIR,
+  spread y DV01 con diferencias menores a $10^{{-7}}$.
+- **PDF real del 2-oct:** al correr `update_tes --fecha 2026-10-02` con el informe descargado de IRC se leen los
+  mismos {len(tab)} papeles y se obtienen los mismos betas y decisiones que con la tabla del enunciado.
+- **Datos reales:** el lector de PDF se probó con **31 informes** de IRC (21-sep a 6-nov-2026). Se encontraron y se
+  tratan anomalías de la fuente: totales que difieren por redondeo, un TCO publicado con cupón 1 %, un informe
+  que es una imagen sin texto y un cupón que se paga el día del informe (detalle en `docs/taller-2/09-validacion.md`).
+- **Pruebas automáticas** (`tests/taller2/`): DV01 por revaluación = fórmula con duración, duración = la publicada
+  por IRC, la aproximación con convexidad mejora la de duración, y la tabla del 2-oct cuadra con el total del informe.
+
+# Conclusiones
+
+1. Con tres parámetros (β0, β1, β2) y τ fijo, Nelson-Siegel describe bien la curva de TES del 2-oct: un error
+   cuadrático medio de {_n(cal.rmse, 2)} por cada 100 de precio para {len(tab)} papeles de 18 días a 31 años.
+2. La curva cero cupón del 2-oct es creciente, de {_pct(spot(1.0, b, tau))} a 1 año a {_pct(spot(30.0, b, tau))} a 30 años.
+3. Comparar la TIR observada con la estimada separa los papeles que se salen de la curva: {n_v} para vender y
+   {n_c} para comprar con umbral de una desviación estándar; la lista cambia con el umbral y el método.
+4. El riesgo de tasa crece con el plazo: el DV01 por $1.000 millones va de ${_n(dv_min["dv01_cop"], 0)} en el {dv_min["nemotecnico"]} a
+   ${_n(dv_max["dv01_cop"], 0)} en el {dv_max["nemotecnico"]}, y para cambios grandes de tasa la convexidad corrige de forma visible la duración.
+
+# Limitaciones
+
+- τ fijo en {_n(tau, 1)}; el ajuste minimiza errores de **precio**, por lo que los TCO (duración baja) pesan poco en
+  la calibración aunque su TIR se desvíe.
+- Muchos precios del informe son de valoración (VAL) y no de operaciones del día; algunos días traen precios con
+  rezago. La decisión debería mirarse junto con el origen de la tasa.
+- La decisión es estática (un día) y no considera liquidez, costos de transacción ni el carry.
+- La curva se calibra con TES tasa fija en pesos; no incluye UVR ni otros emisores.
+
+# Anexo · Cómo reproducir {{-}}
+
+```
+pip install -e ".[reportes]"
+python -m roboadvisor.taller2.reportes      # este PDF y el Excel del 2-oct
+pytest tests/taller2 -q                      # pruebas
+```
+
+Código: <{URL_REPO}> (`src/roboadvisor/taller2/`). Excel adjunto: `Taller2_2026-10-02.xlsx` (hojas *Parametros*
+con los betas y la celda de la suma de errores² lista para Solver, *Resultados*, *Flujos*, *Curva* y *Sensibilidad*).
 """
 
 
-def generar_pdf(r: ResultadoTES, sens: pd.DataFrame, carpeta: str | Path, hoy: dt.date) -> Path:
+def generar_pdf(
+    r: ResultadoTES,
+    sens: pd.DataFrame,
+    carpeta: str | Path,
+    hoy: dt.date,
+    papeles: Sequence[Papel],
+    sens_tau: pd.DataFrame | None = None,
+) -> Path:
     carpeta = Path(carpeta)
     figs_dir = carpeta / "figuras"
     figs_dir.mkdir(parents=True, exist_ok=True)
     figs = {
         "curva": grafico_curva(r, figs_dir / "curva.png"),
         "spreads": grafico_spreads(r, figs_dir / "spreads.png"),
+        "dv01": grafico_dv01(r, figs_dir / "dv01.png"),
     }
     md = carpeta / "_informe.md"
-    md.write_text(construir_markdown(r, sens, figs, hoy), encoding="utf-8")
+    md.write_text(construir_markdown(r, sens, figs, hoy, papeles, sens_tau), encoding="utf-8")
     salida = carpeta / "Taller2_Informe.pdf"
     subprocess.run(
-        ["pandoc", md.name, "-o", salida.name, "--pdf-engine=xelatex", "--resource-path=figuras"],
+        [
+            "pandoc",
+            md.name,
+            "-o",
+            salida.name,
+            "--pdf-engine=xelatex",
+            "--resource-path=figuras",
+            "--columns=200",
+        ],  # fmt: skip
         cwd=carpeta,
         check=True,
     )
