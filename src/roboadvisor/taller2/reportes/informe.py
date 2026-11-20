@@ -274,7 +274,7 @@ def construir_markdown(
             [
                 "Código que obtenga los betas **para un día determinado**",
                 "Sí",
-                "Comando con `--fecha`; sección 4",
+                "Comando con `--fecha` (sección 4.1); curvas de cada día en la página web (sección 4.2)",
             ],
             [
                 "Basado en el informe diario de TES de www.irc.gov.co",
@@ -363,7 +363,8 @@ TFIT/TFVT):
 - **Validación:** el motor reproduce el *Modelo Nelson Siegel.xlsx* del profesor (error < $10^{{-10}}$) y el Excel
   del grupo (betas a $5\\times10^{{-9}}$).
 - **Más allá del enunciado:** el mismo código corre solo cada día hábil y publica la curva en una página
-  **pública, sin registro**: <{URL_APP}> → "T2 Curva TES".
+  **pública, sin registro**. **Lo invitamos a visitarla** para ver la curva cero cupón de cada día desde el
+  2-oct y cómo ha cambiado: <{URL_APP}> → "T2 Curva TES" (sección 4.2).
 
 > **Aviso:** ejercicio académico. Las decisiones del modelo no constituyen una recomendación de inversión.
 
@@ -548,6 +549,8 @@ de papeles que se salen de la curva, no como una orden de operación.
 
 # Cómo se usa para un día determinado
 
+## Desde el código
+
 El mismo código corre para cualquier fecha publicada por IRC:
 
 ```
@@ -560,11 +563,26 @@ El primero descarga el informe de esa fecha de www.irc.gov.co; el segundo usa un
 descargado. Ambos imprimen los betas y guardan en `exports/taller2/<fecha>/` la tabla por papel (TIR, decisión,
 duración, convexidad, DV01), los flujos, la curva de 1 a 10.950 días y los parámetros.
 
-**Página pública.** Un proceso automático (GitHub Actions) ejecuta lo anterior cada día hábil: descarga los informes
-que falten, los valida, calibra (partiendo de los betas del día anterior, como se haría con el Solver) y guarda el
-resultado en la base de datos. La página <{URL_APP}> → **"T2 Curva TES"** (sin registro) muestra el último día
-disponible, la decisión por papel, la duración y el DV01, y la historia de los betas y de la curva desde el 2-oct.
-IRC publica con algunos días de rezago, así que es una actualización **diaria**, no en tiempo real.
+## Vea las curvas de otros días en la página web
+
+Este informe muestra un solo día, pero el modelo **se sigue ejecutando**. Un proceso automático (GitHub Actions)
+corre cada día hábil: descarga los informes de IRC que falten, los valida, calibra la curva (partiendo de los betas
+del día anterior, como se haría con el Solver) y guarda el resultado en la base de datos. **Lo invitamos a ver el
+resultado en la página pública, sin necesidad de registrarse:**
+
+> **<{URL_APP}> → página "T2 Curva TES"**
+
+Allí puede:
+
+1. **Escoger la fecha del informe** en la lista desplegable (por defecto, el último día disponible) y ver los betas,
+   la **curva cero cupón** de ese día con la TIR observada de cada papel y su decisión.
+2. En **"Tabla por papel"**, revisar para esa fecha la TIR observada y estimada, el spread, la decisión, la duración,
+   la convexidad y el DV01 por $1.000 millones, y descargarla en CSV.
+3. En **"Historia"**, comparar las **curvas de todos los días superpuestas**, la evolución de β0, β1 y β2 y de las
+   tasas cero cupón a 1, 5 y 10 años desde el 2-oct.
+4. En **"Cómo leer esto"**, un resumen de la metodología.
+
+IRC publica con algunos días de rezago, así que la página se actualiza **a diario**, no en tiempo real.
 
 # Validación
 
@@ -589,6 +607,8 @@ IRC publica con algunos días de rezago, así que es una actualización **diaria
    {n_c} para comprar con umbral de una desviación estándar; la lista cambia con el umbral y el método.
 4. El riesgo de tasa crece con el plazo: el DV01 por $1.000 millones va de ${_n(dv_min["dv01_cop"], 0)} en el {dv_min["nemotecnico"]} a
    ${_n(dv_max["dv01_cop"], 0)} en el {dv_max["nemotecnico"]}, y para cambios grandes de tasa la convexidad corrige de forma visible la duración.
+5. El mismo código sirve para cualquier día: la curva de cada día hábil desde el 2-oct se puede consultar en
+   <{URL_APP}> → "T2 Curva TES".
 
 # Limitaciones
 

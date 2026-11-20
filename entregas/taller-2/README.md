@@ -3,7 +3,7 @@
 **Inversiones — Maestría en Finanzas, Universidad EAFIT · Semestre II de 2026**  
 Profesor: Juan Carlos Botero Ramírez  
 Integrantes: Sebastian Duarte Uran, Paulina Jaramillo, Juan David Londoño, Juan Luis Orrego Henao y Esteban Palacio Londoño  
-Entrega: **19 de noviembre de 2026**
+Entrega: **26 de noviembre de 2026**
 
 El taller pide un código que, con el *Informe Diario de Deuda Pública* de [www.irc.gov.co](https://www.irc.gov.co/440),
 (1) calcule la **curva cero cupón** (Nelson-Siegel), (2) calcule la **TIR** de cada TES que se transó ese día
@@ -27,7 +27,7 @@ y la compare con la TIR que implica la curva para decidir **comprar, vender o ma
 - **2 – Resultados del 2-oct:** curva y tasas cero cupón, TIR y decisión por papel, duración/convexidad/DV01
   por $1.000 millones y qué tan buena es la aproximación de precio con duración y con convexidad.
 - **3 – Sensibilidad** de la decisión al método de calibración, al umbral y a τ.
-- **4 – Cómo correrlo para un día determinado** (`--fecha`) y la página pública.
+- **4 – Cómo correrlo para un día determinado** (`--fecha`) y **cómo ver en la página las curvas de otros días**.
 - **5 – Validación, 6 – Conclusiones, 7 – Limitaciones.**
 
 ## Resultado del 2 de octubre de 2026 (en una mirada)
