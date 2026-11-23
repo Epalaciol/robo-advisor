@@ -17,11 +17,12 @@ python -m roboadvisor.taller2.pipeline.validacion fase1 --cargar   # si todo PAS
 |---|---|---|
 | C1 | Cada día hábil del rango: leído, validado (V1–V6) y calibrado; festivos/no publicados se listan | sin errores |
 | C2 | La tabla del 2-oct leída del PDF = tabla del enunciado (29 papeles, campo por campo) | exacta |
-| C3a | Betas = Excel del grupo (B35:D35) | 1e-6 |
+| C3a | Betas = Excel del grupo (B35:D35). C3 y C4 recalculan el 2-oct con días calendario (Act/365), la convención del Excel y del `.py` del grupo | 1e-6 |
 | C3b | Precio estimado, TIR observada y estimada (XIRR), diferencia en pb y DV01 = Excel del grupo | 1e-6 / 0,01 pb |
 | C3c | Decisión vs. Excel. **El Excel compara contra `$O$3` (vacía) y no contra `N3`**: queda umbral 0 (10 Comprar / 19 Vender / 0 Mantener). Con `N3` coincide con Python | AVISO documentado |
 | C4a | Motor = `.py` del grupo con los mismos datos (betas, TIR, DV01, decisiones) | 1e-5 |
 | C4b | El lector de PDF del `.py` lee los mismos 29 papeles (en el texto del PDF la fecha de los papeles 2050 y 2058 queda separada de su fila) | AVISO si le faltan |
+| C8 | Con NL/365 (convención del mercado) la TIR del precio = tasa SEN publicada en los 18 papeles SEN del 2-oct | 0,1 pb |
 | C5 | Precio = Excel del profesor (17-mar, 24 papeles sanos + 2 con cupón corregido) | 1e-8 |
 | C6 | Continuidad: la tasa spot a 1/5/10 años no salta más de 50 pb de un día a otro; RMSE < 1,5 | AVISO |
 

@@ -7,6 +7,9 @@ Hojas:
   en pb, decisión, duración, convexidad y DV01 por $1.000 millones.
 - Flujos: bloque por papel (fecha de valoración con −precio + flujos), tasa spot, factor de
   descuento y valor presente con fórmulas; de aquí salen el precio estimado y las XIRR.
+  Conteo NL/365 (mercado de TES): Días = fecha − valoración − 29 de febrero del período. Como
+  XIRR cuenta días calendario, se aplica sobre la "fecha ajustada" = valoración + Días, así XIRR
+  devuelve la TIR en NL/365 (con Act/365 la fecha ajustada es la misma fecha del flujo).
 - Curva: 1 a 10.950 días con la fórmula Nelson-Siegel.
 - Sensibilidad (opcional): tabla de valores.
 """
@@ -19,6 +22,7 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from ..config import NOMINAL_DV01
+from ..core.flujos import bisiestos_entre
 
 NEGRITA = Font(bold=True)
 ENCABEZADO = PatternFill("solid", fgColor="DDE4F0")
@@ -59,6 +63,7 @@ def generar_excel(resultado, ruta: str | Path, sensibilidad: pd.DataFrame | None
         ("RMSE", None),
         ("Regla del umbral", r.regla_umbral),
         ("Papeles usados en la curva", c.usar_origen),
+        ("Conteo de días", r.conteo_dias),
     ]
     for i, (k, v) in enumerate(filas, start=2):
         p.cell(i, 1, k).font = NEGRITA
@@ -88,8 +93,11 @@ def generar_excel(resultado, ruta: str | Path, sensibilidad: pd.DataFrame | None
             "Valor presente",
             "Valores XIRR obs.",
             "Valores XIRR est.",
+            "29 de febrero en el período",
+            "Fecha ajustada (XIRR)",
         ],
     )
+    nl = r.conteo_dias == "NL/365"
     t = r.tabla.reset_index(drop=True)
     fila = 2
     bloques = {}
@@ -103,6 +111,7 @@ def generar_excel(resultado, ruta: str | Path, sensibilidad: pd.DataFrame | None
         fl.cell(fila, 3, "=Parametros!$B$2").number_format = "yyyy-mm-dd"
         fl.cell(fila, 10, f"=-Resultados!F{fr}")
         fl.cell(fila, 11, f"=-Resultados!H{fr}")
+        fl.cell(fila, 13, "=Parametros!$B$2").number_format = "yyyy-mm-dd"
         fila += 1
         for _, f in ff.iterrows():
             fl.cell(fila, 1, int(papel["bono"]))
@@ -111,7 +120,10 @@ def generar_excel(resultado, ruta: str | Path, sensibilidad: pd.DataFrame | None
                 fila, 3, pd.Timestamp(f["fecha_flujo"]).to_pydatetime()
             ).number_format = "yyyy-mm-dd"
             fl.cell(fila, 4, float(f["flujo"]))
-            fl.cell(fila, 5, f"=C{fila}-Parametros!$B$2")
+            fecha_f = pd.Timestamp(f["fecha_flujo"]).date()
+            fl.cell(fila, 12, bisiestos_entre(r.fecha, fecha_f) if nl else 0)
+            fl.cell(fila, 5, f"=C{fila}-Parametros!$B$2-L{fila}")
+            fl.cell(fila, 13, f"=Parametros!$B$2+E{fila}").number_format = "yyyy-mm-dd"
             fl.cell(fila, 6, f"=E{fila}/365")
             fl.cell(fila, 7, _spot(f"F{fila}"))
             fl.cell(fila, 8, f"=1/(1+G{fila})^F{fila}")
@@ -163,8 +175,8 @@ def generar_excel(resultado, ruta: str | Path, sensibilidad: pd.DataFrame | None
             fr, 7, None if pd.isna(papel["duracion_informe"]) else float(papel["duracion_informe"])
         )
         rs.cell(fr, 8, f"=SUM(Flujos!I{a + 1}:I{b})")
-        rs.cell(fr, 9, f"=XIRR(Flujos!J{a}:J{b},Flujos!C{a}:C{b})")
-        rs.cell(fr, 10, f"=XIRR(Flujos!K{a}:K{b},Flujos!C{a}:C{b})")
+        rs.cell(fr, 9, f"=XIRR(Flujos!J{a}:J{b},Flujos!M{a}:M{b})")
+        rs.cell(fr, 10, f"=XIRR(Flujos!K{a}:K{b},Flujos!M{a}:M{b})")
         rs.cell(fr, 11, f"=(I{fr}-J{fr})*10000")
         rs.cell(
             fr,

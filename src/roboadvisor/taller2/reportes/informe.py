@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from ..core.analisis import ResultadoTES  # noqa: E402
+from ..config import ParametrosTES  # noqa: E402
+from ..core.analisis import ResultadoTES, analizar  # noqa: E402
 from ..core.flujos import flujos_papel  # noqa: E402
 from ..core.modelos import Papel  # noqa: E402
 from ..core.nelson_siegel import spot  # noqa: E402
@@ -135,7 +136,7 @@ def _tabla_flujos(r: ResultadoTES, nemo: str) -> pd.DataFrame:
         {
             "Fecha del flujo": f["fecha_flujo"].astype(str),
             "Flujo": [_n(x) for x in f["flujo"]],
-            "Días": f["dias"].astype(str),
+            "Días (sin 29-feb)": f["dias"].astype(str),
             "t (años)": [_n(x, 4) for x in f["anos"]],
             "Tasa spot S(t)": [_pct(x, 3) for x in f["tasa_spot"]],
             "Factor de descuento": [_n(x, 6) for x in f["factor_descuento"]],
@@ -263,6 +264,48 @@ def construir_markdown(
                 }
             )
         )
+    otra = "Act/365" if r.conteo_dias == "NL/365" else "NL/365"
+    r_act = analizar(papeles, r.fecha, ParametrosTES(conteo_dias=otra))
+    ta = r_act.tabla
+    tir_act_pub = float(
+        ((ta["tir_observada"] - ta["tasa_informe"]) / 1e-4)[ta["origen_tasa"] == "SEN"].abs().max()
+    )
+    filas_conv = []
+    for nombre, rr in ((f"{r.conteo_dias} (este informe)", r), (f"{otra}", r_act)):
+        cc = rr.conteo_senales()
+        tt = rr.tabla
+        filas_conv.append(
+            {
+                "Conteo de días": nombre,
+                "β0": _pct(rr.calibracion.betas.b0),
+                "β1": _pct(rr.calibracion.betas.b1),
+                "β2": _pct(rr.calibracion.betas.b2),
+                "Máx. dif. TIR vs. SEN (pb)": _n(
+                    float(
+                        ((tt["tir_observada"] - tt["tasa_informe"]) / 1e-4)[
+                            tt["origen_tasa"] == "SEN"
+                        ]
+                        .abs()
+                        .max()
+                    ),
+                    2,
+                ),
+                "Umbral (pb)": _n(rr.umbral_pb, 1),
+                "C / V / M": f"{cc.get('Comprar', 0)} / {cc.get('Vender', 0)} / {cc.get('Mantener', 0)}",
+            }
+        )
+    t_conv = pd.DataFrame(filas_conv)
+    s1 = tab.set_index("nemotecnico")["senal"]
+    s2 = ta.set_index("nemotecnico")["senal"]
+    dif_s = [n for n in s1.index if s1[n] != s2[n]]
+    cambia_conv = (
+        "; ".join(
+            f"el {n} ({_n(tab.set_index('nemotecnico').loc[n, 'spread_pb'], 1)} pb) es *{s1[n]}* con {r.conteo_dias} y *{s2[n]}* con {otra}"
+            for n in dif_s
+        )
+        if dif_s
+        else "ninguno"
+    )
     nemo_cx, t_cx = _tabla_convexidad(r, papeles)
     fe = tab.set_index("nemotecnico").loc[PAPEL_EJEMPLO]
     fl_ej = r.flujos[r.flujos["nemotecnico"] == PAPEL_EJEMPLO]
@@ -295,7 +338,7 @@ def construir_markdown(
             [
                 "Basarse en el **Modelo Nelson Siegel.xlsx**",
                 "Sí",
-                "Mismas convenciones; Excel adjunto con fórmulas; sección 5",
+                "Mismas fórmulas, con el conteo de días del mercado (sección 1.2); Excel adjunto con fórmulas; secciones 3.4 y 5",
             ],
             [
                 "Probar con las transacciones del **2 de octubre de 2026** (tabla del enunciado)",
@@ -355,13 +398,14 @@ Con las transacciones del **2 de octubre de 2026** (la tabla del enunciado: {len
 TFIT/TFVT):
 
 - **Betas:** β0 = **{_pct(b.b0)}**, β1 = **{_pct(b.b1)}**, β2 = **{_pct(b.b2)}**, con τ = {_n(tau, 1)} (como el Excel del
-  profesor). La curva es **creciente**: parte de {_pct(corto)} en el muy corto plazo y se acerca a {_pct(b.b0)} en el largo.
+  profesor) y la convención de días del mercado de TES (sin 29 de febrero). La curva es **creciente**: parte de {_pct(corto)} en el muy corto plazo y se acerca a {_pct(b.b0)} en el largo.
 - **Decisión** (umbral ±{_n(r.umbral_pb, 1)} pb, una desviación estándar de las diferencias del día):
   **{n_c} comprar · {n_v} vender · {n_m} mantener**. Vender: {vender}. Comprar: {comprar}.
 - **DV01:** va de ${_n(dv_min["dv01_cop"], 0)} ({dv_min["nemotecnico"]}) a **${_n(dv_max["dv01_cop"], 0)}** ({dv_max["nemotecnico"]})
   por punto básico y por $1.000 millones de nominal.
-- **Validación:** el motor reproduce el *Modelo Nelson Siegel.xlsx* del profesor (error < $10^{{-10}}$) y el Excel
-  del grupo (betas a $5\\times10^{{-9}}$).
+- **Validación:** la TIR calculada con el precio publicado da exactamente la tasa SEN de IRC (diferencia máxima
+  {_n(tir_vs_pub[sen].abs().max(), 2)} pb), y con la convención de días del profesor el motor reproduce su *Modelo Nelson
+  Siegel.xlsx* (error < $10^{{-10}}$) y el Excel del grupo (betas a $5\\times10^{{-9}}$).
 - **Más allá del enunciado:** el mismo código corre solo cada día hábil y publica la curva en una página
   **pública, sin registro**. **Lo invitamos a visitarla** para ver la curva cero cupón de cada día desde el
   21-sep-2026 y cómo ha cambiado: <{URL_APP}> → "T2 Curva TES" (sección 4.2).
@@ -389,13 +433,13 @@ fórmulas vivas para revisarlo celda por celda. Un **proceso automático** (GitH
 cada día y guarda los resultados en una **base de datos en la nube** (Supabase) que lee la página pública. Se usó
 **inteligencia artificial** (un asistente de programación) para construir el código; los cálculos son fórmulas fijas.
 
-**Supuestos** (los mismos del *Modelo Nelson Siegel.xlsx*):
+**Supuestos** (los del *Modelo Nelson Siegel.xlsx*, salvo el conteo de días):
 
 | Supuesto | Valor | Por qué |
 |---------------------------------------------|-------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
 | Papeles | TES tasa fija en pesos con vencimiento posterior al día del informe | Es la tabla que indica el enunciado |
 | Cupón | Anual, en el aniversario del vencimiento; los TCO no pagan cupón | Convención de los TES |
-| Plazo | *t* = días calendario / 365 desde la fecha del informe (Act/365) | Igual al Excel del profesor; IRC usa 365/365 sin 29 de febrero (sección 2.2) |
+| Plazo | *t* = días / 365 desde la fecha del informe, **sin contar los 29 de febrero** (NL/365) | Convención del mercado de TES: reproduce la tasa SEN de IRC. El Excel del profesor usa días calendario (sección 3.4) |
 | Tasas | Efectivas anuales; descuento $(1+S(t))^{{-t}}$ | Igual al Excel del profesor |
 | τ | {_n(tau, 1)} fijo | Igual al Excel del profesor; la sensibilidad está en la sección 3.3 |
 | Función objetivo | $\\sum$ (precio sucio observado − precio con la curva)², sin ponderar | La celda que minimiza el Solver del Excel |
@@ -415,7 +459,8 @@ del nemotécnico coincida con el vencimiento y que el cupón corrido (sucio − 
 ## Flujos de cada papel
 
 Un TES paga su cupón (en % del nominal) cada año en el aniversario de su vencimiento y 100 al final; un TCO
-paga solo 100 al vencimiento. Ejemplo, **{PAPEL_EJEMPLO}** (cupón {_n(fe["cupon"])} %, vence {fe["vencimiento"]}):
+paga solo 100 al vencimiento. El plazo de cada flujo se mide en días **sin contar los 29 de febrero**, que es la
+convención del mercado de TES (base 365/365, *NL/365*): un año tiene siempre 365 días. Ejemplo, **{PAPEL_EJEMPLO}** (cupón {_n(fe["cupon"])} %, vence {fe["vencimiento"]}):
 
 {_md(_tabla_flujos(r, PAPEL_EJEMPLO))}
 
@@ -481,7 +526,7 @@ máxima {dif_dv:.0e}).
 
 La curva es **creciente y poco empinada**: unos {_n((spot(30.0, b, tau) - spot(1.0, b, tau)) / 1e-4, 0)} pb entre 1 y 30 años. β1 < 0 da la
 pendiente positiva y β2 > 0 una leve joroba en plazos medios. La mayor desviación es la del TFIT08031127
-(1 año), muy por debajo de la curva; los TCO que vencen entre enero y mayo de 2027 y el TFIT 2050 también quedan por debajo.
+(1 año), muy por debajo de la curva; los TCO que vencen entre enero y junio de 2027 y el TFIT 2050 también quedan por debajo.
 
 ## TIR observada vs. estimada y decisión
 
@@ -493,21 +538,15 @@ pendiente positiva y β2 > 0 una leve joroba en plazos medios. La mayor desviaci
 El caso más claro es el **TFIT08031127**: su TIR observada ({_pct(tab.set_index("nemotecnico").loc["TFIT08031127", "tir_observada"])}) está unos
 {_n(abs(tab.set_index("nemotecnico").loc["TFIT08031127", "spread_pb"]), 0)} pb por debajo de lo que indica la curva; en todos los informes revisados (21-sep a 6-nov) este papel cotiza muy por debajo de la curva, así
 que la señal refleja una característica persistente del papel más que una oportunidad pasajera. Los
-otros "vender" son TCO que vencen entre enero y mayo de 2027, cuyo precio sale en su mayoría del proveedor (VAL) y no de operaciones
+otros "vender" son TCO que vencen entre enero y junio de 2027, cuyo precio sale en su mayoría del proveedor (VAL) y no de operaciones
 del día, y el TFIT31261050, el único TFIT largo con precio VAL.
 
-**TIR observada vs. tasa publicada por IRC.** Para los {int(sen.sum())} papeles con tasa SEN la TIR calculada con el precio sucio
-difiere de la publicada en máximo {_n(tir_vs_pub[sen].abs().max(), 1)} pb (el TFIT34130358, por ejemplo, da 13,489 % frente a 13,500 % en el
-informe). La causa es la **convención de días**: el mercado de TES cuenta los días en base 365/365 **sin los 29 de
-febrero** (NL/365), mientras que el Excel del profesor, y este modelo, usan días calendario / 365 (Act/365). Cada
-29 de febrero hasta el vencimiento alarga un poco los plazos y baja la TIR: el efecto es nulo en los papeles que
-vencen antes del 29-feb-2028 y está entre 0,5 y 2,3 pb en los demás (es mayor en el TFIT 2028, porque un día de
-más pesa más en un plazo corto). Con NL/365, la TIR de los {int(sen.sum())} papeles SEN coincide
-con la publicada (diferencia máxima 0,04 pb): el precio de IRC es exactamente el que da su tasa. Se mantiene
-Act/365 para seguir el Excel del profesor; como la TIR observada y la estimada usan la misma convención, el spread y
-la decisión casi no cambian. En los TCO con tasa VAL la diferencia llega a {_n(tir_vs_pub[~sen].abs().max(), 0)} pb en el más corto, por
-otra razón: la tasa VAL es la de valoración de PRECIA y no sale del precio publicado. Por eso la TIR observada se
-calcula siempre desde el precio, igual que en el Excel del profesor.
+**TIR observada vs. tasa publicada por IRC.** Para los {int(sen.sum())} papeles con tasa SEN, la TIR calculada con el precio sucio
+coincide con la tasa publicada por IRC (diferencia máxima {_n(tir_vs_pub[sen].abs().max(), 2)} pb; el TFIT34130358, por ejemplo, da
+{_pct(tab.set_index("nemotecnico").loc["TFIT34130358", "tir_observada"], 3)} como el informe). Esto confirma que se usa la misma convención de días del mercado. En los TCO
+con tasa VAL la diferencia llega a {_n(tir_vs_pub[~sen].abs().max(), 0)} pb en el más corto por otra razón: la tasa VAL es la de valoración
+de PRECIA y no sale del precio publicado. Por eso la TIR observada se calcula siempre desde el precio, igual que en
+el Excel del profesor.
 
 ## Duración, convexidad y DV01 por $1.000 millones
 
@@ -553,6 +592,20 @@ mueve los betas, sobre todo β2 (la curvatura), y cambia qué papeles quedan fue
 
 La suma de errores² casi no cambia entre τ = 1 y τ = 8: τ = {_n(tau, 1)} es razonable y los betas son estables.
 
+## A la convención de días
+
+El *Modelo Nelson Siegel.xlsx* del profesor mide el plazo en días calendario / 365 (*Act/365*); el mercado de TES, y
+este informe, usan días sin contar los 29 de febrero (*NL/365*), que es con lo que IRC calcula el precio a partir de
+la tasa. Con días calendario, cada 29 de febrero hasta el vencimiento alarga un poco los plazos y baja la TIR: el
+TFIT34130358 daría {_pct(r_act.tabla.set_index("nemotecnico").loc["TFIT34130358", "tir_observada"], 3)} en vez del {_pct(tab.set_index("nemotecnico").loc["TFIT34130358", "tir_observada"], 3)} publicado. El efecto es nulo en los papeles que
+vencen antes del 29-feb-2028 y de hasta {_n(tir_act_pub, 1)} pb en los demás (es mayor en el TFIT 2028, porque un día de
+más pesa más en un plazo corto).
+
+{_md(t_conv)}
+
+Como la TIR observada y la estimada se calculan con la misma convención, el spread se mueve poco y solo cambia un
+papel cercano al umbral: {cambia_conv}.
+
 **Conclusión.** La señal depende del método y del umbral: se presenta como una **ayuda para priorizar el análisis**
 de papeles que se salen de la curva, no como una orden de operación.
 
@@ -596,10 +649,14 @@ pasa varios días sin publicar, la página muestra el último informe disponible
 
 # Validación
 
-- **Modelo Nelson Siegel.xlsx (profesor, 17-mar-2026):** con los betas del Excel el motor reproduce el precio de
-  los papeles con error menor a $10^{{-10}}$.
-- **Excel y script del grupo (2-oct):** betas con diferencia máxima $4{{,}}6\\times10^{{-9}}$; precio estimado con
-  diferencia menor a $10^{{-7}}$, TIR menor a $10^{{-8}}$, spread menor a 0,001 pb y DV01 relativo menor a $10^{{-8}}$.
+- **Tasa SEN de IRC:** con la convención del mercado (sin 29 de febrero) la TIR del precio publicado coincide con la
+  tasa SEN en los {int(sen.sum())} papeles (diferencia máxima {_n(tir_vs_pub[sen].abs().max(), 2)} pb). En los 32 informes del 21-sep al 6-nov
+  coincide a menos de 0,1 pb en 526 de 531 observaciones SEN (con días calendario, solo en 44); las 5 excepciones
+  son precios con rezago del informe (22 y 23-oct, 21-sep), documentados en la validación.
+- **Modelo Nelson Siegel.xlsx (profesor, 17-mar-2026):** con sus betas y su conteo de días (días calendario) el
+  motor reproduce el precio de los papeles con error menor a $10^{{-10}}$.
+- **Excel y script del grupo (2-oct, días calendario):** betas con diferencia máxima $4{{,}}6\\times10^{{-9}}$; precio
+  estimado con diferencia menor a $10^{{-7}}$, TIR menor a $10^{{-8}}$, spread menor a 0,001 pb y DV01 relativo menor a $10^{{-8}}$.
 - **PDF real del 2-oct:** al correr `update_tes --fecha 2026-10-02` con el informe descargado de IRC se leen los
   mismos {len(tab)} papeles y se obtienen los mismos betas y decisiones que con la tabla del enunciado.
 - **Lectura de los PDF de IRC:** se probó con los **33 informes** publicados entre el 21-sep y el 6-nov-2026. En los

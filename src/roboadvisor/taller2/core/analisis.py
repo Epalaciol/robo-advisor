@@ -33,6 +33,7 @@ class ResultadoTES:
     regla_umbral: str
     tabla: pd.DataFrame  # una fila por papel
     flujos: pd.DataFrame  # una fila por flujo (como la hoja CalculoCurva)
+    conteo_dias: str = "NL/365"
 
     def curva(self, dias: int = 10_950) -> pd.DataFrame:
         return curva(self.calibracion.betas, self.calibracion.tau, dias)
@@ -48,7 +49,10 @@ def analizar(
     betas_previos: Betas | None = None,
 ) -> ResultadoTES:
     params = params or ParametrosTES()
-    pares = [(p, flujos_papel(p, fecha, params.dias_ano, params.tol_cupon_hoy)) for p in papeles]
+    pares = [
+        (p, flujos_papel(p, fecha, params.dias_ano, params.tol_cupon_hoy, params.conteo_dias))
+        for p in papeles
+    ]
     arranques = tuple(params.arranques)
     if betas_previos is not None:  # como en el Excel: se parte de los betas del día anterior
         arranques = (betas_previos.como_tupla(), *arranques)
@@ -95,7 +99,9 @@ def analizar(
                     None
                     if p.precio_limpio is None
                     else p.precio_limpio
-                    + cupon_corrido_papel(p, fecha, params.dias_ano, params.tol_cupon_hoy)
+                    + cupon_corrido_papel(
+                        p, fecha, params.dias_ano, params.tol_cupon_hoy, params.conteo_dias
+                    )
                     - p.precio_sucio
                 ),
             }
@@ -124,6 +130,7 @@ def analizar(
         regla_umbral=str(params.umbral),
         tabla=tabla,
         flujos=pd.DataFrame(filas_flujos),
+        conteo_dias=params.conteo_dias,
     )
 
 
@@ -167,7 +174,10 @@ def sensibilidad_tau(
 ) -> pd.DataFrame:
     """SSE y betas para distintos τ (la joroba de β2 está en t ≈ 1,7934·τ años)."""
     params = params or ParametrosTES()
-    pares = [(p, flujos_papel(p, fecha, params.dias_ano, params.tol_cupon_hoy)) for p in papeles]
+    pares = [
+        (p, flujos_papel(p, fecha, params.dias_ano, params.tol_cupon_hoy, params.conteo_dias))
+        for p in papeles
+    ]
     filas = []
     for tau in taus:
         c = calibrar(pares, tau, params.arranques, params.ponderacion, params.usar_origen)

@@ -20,6 +20,9 @@ class ParametrosTES:
 
     tau: float = 3.7  # fijo, como en el Solver del Excel del profesor
     dias_ano: int = 365  # t = días / 365
+    # Conteo de días: "NL/365" = convención del mercado de TES (sin 29 de febrero; reproduce la
+    # tasa SEN de IRC) o "Act/365" = días calendario, la del Excel del profesor y del grupo.
+    conteo_dias: str = "NL/365"
     dias_curva: int = 10_950  # curva de 1 a 10.950 días (30 años), hoja DatosCurvaSpot
     nominal_dv01: int = NOMINAL_DV01
     # Regla de decisión: "sigma" = 1 desviación estándar de los spreads del día (la del Excel

@@ -1,8 +1,13 @@
 """Flujos de un TES: cupones anuales en los aniversarios del vencimiento + 100 al final.
 
-Convención del Excel del profesor (verificada con el cupón corrido del informe del 2-oct):
-las fechas se obtienen restando años al vencimiento (`EDATE(venc, −12·k)`), solo cuentan las
-**estrictamente posteriores** a la fecha de valoración, y t = días / 365.
+Fechas como en el Excel del profesor (verificado con el cupón corrido del informe del 2-oct):
+se restan años al vencimiento (`EDATE(venc, −12·k)`) y solo cuentan las **estrictamente
+posteriores** a la fecha de valoración.
+
+Plazo t = días / 365 con la convención del mercado de TES, **NL/365** (base 365/365: no se cuentan
+los 29 de febrero). Con ella, la TIR del precio publicado por IRC da la tasa SEN (≤ 0,04 pb el
+2-oct). "Act/365" (días calendario / 365) es la del Excel del profesor y se usa solo para
+compararse con él.
 """
 
 from datetime import date
@@ -10,6 +15,26 @@ from datetime import date
 import numpy as np
 
 from .modelos import Flujos, Papel
+
+CONTEOS = ("NL/365", "Act/365")
+
+
+def bisiestos_entre(desde: date, hasta: date) -> int:
+    """Número de 29 de febrero en (desde, hasta]."""
+    n = 0
+    for anio in range(desde.year, hasta.year + 1):
+        if anio % 4 == 0 and (anio % 100 != 0 or anio % 400 == 0):
+            if desde < date(anio, 2, 29) <= hasta:
+                n += 1
+    return n
+
+
+def dias_entre(desde: date, hasta: date, conteo: str = "NL/365") -> int:
+    """Días de `desde` a `hasta`: NL/365 descuenta los 29 de febrero; Act/365 no."""
+    if conteo not in CONTEOS:
+        raise ValueError(f"conteo desconocido: {conteo!r} (use {CONTEOS})")
+    dias = (hasta - desde).days
+    return dias - bisiestos_entre(desde, hasta) if conteo == "NL/365" else dias
 
 
 def aniversario(vencimiento: date, anos_atras: int) -> date:
@@ -27,6 +52,7 @@ def flujos(
     fecha: date,
     dias_ano: int = 365,
     incluir_cupon_hoy: bool = False,
+    conteo: str = "NL/365",
 ) -> Flujos:
     """Flujos posteriores a `fecha` por cada $100 de facial. TCO (cupón 0): solo 100.
 
@@ -46,7 +72,7 @@ def flujos(
         fechas.reverse()
         montos = [cupon] * len(fechas)
         montos[-1] += 100.0
-    t = np.array([(f - fecha).days for f in fechas], dtype=float) / dias_ano
+    t = np.array([dias_entre(fecha, f, conteo) for f in fechas], dtype=float) / dias_ano
     return Flujos(fechas=tuple(fechas), t=t, montos=np.array(montos, dtype=float))
 
 
@@ -64,6 +90,7 @@ def cupon_corrido(
     fecha: date,
     dias_ano: int = 365,
     incluir_cupon_hoy: bool = False,
+    conteo: str = "NL/365",
 ) -> float:
     """Cupón corrido = cupón × días desde el último aniversario / 365 (= sucio − limpio).
 
@@ -73,7 +100,7 @@ def cupon_corrido(
         return 0.0
     if incluir_cupon_hoy and ultimo_cupon(vencimiento, fecha) == fecha:
         return cupon
-    return cupon * (fecha - ultimo_cupon(vencimiento, fecha)).days / dias_ano
+    return cupon * dias_entre(ultimo_cupon(vencimiento, fecha), fecha, conteo) / dias_ano
 
 
 def incluye_cupon_hoy(papel: Papel, fecha: date, tol: float = 0.10) -> bool:
@@ -90,7 +117,9 @@ def incluye_cupon_hoy(papel: Papel, fecha: date, tol: float = 0.10) -> bool:
     return abs(papel.precio_sucio - papel.precio_limpio - papel.cupon) <= tol
 
 
-def flujos_papel(papel: Papel, fecha: date, dias_ano: int = 365, tol: float = 0.10) -> Flujos:
+def flujos_papel(
+    papel: Papel, fecha: date, dias_ano: int = 365, tol: float = 0.10, conteo: str = "NL/365"
+) -> Flujos:
     """Flujos de un papel decidiendo si el cupón de la fecha de valoración entra en t = 0."""
     return flujos(
         papel.vencimiento,
@@ -98,14 +127,18 @@ def flujos_papel(papel: Papel, fecha: date, dias_ano: int = 365, tol: float = 0.
         fecha,
         dias_ano,
         incluir_cupon_hoy=incluye_cupon_hoy(papel, fecha, tol),
+        conteo=conteo,
     )
 
 
-def cupon_corrido_papel(papel: Papel, fecha: date, dias_ano: int = 365, tol: float = 0.10) -> float:
+def cupon_corrido_papel(
+    papel: Papel, fecha: date, dias_ano: int = 365, tol: float = 0.10, conteo: str = "NL/365"
+) -> float:
     return cupon_corrido(
         papel.vencimiento,
         papel.cupon,
         fecha,
         dias_ano,
         incluir_cupon_hoy=incluye_cupon_hoy(papel, fecha, tol),
+        conteo=conteo,
     )

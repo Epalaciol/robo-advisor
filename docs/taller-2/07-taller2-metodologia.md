@@ -9,7 +9,10 @@ Etiquetas: **[Enunciado]** lo pide el taller · **[Excel]** sale del modelo del 
 2. **Observado = precio sucio [Excel]**, por cada $100 de facial. En los TCO (cero cupón) limpio = sucio.
 3. **Flujos [Excel][Datos].** Fechas = aniversarios anuales del vencimiento **estrictamente posteriores** a la fecha de cálculo (`EDATE(venc, −12·k)`; un 29-feb pasa a 28-feb). Monto = cupón en cada fecha y `100 + cupón` al vencimiento; TCO: solo `100`.
    *Verificación con los datos:* sucio − limpio = cupón × (días desde el último aniversario)/365 en 16 de 17 bonos del 2-oct (error ≤ 0,004). El TFIT 2050 difiere en 0,02 (≈ 1 día de cupón). Liquidación: misma fecha del informe.
-4. **Tiempo [Excel]:** `t = días(fecha_flujo − fecha_cálculo) / 365`.
+4. **Tiempo [mercado]:** `t = días(fecha_flujo − fecha_cálculo) / 365` **sin contar los 29 de febrero** (NL/365,
+   base 365/365 del mercado de TES; `ParametrosTES.conteo_dias`). Con ella la TIR del precio publicado da la tasa SEN
+   de IRC (≤ 0,05 pb el 2-oct; < 0,1 pb en 526 de 531 observaciones SEN del 21-sep al 6-nov). El Excel del profesor
+   usa días calendario (`Act/365`), que se conserva como opción para compararse con él y con el Excel del grupo.
 5. **Tasa spot Nelson-Siegel [Excel]**, efectiva anual:
    `S(t) = β0 + (β1 + β2)·(1 − e^(−t/τ))/(t/τ) − β2·e^(−t/τ)`.  Límites: `S(0⁺) = β0 + β1`, `S(∞) = β0`. β2 da la "joroba".
 6. **Descuento y precio estimado [Excel]:** `DF(t) = (1 + S(t))^(−t)`;  `P_est = Σ flujo·DF`.
@@ -23,7 +26,7 @@ Etiquetas: **[Enunciado]** lo pide el taller · **[Excel]** sale del modelo del 
 | Concepto | Definición | Origen |
 |---|---|---|
 | Papeles usados | Los 29 de la tabla (igual que el Excel, que usa toda la tabla del día). Sensibilidad: solo los marcados **SEN** (`usar_origen`) | [Supuesto] |
-| TIR observada | TIR efectiva anual (`brentq`) que iguala el **precio sucio** con los flujos del paso 3 y base días/365. La `tasa_pub` del informe se muestra al lado como referencia | [Supuesto] |
+| TIR observada | TIR efectiva anual (`brentq`) que iguala el **precio sucio** con los flujos del paso 3 y base NL/365 (paso 4). La `tasa_pub` del informe se muestra al lado como referencia | [Supuesto] |
 | TIR teórica | La misma TIR, pero del **precio estimado** con la curva cero ("calcular su TIR usando la cero cupón") | [Enunciado] |
 | Spread | `TIR_obs − TIR_teo` en pb | [Supuesto] |
 | Señal | spread > +u → **COMPRAR**; spread < −u → **VENDER**; si no, **MANTENER**. `u = 10 pb` por defecto. Sensibilidad 5/10/20 pb | [Supuesto] |

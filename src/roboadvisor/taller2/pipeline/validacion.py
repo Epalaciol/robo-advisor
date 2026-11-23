@@ -14,6 +14,7 @@ Escribe exports/taller2/validacion/faseN.html y faseN.md. Código de salida 0 si
 """
 
 import argparse
+import dataclasses
 import datetime as dt
 import importlib.util
 import json
@@ -25,6 +26,7 @@ import numpy as np
 import pandas as pd
 
 from ..config import ParametrosTES
+from ..core.analisis import analizar
 from ..core.flujos import flujos
 from ..core.modelos import Betas
 from ..core.nelson_siegel import precio, spot
@@ -289,13 +291,26 @@ def comparar_con_py_grupo(dia: DiaTES, pdf: Path | None) -> list[Chequeo]:
     return out
 
 
+def chequeo_convencion_mercado(dia: DiaTES, tol_pb: float = 0.1) -> Chequeo:
+    """Con NL/365 la TIR del precio sucio publicado debe dar la tasa SEN de IRC."""
+    t = dia.resultado.tabla
+    sen = t[t["origen_tasa"] == "SEN"]
+    d = float(((sen["tir_observada"] - sen["tasa_informe"]) / 1e-4).abs().max())
+    return Chequeo(
+        "C8",
+        f"TIR del precio = tasa SEN publicada (conteo {dia.resultado.conteo_dias})",
+        "PASA" if d <= tol_pb else "AVISO",
+        f"{len(sen)} papeles SEN; máx |Δ| = {d:.3f} pb (tolerancia {tol_pb} pb)",
+    )
+
+
 def comparar_con_excel_profesor() -> Chequeo:
     datos = json.loads(EXCEL_PROFESOR.read_text())
     b = Betas(*datos["betas"])
     fecha = dt.date.fromisoformat(datos["fecha_calculo"])
     peor_sano, peor_roto = 0.0, 0.0
     for p in datos["papeles"]:
-        f = flujos(dt.date.fromisoformat(p["vencimiento"]), p["cupon"], fecha)
+        f = flujos(dt.date.fromisoformat(p["vencimiento"]), p["cupon"], fecha, conteo="Act/365")
         pe = precio(f, b, datos["tau"])
         if p["excel_roto"]:
             peor_roto = max(peor_roto, abs(pe - p["precio_estimado_correcto"]))
@@ -426,8 +441,17 @@ def fase1(a, params: ParametrosTES) -> int:
         if pdf is not None and not pdf.exists():
             pdf = next((p for p in a.carpeta.glob("*.pdf") if d2.informe.fuente == p.name), None)
         chequeos.append(comparar_con_enunciado(d2))
-        chequeos += comparar_con_excel_grupo(d2)
-        chequeos += comparar_con_py_grupo(d2, pdf)
+        chequeos.append(chequeo_convencion_mercado(d2))
+        # El Excel y el .py del grupo cuentan días calendario (Act/365, como el Excel del profesor):
+        # para compararse con ellos se recalcula el 2-oct con esa convención.
+        d2_act = dataclasses.replace(
+            d2,
+            resultado=analizar(
+                d2.informe.papeles(), d2.fecha, dataclasses.replace(params, conteo_dias="Act/365")
+            ),
+        )
+        chequeos += comparar_con_excel_grupo(d2_act)
+        chequeos += comparar_con_py_grupo(d2_act, pdf)
         figuras += [
             ("Curva cero cupón 2-oct-2026 y TIR observadas", graficas.figura_curva(d2.resultado)),
             ("Spread TIR observada − estimada (pb)", graficas.figura_spreads(d2.resultado)),

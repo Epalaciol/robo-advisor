@@ -72,7 +72,8 @@ def test_prueba_dorada_excel_del_profesor():
     b, tau = Betas(*datos["betas"]), datos["tau"]
     fecha = dt.date.fromisoformat(datos["fecha_calculo"])
     for p in datos["papeles"]:
-        pe = precio(flujos(dt.date.fromisoformat(p["vencimiento"]), p["cupon"], fecha), b, tau)
+        f = flujos(dt.date.fromisoformat(p["vencimiento"]), p["cupon"], fecha, conteo="Act/365")
+        pe = precio(f, b, tau)
         esperado = p["precio_estimado_correcto"] if p["excel_roto"] else p["precio_estimado_excel"]
         assert pe == pytest.approx(esperado, abs=1e-8), p["vencimiento"]
 
@@ -87,21 +88,50 @@ def test_tir_bono_par_y_tco():
     assert convexidad(y, tco) == pytest.approx(2 / 1.11**2)
 
 
-def test_calibracion_2oct_reproduce_excel_del_grupo(resultado_2oct):
-    """Libro-taller2.xlsx (B35:D35): mismos betas que el Solver del grupo."""
-    b = resultado_2oct.calibracion.betas
+def test_calibracion_2oct_reproduce_excel_del_grupo(informe_2oct):
+    """Libro-taller2.xlsx (B35:D35): mismos betas que el Solver del grupo (días calendario)."""
+    from roboadvisor.taller2.core.analisis import analizar
+
+    r = analizar(informe_2oct.papeles(), F, ParametrosTES(conteo_dias="Act/365"))
     np.testing.assert_allclose(
-        b.como_tupla(), (0.13543912084533, -0.01199006426047, 0.00780016280557), atol=1e-7
+        r.calibracion.betas.como_tupla(),
+        (0.13543912084533, -0.01199006426047, 0.00780016280557),
+        atol=1e-7,
     )
-    assert resultado_2oct.calibracion.rmse == pytest.approx(0.4852, abs=1e-3)
-    assert resultado_2oct.calibracion.convergio
+    assert r.calibracion.rmse == pytest.approx(0.4852, abs=1e-3)
+    assert r.umbral_pb == pytest.approx(23.4838, abs=1e-3)
+    assert r.conteo_senales() == {"Mantener": 23, "Vender": 6}
+    assert r.calibracion.convergio
+
+
+def test_convencion_de_mercado_reproduce_la_tasa_sen(resultado_2oct):
+    """NL/365 (sin 29-feb): la TIR del precio publicado = tasa SEN de IRC."""
+    t = resultado_2oct.tabla
+    sen = t[t["origen_tasa"] == "SEN"]
+    assert len(sen) == 18
+    assert ((sen["tir_observada"] - sen["tasa_informe"]).abs() / 1e-4).max() < 0.05
+    assert t.set_index("nemotecnico").loc["TFIT34130358", "tir_observada"] == pytest.approx(
+        0.135, abs=1e-6
+    )
+
+
+def test_dias_sin_29_de_febrero():
+    from roboadvisor.taller2.core.flujos import dias_entre
+
+    a, b = dt.date(2028, 2, 1), dt.date(2028, 3, 1)
+    assert dias_entre(a, b, "Act/365") == 29 and dias_entre(a, b) == 28
+    assert dias_entre(F, dt.date(2058, 3, 13)) == (dt.date(2058, 3, 13) - F).days - 8
+    with pytest.raises(ValueError):
+        dias_entre(a, b, "30/360")
 
 
 def test_decisiones_2oct_con_umbral_1_sigma(resultado_2oct):
-    assert resultado_2oct.umbral_pb == pytest.approx(23.4838, abs=1e-3)
-    assert resultado_2oct.conteo_senales() == {"Mantener": 23, "Vender": 6}
+    assert resultado_2oct.conteo_dias == "NL/365"
+    assert resultado_2oct.calibracion.betas.b0 == pytest.approx(0.135518, abs=1e-6)
+    assert resultado_2oct.umbral_pb == pytest.approx(23.7203, abs=1e-3)
+    assert resultado_2oct.conteo_senales() == {"Mantener": 22, "Vender": 7}
     t = resultado_2oct.tabla.set_index("nemotecnico")
-    assert t.loc["TFIT08031127", "spread_pb"] == pytest.approx(-102.82, abs=0.05)
+    assert t.loc["TFIT08031127", "spread_pb"] == pytest.approx(-103.60, abs=0.05)
     assert t.loc["TFIT08031127", "senal"] == "Vender"
 
 

@@ -150,7 +150,8 @@ with pest[3]:
 - **Calibración**: β0, β1 y β2 minimizan la suma de (precio sucio observado − precio con la curva)²,
   igual que el Solver del Excel del profesor.
 - **TIR observada vs. estimada**: TIR del precio sucio del mercado vs. TIR del precio que da
-  la curva (misma base días/365 que `TIR.NO.PER`).
+  la curva. Plazos en días / 365 **sin contar los 29 de febrero** (convención del mercado de TES,
+  NL/365): con ella la TIR del precio publicado coincide con la tasa SEN de IRC.
 - **Decisión**: si la TIR observada supera la estimada en más del umbral, el papel está
   barato frente a la curva → *Comprar*; si es menor por más del umbral → *Vender*.
   El umbral por defecto es 1 desviación estándar de las diferencias del día.

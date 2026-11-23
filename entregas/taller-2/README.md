@@ -32,9 +32,13 @@ y la compare con la TIR que implica la curva para decidir **comprar, vender o ma
 
 ## Resultado del 2 de octubre de 2026 (en una mirada)
 
-β0 = 13,54 % · β1 = −1,20 % · β2 = 0,78 % · τ = 3,7 → **0 comprar · 6 vender · 23 mantener**
-(umbral: ±23,5 puntos básicos, una desviación estándar de las diferencias). El DV01 por $1.000 millones va de
-$4.367 (TCO a 18 días) a $653.824 (TFIT 2058).
+β0 = 13,55 % · β1 = −1,20 % · β2 = 0,80 % · τ = 3,7 → **0 comprar · 7 vender · 22 mantener**
+(umbral: ±23,7 puntos básicos, una desviación estándar de las diferencias). El DV01 por $1.000 millones va de
+$4.367 (TCO a 18 días) a $653.204 (TFIT 2058).
+
+Los plazos se cuentan con la **convención del mercado de TES** (días / 365 sin contar los 29 de febrero): con ella
+la TIR del precio publicado coincide con la tasa SEN de IRC (por ejemplo, 13,500 % en el TFIT 2058). El Excel del
+profesor usa días calendario; la sección 3.4 del informe compara ambas (con días calendario sale 6 vender · 23 mantener).
 
 Para otro día: `python -m roboadvisor.taller2.pipeline.update_tes --fecha AAAA-MM-DD --sin-supabase`.
 
