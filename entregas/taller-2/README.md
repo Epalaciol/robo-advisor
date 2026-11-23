@@ -41,7 +41,7 @@ Para otro día: `python -m roboadvisor.taller2.pipeline.update_tes --fecha AAAA-
 ## Más allá del taller: la página web, siempre al día
 
 El código no solo se probó con el 2-oct: alimenta una **página pública** —**sin registro**— con la curva de
-cada día, la decisión por papel, la duración/DV01 y la historia de la curva:
+cada día publicado por IRC (desde el 21-sep-2026), la decisión por papel, la duración/DV01 y la historia de la curva:
 
 **🔗 <https://mft-investements.streamlit.app/> → página "T2 Curva TES"**
 

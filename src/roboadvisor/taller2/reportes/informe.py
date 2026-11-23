@@ -364,7 +364,7 @@ TFIT/TFVT):
   del grupo (betas a $5\\times10^{{-9}}$).
 - **Más allá del enunciado:** el mismo código corre solo cada día hábil y publica la curva en una página
   **pública, sin registro**. **Lo invitamos a visitarla** para ver la curva cero cupón de cada día desde el
-  2-oct y cómo ha cambiado: <{URL_APP}> → "T2 Curva TES" (sección 4.2).
+  21-sep-2026 y cómo ha cambiado: <{URL_APP}> → "T2 Curva TES" (sección 4.2).
 
 > **Aviso:** ejercicio académico. Las decisiones del modelo no constituyen una recomendación de inversión.
 
@@ -383,7 +383,7 @@ TFIT/TFVT):
 4. *Por papel:* precio con la curva → TIR estimada; precio de mercado → TIR observada; diferencia en pb → decisión.
 5. *Riesgo:* duración de Macaulay y modificada, convexidad y DV01 por $1.000 millones.
 
-**Herramientas.** **Python** hace los cálculos (numpy, scipy para el Solver, pandas), este informe y el Excel; las
+**Herramientas.** **Python** hace los cálculos (numpy, scipy en lugar del Solver, pandas), este informe y el Excel; las
 mismas funciones alimentan la aplicación, así los números coinciden. El **Excel** adjunto repite el modelo con
 fórmulas vivas para revisarlo celda por celda. Un **proceso automático** (GitHub Actions) descarga el informe de
 cada día y guarda los resultados en una **base de datos en la nube** (Supabase) que lee la página pública. Se usó
@@ -406,8 +406,9 @@ cada día y guarda los resultados en una **base de datos en la nube** (Supabase)
 
 El *Informe Diario de Deuda Pública* trae, para cada TES transado o valorado, el nemotécnico, la fecha de
 vencimiento, el cupón, el precio limpio y el sucio, la tasa y su origen (**SEN**: sale de operaciones del día en el
-sistema del Banco de la República; **VAL**: sale del proveedor de precios), la duración y el valor nominal en
-circulación. Para el 2-oct se usó **la tabla del enunciado** ({len(tab)} filas; nominal total {_n(nominal_total, 0)} millones,
+sistema del Banco de la República; **VAL**: tasa de valoración vigente publicada por el proveedor de precios
+PRECIA), la duración y el saldo en circulación (valor nominal, en millones de pesos). El informe trae además una
+tabla de TES en UVR, que no se usa: el enunciado pide la tabla "Tasa Fija en Pesos". Para el 2-oct se usó **la tabla del enunciado** ({len(tab)} filas; nominal total {_n(nominal_total, 0)} millones,
 igual al total del informe). Antes de calcular se revisa que la suma de nominales cuadre con el total, que la fecha
 del nemotécnico coincida con el vencimiento y que el cupón corrido (sucio − limpio) sea coherente con el cupón.
 
@@ -437,7 +438,7 @@ $$S(t)=\\beta_0+\\beta_1\\,\\frac{{1-e^{{-t/\\tau}}}}{{t/\\tau}}+\\beta_2\\left[
 ## Calibración (el Solver)
 
 Se buscan β0, β1 y β2 que minimizan $\\sum_i (P_i^{{obs}}-P_i^{{NS}})^2$ sobre todos los papeles del día, con τ fijo. Se usa el
-método SLSQP de scipy (equivalente al Solver GRG de Excel) desde varios puntos de partida, entre ellos los betas
+método de mínimos cuadrados no lineales de scipy (`least_squares`, que cumple el papel del Solver de Excel) desde varios puntos de partida, entre ellos los betas
 del Excel del profesor, y se conserva la mejor solución. Para el 2-oct la suma de errores² es **{_n(cal.sse, 4)}**
 (error cuadrático medio de {_n(cal.rmse, 3)} por cada 100 de precio).
 
@@ -479,8 +480,8 @@ máxima {dif_dv:.0e}).
 {_md(spots)}
 
 La curva es **creciente y poco empinada**: unos {_n((spot(30.0, b, tau) - spot(1.0, b, tau)) / 1e-4, 0)} pb entre 1 y 30 años. β1 < 0 da la
-pendiente positiva y β2 > 0 una leve joroba en plazos medios. Los TCO (menos de un año) quedan muy cerca de la
-curva; la mayor dispersión está en los TFIT de 1 a 5 años y en los más largos.
+pendiente positiva y β2 > 0 una leve joroba en plazos medios. La mayor desviación es la del TFIT08031127
+(1 año), muy por debajo de la curva; los TCO que vencen entre enero y mayo de 2027 y el TFIT 2050 también quedan por debajo.
 
 ## TIR observada vs. estimada y decisión
 
@@ -492,7 +493,7 @@ curva; la mayor dispersión está en los TFIT de 1 a 5 años y en los más largo
 El caso más claro es el **TFIT08031127**: su TIR observada ({_pct(tab.set_index("nemotecnico").loc["TFIT08031127", "tir_observada"])}) está unos
 {_n(abs(tab.set_index("nemotecnico").loc["TFIT08031127", "spread_pb"]), 0)} pb por debajo de lo que indica la curva; en todos los informes revisados (21-sep a 6-nov) este papel cotiza muy por debajo de la curva, así
 que la señal refleja una característica persistente del papel más que una oportunidad pasajera. Los
-otros "vender" son TCO de 4 a 8 meses, cuyo precio sale en su mayoría del proveedor (VAL) y no de operaciones
+otros "vender" son TCO que vencen entre enero y mayo de 2027, cuyo precio sale en su mayoría del proveedor (VAL) y no de operaciones
 del día, y el TFIT31261050, el único TFIT largo con precio VAL.
 
 **TIR observada vs. tasa publicada por IRC.** Para los {int(sen.sum())} papeles con tasa SEN la TIR calculada con el precio sucio
@@ -579,20 +580,24 @@ Allí puede:
 2. En **"Tabla por papel"**, revisar para esa fecha la TIR observada y estimada, el spread, la decisión, la duración,
    la convexidad y el DV01 por $1.000 millones, y descargarla en CSV.
 3. En **"Historia"**, comparar las **curvas de todos los días superpuestas**, la evolución de β0, β1 y β2 y de las
-   tasas cero cupón a 1, 5 y 10 años desde el 2-oct.
+   tasas cero cupón a 1, 5 y 10 años desde el 21-sep-2026.
 4. En **"Cómo leer esto"**, un resumen de la metodología.
 
-IRC publica con algunos días de rezago, así que la página se actualiza **a diario**, no en tiempo real.
+IRC publica con algunos días de rezago, así que la página se actualiza **a diario**, no en tiempo real. Si IRC
+pasa varios días sin publicar, la página muestra el último informe disponible y avisa cuántos días hábiles tiene.
 
 # Validación
 
 - **Modelo Nelson Siegel.xlsx (profesor, 17-mar-2026):** con los betas del Excel el motor reproduce el precio de
   los papeles con error menor a $10^{{-10}}$.
-- **Excel y script del grupo (2-oct):** betas con diferencia máxima $4{{,}}6\\times10^{{-9}}$; precio estimado, TIR,
-  spread y DV01 con diferencias menores a $10^{{-7}}$.
+- **Excel y script del grupo (2-oct):** betas con diferencia máxima $4{{,}}6\\times10^{{-9}}$; precio estimado con
+  diferencia menor a $10^{{-7}}$, TIR menor a $10^{{-8}}$, spread menor a 0,001 pb y DV01 relativo menor a $10^{{-8}}$.
 - **PDF real del 2-oct:** al correr `update_tes --fecha 2026-10-02` con el informe descargado de IRC se leen los
   mismos {len(tab)} papeles y se obtienen los mismos betas y decisiones que con la tabla del enunciado.
-- **Datos reales:** el lector de PDF se probó con **31 informes** de IRC (21-sep a 6-nov-2026). Se encontraron y se
+- **Lectura de los PDF de IRC:** se probó con los **33 informes** publicados entre el 21-sep y el 6-nov-2026. En los
+  32 que tienen texto, cada valor leído (nominal, cupón, precios, duración, tasas, origen y variación; 939 filas) se
+  comparó con una segunda extracción hecha con otro motor de PDF: **cero diferencias**, y la suma de nominales cuadra
+  con el total del informe (salvo diferencias de 2–3 millones por redondeo de la fuente). Se encontraron y se
   tratan anomalías de la fuente: totales que difieren por redondeo, un TCO publicado con cupón 1 %, un informe
   que es una imagen sin texto y un cupón que se paga el día del informe (detalle en `docs/taller-2/09-validacion.md`).
 - **Pruebas automáticas** (`tests/taller2/`): DV01 por revaluación = fórmula con duración, duración = la publicada
@@ -607,7 +612,7 @@ IRC publica con algunos días de rezago, así que la página se actualiza **a di
    {n_c} para comprar con umbral de una desviación estándar; la lista cambia con el umbral y el método.
 4. El riesgo de tasa crece con el plazo: el DV01 por $1.000 millones va de ${_n(dv_min["dv01_cop"], 0)} en el {dv_min["nemotecnico"]} a
    ${_n(dv_max["dv01_cop"], 0)} en el {dv_max["nemotecnico"]}, y para cambios grandes de tasa la convexidad corrige de forma visible la duración.
-5. El mismo código sirve para cualquier día: la curva de cada día hábil desde el 2-oct se puede consultar en
+5. El mismo código sirve para cualquier día: la curva de cada día publicado por IRC desde el 21-sep se puede consultar en
    <{URL_APP}> → "T2 Curva TES".
 
 # Limitaciones
