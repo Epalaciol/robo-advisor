@@ -395,7 +395,7 @@ cada día y guarda los resultados en una **base de datos en la nube** (Supabase)
 |---------------------------------------------|-------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
 | Papeles | TES tasa fija en pesos con vencimiento posterior al día del informe | Es la tabla que indica el enunciado |
 | Cupón | Anual, en el aniversario del vencimiento; los TCO no pagan cupón | Convención de los TES |
-| Plazo | *t* = días / 365 desde la fecha del informe | Igual al Excel del profesor |
+| Plazo | *t* = días calendario / 365 desde la fecha del informe (Act/365) | Igual al Excel del profesor; IRC usa 365/365 sin 29 de febrero (sección 2.2) |
 | Tasas | Efectivas anuales; descuento $(1+S(t))^{{-t}}$ | Igual al Excel del profesor |
 | τ | {_n(tau, 1)} fijo | Igual al Excel del profesor; la sensibilidad está en la sección 3.3 |
 | Función objetivo | $\\sum$ (precio sucio observado − precio con la curva)², sin ponderar | La celda que minimiza el Solver del Excel |
@@ -497,9 +497,17 @@ otros "vender" son TCO que vencen entre enero y mayo de 2027, cuyo precio sale e
 del día, y el TFIT31261050, el único TFIT largo con precio VAL.
 
 **TIR observada vs. tasa publicada por IRC.** Para los {int(sen.sum())} papeles con tasa SEN la TIR calculada con el precio sucio
-difiere de la publicada en máximo {_n(tir_vs_pub[sen].abs().max(), 1)} pb (redondeo del precio a 3 decimales). En los TCO con tasa VAL la diferencia
-llega a {_n(tir_vs_pub[~sen].abs().max(), 0)} pb en el más corto: la tasa VAL del proveedor no sale del precio publicado. Por eso la TIR
-observada se calcula siempre desde el precio, igual que en el Excel del profesor.
+difiere de la publicada en máximo {_n(tir_vs_pub[sen].abs().max(), 1)} pb (el TFIT34130358, por ejemplo, da 13,489 % frente a 13,500 % en el
+informe). La causa es la **convención de días**: el mercado de TES cuenta los días en base 365/365 **sin los 29 de
+febrero** (NL/365), mientras que el Excel del profesor, y este modelo, usan días calendario / 365 (Act/365). Cada
+29 de febrero hasta el vencimiento alarga un poco los plazos y baja la TIR: el efecto es nulo en los papeles que
+vencen antes del 29-feb-2028 y está entre 0,5 y 2,3 pb en los demás (es mayor en el TFIT 2028, porque un día de
+más pesa más en un plazo corto). Con NL/365, la TIR de los {int(sen.sum())} papeles SEN coincide
+con la publicada (diferencia máxima 0,04 pb): el precio de IRC es exactamente el que da su tasa. Se mantiene
+Act/365 para seguir el Excel del profesor; como la TIR observada y la estimada usan la misma convención, el spread y
+la decisión casi no cambian. En los TCO con tasa VAL la diferencia llega a {_n(tir_vs_pub[~sen].abs().max(), 0)} pb en el más corto, por
+otra razón: la tasa VAL es la de valoración de PRECIA y no sale del precio publicado. Por eso la TIR observada se
+calcula siempre desde el precio, igual que en el Excel del profesor.
 
 ## Duración, convexidad y DV01 por $1.000 millones
 
