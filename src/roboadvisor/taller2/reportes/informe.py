@@ -326,6 +326,8 @@ header-includes:
   - \\AtBeginEnvironment{{longtable}}{{\\small}}
 ---
 
+\\newpage
+
 # Resumen ejecutivo {{-}}
 
 Construimos un código en Python que, para **cualquier día**, toma el *Informe Diario de Deuda Pública* de
