@@ -14,13 +14,13 @@ y la compare con la TIR que implica la curva para decidir **comprar, vender o ma
 
 | Archivo | Qué es | Para quién |
 |---|---|---|
-| [**Taller2_Informe.pdf**](Taller2_Informe.pdf) | El informe: tabla de cumplimiento del enunciado, método paso a paso, curva, TIR de cada papel, decisiones, duración, convexidad y DV01 | **Empiece por aquí** |
+| [**Taller2_Informe.pdf**](Taller2_Informe.pdf) | El informe: método paso a paso, curva, TIR de cada papel, decisiones, duración, convexidad y DV01 | **Empiece por aquí** |
 | [Taller2_2026-10-02.xlsx](Taller2_2026-10-02.xlsx) | El modelo en Excel (siguiendo el "Modelo Nelson Siegel.xlsx"), con fórmulas vivas y la celda de la suma de errores² lista para Solver | Para revisar un cálculo |
 | [figuras/](figuras/) | Gráficos del informe | Opcional |
 
 ## Cómo leer el informe
 
-- **Resumen ejecutivo y cumplimiento del enunciado:** la respuesta en una página y dónde se cumple cada punto.
+- **Resumen ejecutivo:** la respuesta en una página.
 - **1 – Metodología:** datos de IRC, flujos de cada papel (con un ejemplo), la curva Nelson-Siegel, la
   calibración (el Solver), TIR observada vs. estimada y la regla de decisión, y las fórmulas de duración,
   convexidad y DV01.

@@ -128,5 +128,5 @@ def test_informe_markdown_del_taller2(informe_2oct, resultado_2oct, tmp_path):
     )
     assert "13,55 %" in md and "0 comprar · 7 vender · 22 mantener" in md
     assert "NL/365" in md and "TCO364150627" in md
-    assert "Cumplimiento del enunciado" in md and "Esteban Palacio Londoño" in md
+    assert "Cumplimiento del enunciado" not in md and "Esteban Palacio Londoño" in md
     assert "19 de noviembre de 2026" in md and "--fecha" in md

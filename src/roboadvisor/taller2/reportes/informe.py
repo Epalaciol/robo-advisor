@@ -48,14 +48,6 @@ def _md(df: pd.DataFrame) -> str:
     return df.to_markdown(index=False, disable_numparse=True)
 
 
-def _md_ancho(df: pd.DataFrame, anchos: Sequence[float]) -> str:
-    """Tabla con anchos relativos (texto que se parte en varias líneas); anchos suman 1."""
-    sep = "|" + "|".join("-" * max(3, int(a * 250)) for a in anchos) + "|"
-    filas = ["| " + " | ".join(map(str, df.columns)) + " |", sep]
-    filas += ["| " + " | ".join(map(str, f)) + " |" for f in df.itertuples(index=False)]
-    return "\n".join(filas)
-
-
 def _fecha(f: dt.date) -> str:
     return f"{f.day} de {MESES[f.month - 1]} de {f.year}"
 
@@ -312,58 +304,6 @@ def construir_markdown(
     dif_dv = _max_dif_dv01(r, papeles)
     autores = "\n".join(f"  - {x}" for x in INTEGRANTES)
 
-    cumplimiento = pd.DataFrame(
-        [
-            [
-                "Código que obtenga los betas **para un día determinado**",
-                "Sí",
-                "Comando con `--fecha` (sección 4.1); curvas de cada día en la página web (sección 4.2)",
-            ],
-            [
-                "Basado en el informe diario de TES de www.irc.gov.co",
-                "Sí",
-                "Descarga y lectura del PDF de IRC con validaciones; secciones 1.1 y 4",
-            ],
-            ["Curva cero cupón con **Nelson-Siegel**", "Sí", "Secciones 1.3–1.4 y 2.1"],
-            [
-                "**TIR** de cada papel transado ese día **usando la cero cupón**",
-                "Sí",
-                "TIR estimada, secciones 1.5 y 2.2",
-            ],
-            [
-                "Comparar TIR observada vs. estimada → **comprar, vender o mantener**",
-                "Sí",
-                "Secciones 1.5 y 2.2",
-            ],
-            [
-                "Basarse en el **Modelo Nelson Siegel.xlsx**",
-                "Sí",
-                "Mismas fórmulas, con el conteo de días del mercado (sección 1.2); Excel adjunto con fórmulas; secciones 3.4 y 5",
-            ],
-            [
-                "Probar con las transacciones del **2 de octubre de 2026** (tabla del enunciado)",
-                "Sí",
-                f"Los {len(tab)} papeles de la tabla; sección 2",
-            ],
-            [
-                "**DV01** de cada papel por cada **$1.000 millones** de nominal",
-                "Sí",
-                "Secciones 1.6 y 2.3",
-            ],
-            [
-                "Objetivo: duración y convexidad",
-                "Sí",
-                "Secciones 2.3 y 2.4 (aproximación de precio)",
-            ],
-            [
-                "Objetivo: analizar el mercado accionario",
-                "—",
-                "El enunciado no trae una tarea de renta variable; se cubrió en el Taller 1 (beta y múltiplos)",
-            ],
-        ],
-        columns=["Lo que pide el enunciado", "¿Cumple?", "Dónde está"],
-    )
-
     return f"""---
 title: "Taller 2 · Curva cero cupón de TES con Nelson-Siegel, TIR, decisión y DV01"
 subtitle: "Inversiones — Maestría en Finanzas, Universidad EAFIT · Semestre II de 2026"
@@ -411,10 +351,6 @@ TFIT/TFVT):
   21-sep-2026 y cómo ha cambiado: <{URL_APP}> → "T2 Curva TES" (sección 4.2).
 
 > **Aviso:** ejercicio académico. Las decisiones del modelo no constituyen una recomendación de inversión.
-
-## Cumplimiento del enunciado {{-}}
-
-{_md_ancho(cumplimiento, (0.45, 0.1, 0.45))}
 
 # Metodología
 
@@ -689,16 +625,6 @@ pasa varios días sin publicar, la página muestra el último informe disponible
 - La decisión es estática (un día) y no considera liquidez, costos de transacción ni el carry.
 - La curva se calibra con TES tasa fija en pesos; no incluye UVR ni otros emisores.
 
-# Anexo · Cómo reproducir {{-}}
-
-```
-pip install -e ".[reportes]"
-python -m roboadvisor.taller2.reportes      # este PDF y el Excel del 2-oct
-pytest tests/taller2 -q                      # pruebas
-```
-
-Código: <{URL_REPO}> (`src/roboadvisor/taller2/`). Excel adjunto: `Taller2_2026-10-02.xlsx` (hojas *Parametros*
-con los betas y la celda de la suma de errores² lista para Solver, *Resultados*, *Flujos*, *Curva* y *Sensibilidad*).
 """
 
 
