@@ -15,13 +15,13 @@ COLUMNAS = {
     "senal": "Decisión",
     "duracion_modificada": "Duración mod.",
     "convexidad": "Convexidad",
-    "dv01_cop": "DV01 por $1.000 M",
+    "dv01_cop": "DV01 por $1.000 M (COP)",
 }
 
 
 def pesos(x: float) -> str:
-    """Formato colombiano: 653823.95 → '$653.824'."""
-    return "$" + f"{x:,.0f}".replace(",", ".")
+    """Formato colombiano: 653823.95 → '$653.824 COP'."""
+    return "$" + f"{x:,.0f}".replace(",", ".") + " COP"
 
 
 def tabla_presentacion(df: pd.DataFrame) -> pd.DataFrame:

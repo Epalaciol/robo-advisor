@@ -114,7 +114,7 @@ with pest[1]:
     else:
         st.dataframe(tabla_presentacion(tabla), hide_index=True, use_container_width=True)
         st.caption(
-            "DV01: pesos que gana (o pierde) una posición de **$1.000.000.000 COP de valor "
+            "DV01: lo que gana (o pierde), en COP, una posición de **$1.000.000.000 COP de valor "
             f"nominal** si la TIR baja (sube) 1 pb. Mayor DV01 del día: "
             f"{pesos(float(tabla['dv01_cop'].max()))}."
         )
