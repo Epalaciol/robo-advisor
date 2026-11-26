@@ -8,7 +8,7 @@ Entrega: **26 de noviembre de 2026**
 El taller pide un código que, con el *Informe Diario de Deuda Pública* de [www.irc.gov.co](https://www.irc.gov.co/440),
 (1) calcule la **curva cero cupón** (Nelson-Siegel), (2) calcule la **TIR** de cada TES que se transó ese día
 y la compare con la TIR que implica la curva para decidir **comprar, vender o mantener**, y (3) calcule el
-**DV01** por cada $1.000 millones. Debía probarse con el **2 de octubre de 2026**.
+**DV01** por cada 1.000'000.000 COP (mil millones de pesos). Debía probarse con el **2 de octubre de 2026**.
 
 ## ¿Qué hay en esta carpeta?
 
@@ -25,7 +25,7 @@ y la compare con la TIR que implica la curva para decidir **comprar, vender o ma
   calibración (el Solver), TIR observada vs. estimada y la regla de decisión, y las fórmulas de duración,
   convexidad y DV01.
 - **2 – Resultados del 2-oct:** curva y tasas cero cupón, TIR y decisión por papel, duración/convexidad/DV01
-  por $1.000 millones y qué tan buena es la aproximación de precio con duración y con convexidad.
+  por 1.000'000.000 COP y qué tan buena es la aproximación de precio con duración y con convexidad.
 - **3 – Sensibilidad** de la decisión al método de calibración, al umbral y a τ.
 - **4 – Cómo correrlo para un día determinado** (`--fecha`) y **cómo ver en la página las curvas de otros días**.
 - **5 – Validación, 6 – Conclusiones, 7 – Limitaciones.**
@@ -33,8 +33,8 @@ y la compare con la TIR que implica la curva para decidir **comprar, vender o ma
 ## Resultado del 2 de octubre de 2026 (en una mirada)
 
 β0 = 13,55 % · β1 = −1,20 % · β2 = 0,80 % · τ = 3,7 → **0 comprar · 7 vender · 22 mantener**
-(umbral: ±23,7 puntos básicos, una desviación estándar de las diferencias). El DV01 por $1.000 millones va de
-$4.367 COP (TCO a 18 días) a $653.204 COP (TFIT 2058).
+(umbral: ±23,7 puntos básicos, una desviación estándar de las diferencias). El DV01 por 1.000'000.000 COP va de
+4.367 COP (TCO a 18 días) a 653.204 COP (TFIT 2058).
 
 Los plazos se cuentan con la **convención del mercado de TES** (días / 365 sin contar los 29 de febrero): con ella
 la TIR del precio publicado coincide con la tasa SEN de IRC (por ejemplo, 13,500 % en el TFIT 2058). El Excel del

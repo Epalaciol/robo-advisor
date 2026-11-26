@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 # Betas guardados en el "Modelo Nelson Siegel.xlsx" del profesor (ejemplo del 17-mar-2026).
 BETAS_EXCEL_PROFESOR = (0.12790448628048, -0.0313297355745254, 0.0436569038355564)
 
-# $1.000 millones de valor nominal = 1.000.000.000 COP = 10**9 (NO 10**12, que es un billón).
+# 1.000'000.000 COP (mil millones de pesos) de valor nominal = 10**9 (NO 10**12, que es un billón).
 NOMINAL_DV01 = 1_000_000_000
 
 PB = 0.0001  # 1 punto básico

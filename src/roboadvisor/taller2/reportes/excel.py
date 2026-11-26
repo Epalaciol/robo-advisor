@@ -4,7 +4,7 @@ Hojas:
 - Parametros: β0, β1, β2, τ, nominal DV01, umbral y la celda SSE (lista para Solver:
   minimizar Parametros!B9 cambiando B3:B5, sin restringir el signo).
 - Resultados: un papel por fila; precio estimado, TIR observada y estimada (XIRR), diferencia
-  en pb, decisión, duración, convexidad y DV01 por $1.000 millones.
+  en pb, decisión, duración, convexidad y DV01 por 1.000'000.000 COP.
 - Flujos: bloque por papel (fecha de valoración con −precio + flujos), tasa spot, factor de
   descuento y valor presente con fórmulas; de aquí salen el precio estimado y las XIRR.
   Conteo NL/365 (mercado de TES): Días = fecha − valoración − 29 de febrero del período. Como
@@ -57,7 +57,7 @@ def generar_excel(resultado, ruta: str | Path, sensibilidad: pd.DataFrame | None
         ("β1", c.betas.b1),
         ("β2", c.betas.b2),
         ("τ (fijo)", c.tau),
-        ("Nominal DV01 (COP) = $1.000 millones", NOMINAL_DV01),
+        ("Nominal DV01 = 1.000'000.000 COP (mil millones de pesos)", NOMINAL_DV01),
         ("Umbral decisión (pb)", r.umbral_pb),
         ("SSE = Σ (sucio − estimado)²", None),
         ("RMSE", None),
@@ -156,7 +156,7 @@ def generar_excel(resultado, ruta: str | Path, sensibilidad: pd.DataFrame | None
             "Duración Macaulay",
             "Duración modificada",
             "Convexidad",
-            "DV01 por $1.000 millones (COP)",
+            "DV01 por 1.000'000.000 COP (fórmula)",
             "DV01 revaluación (COP)",
         ],
     )

@@ -106,7 +106,7 @@ def grafico_dv01(r: ResultadoTES, ruta: Path) -> Path:
             ax.annotate(f["nemotecnico"], (f["duracion_modificada"], f["dv01_cop"] / 1e3),
                         fontsize=6, xytext=(3, 3), textcoords="offset points")  # fmt: skip
     ax.set_xlabel("Duración modificada (años)")
-    ax.set_ylabel("DV01 por $1.000 millones (miles de COP)")
+    ax.set_ylabel("DV01 por 1.000'000.000 COP de nominal (miles de COP)")
     ax.grid(alpha=0.25)
     fig.tight_layout()
     fig.savefig(ruta, dpi=160)
@@ -212,7 +212,7 @@ def construir_markdown(
             "Dur. informe IRC": [_n(x) for x in tab["duracion_informe"]],
             "Dur. modificada": [_n(x) for x in tab["duracion_modificada"]],
             "Convexidad": [_n(x) for x in tab["convexidad"]],
-            "DV01 por $1.000 M (COP)": [_n(x, 0) for x in tab["dv01_cop"]],
+            "DV01 (COP)": [_n(x, 0) for x in tab["dv01_cop"]],
         }
     )
     spots = pd.DataFrame(
@@ -334,7 +334,7 @@ Construimos un código en Python que, para **cualquier día**, toma el *Informe 
 [www.irc.gov.co](https://www.irc.gov.co/440), calibra los betas de **Nelson-Siegel**, calcula la **curva cero
 cupón**, valora cada TES tasa fija en pesos que se transó ese día, calcula su **TIR observada** (con el precio de
 mercado) y su **TIR estimada** (con el precio que da la curva), y decide si hay una oportunidad de **comprar,
-vender o mantener**. Además calcula **duración, convexidad y DV01 por cada $1.000 millones** de nominal.
+vender o mantener**. Además calcula **duración, convexidad y DV01 por cada 1.000'000.000 COP (mil millones de pesos)** de nominal.
 
 Con las transacciones del **2 de octubre de 2026** (la tabla del enunciado: {len(tab)} papeles, {n_tco} TCO y {n_tf}
 TFIT/TFVT):
@@ -343,8 +343,8 @@ TFIT/TFVT):
   profesor) y la convención de días del mercado de TES (sin 29 de febrero). La curva es **creciente**: parte de {_pct(corto)} en el muy corto plazo y se acerca a {_pct(b.b0)} en el largo.
 - **Decisión** (umbral ±{_n(r.umbral_pb, 1)} pb, una desviación estándar de las diferencias del día):
   **{n_c} comprar · {n_v} vender · {n_m} mantener**. Vender: {vender}. Comprar: {comprar}.
-- **DV01:** va de ${_n(dv_min["dv01_cop"], 0)} COP ({dv_min["nemotecnico"]}) a **${_n(dv_max["dv01_cop"], 0)} COP** ({dv_max["nemotecnico"]})
-  por punto básico y por $1.000 millones de nominal.
+- **DV01:** va de {_n(dv_min["dv01_cop"], 0)} COP ({dv_min["nemotecnico"]}) a **{_n(dv_max["dv01_cop"], 0)} COP** ({dv_max["nemotecnico"]})
+  por punto básico y por 1.000'000.000 COP de nominal.
 - **Validación:** la TIR calculada con el precio publicado da exactamente la tasa SEN de IRC (diferencia máxima
   {_n(tir_vs_pub[sen].abs().max(), 2)} pb), y con la convención de días del profesor el motor reproduce su *Modelo Nelson
   Siegel.xlsx* (error < $10^{{-10}}$) y el Excel del grupo (betas a $5\\times10^{{-9}}$).
@@ -363,7 +363,7 @@ TFIT/TFVT):
 2. *Flujos:* calendario de pagos de cada papel y su plazo *t* en años.
 3. *Curva:* betas de Nelson-Siegel que mejor explican los precios sucios de todos los papeles (Solver).
 4. *Por papel:* precio con la curva → TIR estimada; precio de mercado → TIR observada; diferencia en pb → decisión.
-5. *Riesgo:* duración de Macaulay y modificada, convexidad y DV01 por $1.000 millones.
+5. *Riesgo:* duración de Macaulay y modificada, convexidad y DV01 por 1.000'000.000 COP de nominal.
 
 **Herramientas.** **Python** hace los cálculos (numpy, scipy en lugar del Solver, pandas), este informe y el Excel; las
 mismas funciones alimentan la aplicación, así los números coinciden. El **Excel** adjunto repite el modelo con
@@ -382,14 +382,14 @@ cada día y guarda los resultados en una **base de datos en la nube** (Supabase)
 | τ | {_n(tau, 1)} fijo | Igual al Excel del profesor; la sensibilidad está en la sección 3.3 |
 | Función objetivo | $\\sum$ (precio sucio observado − precio con la curva)², sin ponderar | La celda que minimiza el Solver del Excel |
 | Decisión | Umbral = 1 desviación estándar de las diferencias del día | Separa lo "normal" de lo que se sale de la curva |
-| DV01 | Nominal de $1.000 millones = $10^9$ pesos | Lo pide el enunciado |
+| DV01 | Nominal de 1.000'000.000 COP (mil millones de pesos) = $10^9$ COP | Lo pide el enunciado |
 
 ## Datos del informe de IRC
 
 El *Informe Diario de Deuda Pública* trae, para cada TES transado o valorado, el nemotécnico, la fecha de
 vencimiento, el cupón, el precio limpio y el sucio, la tasa y su origen (**SEN**: sale de operaciones del día en el
 sistema del Banco de la República; **VAL**: tasa de valoración vigente publicada por el proveedor de precios
-PRECIA), la duración y el saldo en circulación (valor nominal, en millones de pesos). El informe trae además una
+PRECIA), la duración y el saldo en circulación (valor nominal, en millones de COP). El informe trae además una
 tabla de TES en UVR, que no se usa: el enunciado pide la tabla "Tasa Fija en Pesos". Para el 2-oct se usó **la tabla del enunciado** ({len(tab)} filas; nominal total {_n(nominal_total, 0)} millones,
 igual al total del informe). Antes de calcular se revisa que la suma de nominales cuadre con el total, que la fecha
 del nemotécnico coincida con el vencimiento y que el cupón corrido (sucio − limpio) sea coherente con el cupón.
@@ -446,9 +446,9 @@ Con la TIR observada *y* y $VP_k=F_k(1+y)^{{-t_k}}$:
 $$D_{{Mac}}=\\frac{{\\sum_k t_k\\,VP_k}}{{P}},\\qquad D^*=\\frac{{D_{{Mac}}}}{{1+y}},\\qquad C=\\frac{{\\sum_k t_k(t_k+1)\\,VP_k}}{{P\\,(1+y)^2}},$$
 
 $$DV01=\\big[P(y-\\tfrac12\\,\\text{{pb}})-P(y+\\tfrac12\\,\\text{{pb}})\\big]\\cdot\\frac{{N}}{{100}}\\;\\approx\\;N\\cdot\\frac{{P}}{{100}}\\cdot D^*\\cdot 0{{,}}0001,
-\\qquad N=\\$1.000\\text{{ millones}}=10^9.$$
+\\qquad N=\\text{{1.000'000.000 COP}}=10^9.$$
 
-El DV01 es cuántos pesos gana (pierde) una posición de $1.000 millones de nominal si la TIR baja (sube) 1 pb. Se
+El DV01 es cuántos COP gana (pierde) una posición de 1.000'000.000 COP (mil millones de pesos) de nominal si la TIR baja (sube) 1 pb. Se
 calcula revaluando el bono y se verifica contra la fórmula con la duración modificada (diferencia relativa
 máxima {dif_dv:.0e}).
 
@@ -486,7 +486,7 @@ con tasa VAL la diferencia llega a {_n(tir_vs_pub[~sen].abs().max(), 0)} pb en e
 de PRECIA y no sale del precio publicado. Por eso la TIR observada se calcula siempre desde el precio, igual que en
 el Excel del profesor.
 
-## Duración, convexidad y DV01 por $1.000 millones
+## Duración, convexidad y DV01 por 1.000'000.000 COP
 
 {_md(t_dur)}
 
@@ -494,10 +494,10 @@ La duración de Macaulay calculada coincide con la que publica IRC (diferencia m
 crece con la duración modificada y con el precio: un TFIT con cupón alto y precio sobre la par (TFIT34130358,
 TFIT23250746) tiene más DV01 que uno más largo pero muy por debajo de la par (TFIT31261050).
 
-![DV01 por $1.000 millones frente a la duración modificada]({figs["dv01"].name}){{width=80%}}
+![DV01 por 1.000'000.000 COP de nominal frente a la duración modificada]({figs["dv01"].name}){{width=80%}}
 
-**Cómo leerlo.** Si la TIR del {dv_max["nemotecnico"]} sube 1 pb, una posición de $1.000 millones de nominal pierde unos
-${_n(dv_max["dv01_cop"], 0)} COP; si sube 100 pb, alrededor de 100 veces eso (menos por la convexidad).
+**Cómo leerlo.** Si la TIR del {dv_max["nemotecnico"]} sube 1 pb, una posición de 1.000'000.000 COP de nominal pierde unos
+{_n(dv_max["dv01_cop"], 0)} COP; si sube 100 pb, alrededor de 100 veces eso (menos por la convexidad).
 
 ## Duración y convexidad: qué tan buena es la aproximación
 
@@ -577,7 +577,7 @@ Allí puede:
 1. **Escoger la fecha del informe** en la lista desplegable (por defecto, el último día disponible) y ver los betas,
    la **curva cero cupón** de ese día con la TIR observada de cada papel y su decisión.
 2. En **"Tabla por papel"**, revisar para esa fecha la TIR observada y estimada, el spread, la decisión, la duración,
-   la convexidad y el DV01 por $1.000 millones, y descargarla en CSV.
+   la convexidad y el DV01 por 1.000'000.000 COP de nominal, y descargarla en CSV.
 3. En **"Historia"**, comparar las **curvas de todos los días superpuestas**, la evolución de β0, β1 y β2 y de las
    tasas cero cupón a 1, 5 y 10 años desde el 21-sep-2026.
 4. En **"Cómo leer esto"**, un resumen de la metodología.
@@ -613,8 +613,8 @@ pasa varios días sin publicar, la página muestra el último informe disponible
 2. La curva cero cupón del 2-oct es creciente, de {_pct(spot(1.0, b, tau))} a 1 año a {_pct(spot(30.0, b, tau))} a 30 años.
 3. Comparar la TIR observada con la estimada separa los papeles que se salen de la curva: {n_v} para vender y
    {n_c} para comprar con umbral de una desviación estándar; la lista cambia con el umbral y el método.
-4. El riesgo de tasa crece con el plazo: el DV01 por $1.000 millones va de ${_n(dv_min["dv01_cop"], 0)} COP en el {dv_min["nemotecnico"]} a
-   ${_n(dv_max["dv01_cop"], 0)} COP en el {dv_max["nemotecnico"]}, y para cambios grandes de tasa la convexidad corrige de forma visible la duración.
+4. El riesgo de tasa crece con el plazo: el DV01 por 1.000'000.000 COP de nominal va de {_n(dv_min["dv01_cop"], 0)} COP en el {dv_min["nemotecnico"]} a
+   {_n(dv_max["dv01_cop"], 0)} COP en el {dv_max["nemotecnico"]}, y para cambios grandes de tasa la convexidad corrige de forma visible la duración.
 5. El mismo código sirve para cualquier día: la curva de cada día publicado por IRC desde el 21-sep se puede consultar en
    <{URL_APP}> → "T2 Curva TES".
 

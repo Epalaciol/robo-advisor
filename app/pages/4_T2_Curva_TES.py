@@ -114,8 +114,9 @@ with pest[1]:
     else:
         st.dataframe(tabla_presentacion(tabla), hide_index=True, use_container_width=True)
         st.caption(
-            "DV01: lo que gana (o pierde), en COP, una posición de **$1.000.000.000 COP de valor "
-            f"nominal** si la TIR baja (sube) 1 pb. Mayor DV01 del día: "
+            "DV01: lo que gana (o pierde), en COP, una posición de "
+            "**1.000'000.000 COP (mil millones de pesos) de valor nominal**"
+            f" si la TIR baja (sube) 1 pb. Mayor DV01 del día: "
             f"{pesos(float(tabla['dv01_cop'].max()))}."
         )
         st.download_button(
@@ -155,7 +156,8 @@ with pest[3]:
 - **Decisión**: si la TIR observada supera la estimada en más del umbral, el papel está
   barato frente a la curva → *Comprar*; si es menor por más del umbral → *Vender*.
   El umbral por defecto es 1 desviación estándar de las diferencias del día.
-- **DV01** por $1.000 millones (10⁹ COP) de nominal, por revaluación con ±½ pb en la TIR.
+- **DV01** por 1.000'000.000 COP (mil millones de pesos) de nominal, por revaluación
+  con ±½ pb en la TIR.
 - Las decisiones cambian bastante con el método de calibración y el umbral: son salidas
   de un modelo, **no recomendaciones de inversión**.
 """

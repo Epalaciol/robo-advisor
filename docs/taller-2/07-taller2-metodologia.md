@@ -19,7 +19,7 @@ Etiquetas: **[Enunciado]** lo pide el taller · **[Excel]** sale del modelo del 
 7. **Calibración [Excel]:** minimizar `SSE = Σ (P_sucio − P_est)²` (sin ponderar) sobre β0, β1, β2, **libres de signo**, con **τ fijo = 3,7** (así lo deja el Solver del profesor). Arranque: β del día anterior; si no hay, los del Excel (0,1279; −0,0313; 0,0437).
 8. **Curva cero cupón [Excel]:** `S(d/365)` para d = 1…10.950 días (30 años) → hoja `DatosCurvaSpot`.
 9. **TIR teórica, comparación y señal [Enunciado]:** §2.
-10. **DV01 por $1.000 millones de nominal [Enunciado]:** §2.
+10. **DV01 por 1.000'000.000 COP (mil millones de pesos) de nominal [Enunciado]:** §2.
 
 ## 2. Definiciones propias (todas configurables)
 
@@ -32,7 +32,7 @@ Etiquetas: **[Enunciado]** lo pide el taller · **[Excel]** sale del modelo del 
 | Señal | spread > +u → **COMPRAR**; spread < −u → **VENDER**; si no, **MANTENER**. `u = 10 pb` por defecto. Sensibilidad 5/10/20 pb | [Supuesto] |
 | Duración | Macaulay `D = Σ t·PV/P` (la columna del informe es Macaulay [Datos]); modificada `D* = D/(1+y)` | estándar |
 | Convexidad | `C = Σ t(t+1)·PV / (P·(1+y)²)` | estándar |
-| **DV01** | Nominal **N = $1.000.000.000 COP (10⁹)**. `DV01 = N/100 · [P(y−1pb) − P(y+1pb)]/2` con `y = TIR_obs`. Control: `≈ N·(P/100)·D*·1e-4` | [Enunciado] + [Supuesto] en la tasa base |
+| **DV01** | Nominal **N = 1.000'000.000 COP (10⁹)**. `DV01 = N/100 · [P(y−1pb) − P(y+1pb)]/2` con `y = TIR_obs`. Control: `≈ N·(P/100)·D*·1e-4` | [Enunciado] + [Supuesto] en la tasa base |
 | DV01 de curva (complemento) | `N/100 · [P_est(β0−1pb) − P_est(β0+1pb)]/2`. Mover β0 desplaza **toda** la curva spot 1 pb en paralelo | [Supuesto] |
 | Aproximación de precio | `ΔP/P ≈ −D*·Δy + ½·C·Δy²`, comparada con la revaluación exacta para Δy = ±50 y ±100 pb | objetivo del taller |
 
@@ -41,8 +41,8 @@ Etiquetas: **[Enunciado]** lo pide el taller · **[Excel]** sale del modelo del 
 **Consecuencia para la calibración.** El SSE en precios (método del Excel) casi no "ve" los TCO cortos, porque sus errores de precio son pequeños aunque en tasa sean grandes. Por eso en el tramo corto pueden salir señales fuertes que son del ajuste, no del mercado. Se reporta como sensibilidad una calibración ponderada por `1/D*` (aproxima minimizar errores en tasa), sin cambiar el método principal.
 
 ### Unidades del DV01
-**$1.000 millones = 1.000.000.000 COP = 10⁹.** 10¹² es **un billón** y daría un DV01 1.000 veces mayor. `DV01 ≈ $100.000 × D* × P/100`, sin tope fijo. Hoy (tasas ≈ 13 %) la D* más alta es ≈ 7, así que el máximo ronda $650.000. Si las tasas bajan, un papel largo puede superar $1.000.000.
-Valor Nominal* del informe: **millones de COP**, saldo en circulación (el TCO 20-oct-26 muestra 5.351.599 el 17-mar y el 2-oct), no monto transado. No interviene en el DV01 pedido, que es por $1.000 millones.
+**1.000'000.000 COP (mil millones de pesos) = 10⁹.** 10¹² es **un billón** y daría un DV01 1.000 veces mayor. `DV01 ≈ 100.000 COP × D* × P/100`, sin tope fijo. Hoy (tasas ≈ 13 %) la D* más alta es ≈ 7, así que el máximo ronda 650.000 COP. Si las tasas bajan, un papel largo puede superar 1.000.000 COP.
+Valor Nominal* del informe: **millones de COP**, saldo en circulación (el TCO 20-oct-26 muestra 5.351.599 el 17-mar y el 2-oct), no monto transado. No interviene en el DV01 pedido, que es por 1.000'000.000 COP.
 
 ## 3. Hallazgos en el Excel del profesor (se corrigen en el Excel que entregamos)
 1. **Dos bloques con cupón roto.** En los papeles que vencen el 3-nov-2027 (filas 112–122) y el 18-sep-2030 (filas 173–188), la columna B no está enlazada al cupón de la tabla y los cupones quedan en 0. El Excel estima 84,36 y 59,48; lo correcto con los mismos β es 94,61 y 89,22. En los otros 24 papeles, Python reproduce el Excel a ~1e-12.
@@ -68,7 +68,7 @@ Valor Nominal* del informe: **millones de COP**, saldo en circulación (el TCO 2
   Las señales cambian mucho con el método. Los resultados se presentan con el método del Excel y esta tabla como advertencia; no se presentan como recomendación firme.
 - **TIR desde el precio vs. tasa publicada:** < 3 pb en los SEN y en los TFIT. En 10 de 11 VAL (TCO) no cuadra: hasta 68 pb en el TCO de 18 días (12,29 % vs. 11,607 %). Sugiere otra convención en esas valoraciones; por eso la TIR observada se calcula desde el precio.
 - **Duración:** la calculada difiere de la del informe en ≤ 0,01 años.
-- **DV01 por $1.000 millones:** $4.367 (TCO 20-oct-26) a $653.824 (TFIT 2058). El DV01 de curva da casi lo mismo, salvo en papeles largos con cupón bajo (TFIT 2050: $454.457 vs. $430.411). Control: DV01/((P/100)·N·1e-4) = D* con error < 1e-5.
+- **DV01 por 1.000'000.000 COP:** 4.367 COP (TCO 20-oct-26) a 653.824 COP (TFIT 2058). El DV01 de curva da casi lo mismo, salvo en papeles largos con cupón bajo (TFIT 2050: 454.457 COP vs. 430.411 COP). Control: DV01/((P/100)·N·1e-4) = D* con error < 1e-5.
 - **Duración y convexidad (TFIT 2058, D* = 6,84, C = 94,9):**
   | Δy | ΔP/P exacto | Solo duración | Duración + convexidad |
   |---|---|---|---|
@@ -82,7 +82,7 @@ Valor Nominal* del informe: **millones de COP**, saldo en circulación (el TCO 2
 2. **TIR observada:** ¿la tasa publicada o la que se deduce del precio sucio? (No cuadran en los TCO VAL.)
 3. **Umbral** para comprar/vender/mantener: ¿hay un criterio (p. ej. 10 pb, o según el error del ajuste)?
 4. **τ:** ¿siempre 3,7 o también se calibra?
-5. **DV01:** ¿con la TIR del papel (desplazar su tasa) o con la curva (desplazamiento paralelo)? ¿Por $1.000 millones = 10⁹ COP?
+5. **DV01:** ¿con la TIR del papel (desplazar su tasa) o con la curva (desplazamiento paralelo)? ¿Por 1.000'000.000 COP = 10⁹?
 6. **Renta variable:** el título y el objetivo la mencionan, pero el enunciado no pide nada. ¿Hay una parte que falta?
 7. **Formato de entrega:** ¿código + informe PDF + Excel? ¿Hay sustentación?
 8. **TFVT vs. TFIT 26-mar-2031:** mismo vencimiento y cupón, distinto precio; ¿se tratan como papeles distintos? (Por defecto sí.)
