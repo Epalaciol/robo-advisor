@@ -34,7 +34,7 @@ y la compare con la TIR que implica la curva para decidir **comprar, vender o ma
 
 β0 = 13,55 % · β1 = −1,20 % · β2 = 0,80 % · τ = 3,7 → **0 comprar · 7 vender · 22 mantener**
 (umbral: ±23,7 puntos básicos, una desviación estándar de las diferencias). El DV01 por $1.000 millones va de
-$4.367 pesos (TCO a 18 días) a $653.204 pesos (TFIT 2058).
+$4.367 COP (TCO a 18 días) a $653.204 COP (TFIT 2058).
 
 Los plazos se cuentan con la **convención del mercado de TES** (días / 365 sin contar los 29 de febrero): con ella
 la TIR del precio publicado coincide con la tasa SEN de IRC (por ejemplo, 13,500 % en el TFIT 2058). El Excel del

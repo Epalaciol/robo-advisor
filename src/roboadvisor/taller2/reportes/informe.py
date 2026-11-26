@@ -343,7 +343,7 @@ TFIT/TFVT):
   profesor) y la convención de días del mercado de TES (sin 29 de febrero). La curva es **creciente**: parte de {_pct(corto)} en el muy corto plazo y se acerca a {_pct(b.b0)} en el largo.
 - **Decisión** (umbral ±{_n(r.umbral_pb, 1)} pb, una desviación estándar de las diferencias del día):
   **{n_c} comprar · {n_v} vender · {n_m} mantener**. Vender: {vender}. Comprar: {comprar}.
-- **DV01:** va de ${_n(dv_min["dv01_cop"], 0)} pesos ({dv_min["nemotecnico"]}) a **${_n(dv_max["dv01_cop"], 0)} pesos** ({dv_max["nemotecnico"]})
+- **DV01:** va de ${_n(dv_min["dv01_cop"], 0)} COP ({dv_min["nemotecnico"]}) a **${_n(dv_max["dv01_cop"], 0)} COP** ({dv_max["nemotecnico"]})
   por punto básico y por $1.000 millones de nominal.
 - **Validación:** la TIR calculada con el precio publicado da exactamente la tasa SEN de IRC (diferencia máxima
   {_n(tir_vs_pub[sen].abs().max(), 2)} pb), y con la convención de días del profesor el motor reproduce su *Modelo Nelson
@@ -497,7 +497,7 @@ TFIT23250746) tiene más DV01 que uno más largo pero muy por debajo de la par (
 ![DV01 por $1.000 millones frente a la duración modificada]({figs["dv01"].name}){{width=80%}}
 
 **Cómo leerlo.** Si la TIR del {dv_max["nemotecnico"]} sube 1 pb, una posición de $1.000 millones de nominal pierde unos
-${_n(dv_max["dv01_cop"], 0)} pesos; si sube 100 pb, alrededor de 100 veces eso (menos por la convexidad).
+${_n(dv_max["dv01_cop"], 0)} COP; si sube 100 pb, alrededor de 100 veces eso (menos por la convexidad).
 
 ## Duración y convexidad: qué tan buena es la aproximación
 
@@ -613,8 +613,8 @@ pasa varios días sin publicar, la página muestra el último informe disponible
 2. La curva cero cupón del 2-oct es creciente, de {_pct(spot(1.0, b, tau))} a 1 año a {_pct(spot(30.0, b, tau))} a 30 años.
 3. Comparar la TIR observada con la estimada separa los papeles que se salen de la curva: {n_v} para vender y
    {n_c} para comprar con umbral de una desviación estándar; la lista cambia con el umbral y el método.
-4. El riesgo de tasa crece con el plazo: el DV01 por $1.000 millones va de ${_n(dv_min["dv01_cop"], 0)} pesos en el {dv_min["nemotecnico"]} a
-   ${_n(dv_max["dv01_cop"], 0)} pesos en el {dv_max["nemotecnico"]}, y para cambios grandes de tasa la convexidad corrige de forma visible la duración.
+4. El riesgo de tasa crece con el plazo: el DV01 por $1.000 millones va de ${_n(dv_min["dv01_cop"], 0)} COP en el {dv_min["nemotecnico"]} a
+   ${_n(dv_max["dv01_cop"], 0)} COP en el {dv_max["nemotecnico"]}, y para cambios grandes de tasa la convexidad corrige de forma visible la duración.
 5. El mismo código sirve para cualquier día: la curva de cada día publicado por IRC desde el 21-sep se puede consultar en
    <{URL_APP}> → "T2 Curva TES".
 
